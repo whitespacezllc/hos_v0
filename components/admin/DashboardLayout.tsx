@@ -21,13 +21,16 @@ export const ADMIN_TERRA = '#8B6F47'; // terracotta
 export default function DashboardLayout({
   children,
   pendingCounts,
+  adminEmail,
 }: {
   children: React.ReactNode;
   pendingCounts?: PendingCounts;
+  /** The signed-in admin's email, for the sidebar's user block. */
+  adminEmail?: string;
 }) {
   return (
     <div className="admin-scope min-h-screen flex bg-neutral-50 text-ink">
-      <Sidebar pendingCounts={pendingCounts} />
+      <Sidebar pendingCounts={pendingCounts} adminEmail={adminEmail} />
       <main className="flex-1 min-w-0 md:ml-[260px]">
         {children}
       </main>

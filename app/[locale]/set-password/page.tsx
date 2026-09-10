@@ -2,57 +2,90 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { EmailOtpType } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import { homeFor } from '@/lib/auth/roles';
+import { describeUpdatePasswordError } from '@/lib/auth/errors';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { AuthShell, AuthError, FIELD_LABEL, SUBMIT_BUTTON } from '@/components/auth/AuthShell';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 
-const BURGUNDY = '#8D0000';
-
-// Landing for admin invitations and password resets. The invite/recovery email
-// links here carrying a one-time token; we exchange it for a session, then the
-// person picks their password. Placed under app/[locale] (like /login) so it
-// inherits the public root layout — the admin panel lives outside the locale
-// segment and has no <html> of its own to lend a standalone page.
+// ─── Set a password ──────────────────────────────────────────────────────────
+// Where the email links land: an invitation ("set your password") and a
+// reset ("choose a new one") both come here with a one-time token, which is
+// exchanged for a session before the person types anything. Three ways the
+// token can arrive, in the order they are tried:
 //
-// Access to the panel itself is still gated by user_metadata.role === 'admin'
-// (see proxy.ts). This page only sets the password; the role is granted when
-// the invite is created (scripts/invite-admins.mjs, or in the Supabase
-// dashboard). Setting a password never elevates a role — that needs the
-// service key — so a stray visitor here gains nothing.
-type Phase = 'verifying' | 'ready' | 'error' | 'saving';
+//   1. A session already in the browser — the client picked up tokens from
+//      the URL hash (Supabase's default templates), or the person is simply
+//      signed in and wants a new password.
+//   2. `token_hash` + `type` in the query — our own templates
+//      (supabase/templates/*.html) and scripts/invite-admins.mjs build links
+//      this way. Verified on the server, so the link opens on any device.
+//   3. A PKCE `code` — only works in the browser that asked for the link.
+//
+// A link that has expired or was already used comes back from Supabase
+// with `error` parameters; those get their own screen and a way to ask for
+// a fresh link. Setting a password never grants a role: the account keeps
+// whatever app_metadata says (lib/auth/roles.ts), and is sent to its own
+// door — or signed out, if it has none.
+
+const MIN_LENGTH = 10;
+
+type Phase = 'verifying' | 'ready' | 'saving' | 'expired' | 'no-access';
+
+type Landing = { kind: 'invite' | 'recovery' | 'signed-in'; error?: string };
+
+function readLanding(): Landing & { tokenHash?: string; type?: string; code?: string } {
+  const url = new URL(window.location.href);
+  // Supabase reports a bad link in the query on our templates and in the
+  // hash on its own; read both.
+  const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const read = (key: string) => url.searchParams.get(key) ?? hash.get(key);
+  const type = read('type') ?? undefined;
+  const errorCode = read('error_code') ?? read('error') ?? undefined;
+  return {
+    kind: type === 'invite' ? 'invite' : type === 'recovery' ? 'recovery' : 'signed-in',
+    error: errorCode ?? undefined,
+    tokenHash: read('token_hash') ?? undefined,
+    type,
+    code: url.searchParams.get('code') ?? undefined,
+  };
+}
 
 export default function SetPasswordPage() {
   const [supabase] = useState(() => createClient());
   const [phase, setPhase] = useState<Phase>('verifying');
+  const [landing, setLanding] = useState<Landing>({ kind: 'signed-in' });
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Establish a session from whatever the email link delivered.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // 1. A session may already exist — either the person is signed in, or the
-      //    browser client auto-detected tokens from the URL hash (implicit flow).
-      const { data: { session } } = await supabase.auth.getSession();
+      const l = readLanding();
+      if (!cancelled) setLanding({ kind: l.kind, error: l.error });
+
+      if (l.error) {
+        if (!cancelled) setPhase('expired');
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         if (!cancelled) setPhase('ready');
         return;
       }
 
-      const url = new URL(window.location.href);
-
-      // 2. token_hash + type (the robust, server-verifiable invite/recovery flow).
-      const tokenHash = url.searchParams.get('token_hash');
-      const type = url.searchParams.get('type');
-      if (tokenHash && type) {
+      if (l.tokenHash && l.type) {
         const { error: vErr } = await supabase.auth.verifyOtp({
-          type: type as EmailOtpType,
-          token_hash: tokenHash,
+          type: l.type as EmailOtpType,
+          token_hash: l.tokenHash,
         });
         if (!cancelled && !vErr) {
           setPhase('ready');
@@ -60,17 +93,15 @@ export default function SetPasswordPage() {
         }
       }
 
-      // 3. PKCE code (best effort — only succeeds if this browser began the flow).
-      const code = url.searchParams.get('code');
-      if (code) {
-        const { error: cErr } = await supabase.auth.exchangeCodeForSession(code);
+      if (l.code) {
+        const { error: cErr } = await supabase.auth.exchangeCodeForSession(l.code);
         if (!cancelled && !cErr) {
           setPhase('ready');
           return;
         }
       }
 
-      if (!cancelled) setPhase('error');
+      if (!cancelled) setPhase('expired');
     })();
     return () => {
       cancelled = true;
@@ -81,148 +112,129 @@ export default function SetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (password.length < MIN_LENGTH) {
+      setError(`Use at least ${MIN_LENGTH} characters.`);
       return;
     }
     if (password !== confirm) {
-      setError('Passwords do not match.');
+      setError('The two passwords don’t match.');
       return;
     }
 
     setPhase('saving');
-    const { error: uErr } = await supabase.auth.updateUser({ password });
+    const { data, error: uErr } = await supabase.auth.updateUser({ password });
     if (uErr) {
-      setError(
-        'Could not set your password. The link may have expired — ask the studio admin to send a new invitation.',
-      );
+      setError(describeUpdatePasswordError(uErr));
       setPhase('ready');
       return;
     }
 
-    // Hard navigation so the proxy re-evaluates the fresh session + role.
-    window.location.assign('/admin');
+    // Hard navigation so the proxy re-evaluates the fresh session and role.
+    const home = homeFor(data.user);
+    if (home) {
+      window.location.assign(home);
+      return;
+    }
+    await supabase.auth.signOut();
+    setPhase('no-access');
   }
 
+  const title =
+    landing.kind === 'invite' ? 'Set your password' : landing.kind === 'recovery' ? 'Choose a new password' : 'Change your password';
+  const subtitle =
+    landing.kind === 'invite'
+      ? 'Welcome to the House of Shakti panel'
+      : landing.kind === 'recovery'
+        ? 'Then you’ll be signed in'
+        : 'For your House of Shakti account';
+
+  const backToSignIn = (
+    <Link href="/login" className="font-body text-sm text-ink/60 hover:text-ink underline underline-offset-4 decoration-[0.5px]">
+      Back to sign in
+    </Link>
+  );
+
   return (
-    <div className="admin-scope font-body min-h-screen bg-neutral-50 flex items-center justify-center p-4 text-ink">
-      <div className="w-full max-w-sm">
-        {/* Logo — House of Shakti monogram */}
-        <div className="text-center mb-8">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: BURGUNDY }}
+    <AuthShell title={title} subtitle={subtitle} footer="House of Shakti · Admin panel">
+      {phase === 'verifying' ? (
+        <div className="flex flex-col items-center gap-3 py-6 text-ink/50" role="status">
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
+          <p className="font-body text-sm">Checking your link…</p>
+        </div>
+      ) : phase === 'expired' ? (
+        <div className="space-y-5">
+          <AuthError>
+            This link has expired or was already used. Links work once and for an hour.
+          </AuthError>
+          <Link
+            href="/forgot-password"
+            className="block w-full h-10 leading-10 text-center bg-burgundy text-cream font-body text-sm hover:bg-dark transition-colors"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/favicon.png"
-              alt="House of Shakti"
-              className="w-8 h-8 object-contain"
-              loading="lazy"
-              decoding="async"
+            Email me a new link
+          </Link>
+          <div className="text-center">{backToSignIn}</div>
+        </div>
+      ) : phase === 'no-access' ? (
+        <div className="space-y-5" role="status">
+          <p className="font-body text-sm text-ink leading-relaxed">
+            Your password is saved. This account doesn’t have access to the panel yet — ask the team to grant it.
+          </p>
+          <div className="text-center">{backToSignIn}</div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className={FIELD_LABEL}>
+              New password
+            </Label>
+            <PasswordInput
+              id="password"
+              name="password"
+              autoComplete="new-password"
+              autoFocus
+              required
+              minLength={MIN_LENGTH}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={`At least ${MIN_LENGTH} characters`}
+              aria-invalid={error ? true : undefined}
+            />
+            <p className="font-body text-xs text-ink/50">
+              Long beats clever: a few words you’ll remember, with a number or a symbol.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm" className={FIELD_LABEL}>
+              Confirm password
+            </Label>
+            <PasswordInput
+              id="confirm"
+              name="confirm"
+              autoComplete="new-password"
+              required
+              minLength={MIN_LENGTH}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Once more"
+              aria-invalid={error ? true : undefined}
             />
           </div>
-          <h1 className="font-body text-2xl font-normal text-black">Set your password</h1>
-          <p className="font-body text-sm text-ink/50 mt-1">House of Shakti · Admin access</p>
-        </div>
 
-        <div className="bg-white border border-ink/10 p-6">
-          {phase === 'verifying' ? (
-            <div className="flex flex-col items-center gap-3 py-6 text-ink/50">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <p className="font-body text-sm">Verifying your invitation…</p>
-            </div>
-          ) : phase === 'error' ? (
-            <div className="space-y-4">
-              <div className="bg-burgundy/5 border border-burgundy/20 px-3 py-2.5 text-xs text-burgundy">
-                This link is invalid or has expired. Ask the studio admin to send you a
-                new invitation.
-              </div>
-              <Link
-                href="/login"
-                className="block text-center font-body text-sm text-ink/60 hover:text-ink underline underline-offset-4"
-              >
-                Back to sign in
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="password"
-                  className="font-body text-[10px] font-medium text-ink/50 uppercase tracking-[0.15em]"
-                >
-                  New password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPass ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    className="h-10 pr-10 rounded-none bg-white border-ink/20 text-ink placeholder:text-ink/30 focus:border-burgundy focus-visible:ring-0"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink/70 transition-colors"
-                  >
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+          {error && <AuthError>{error}</AuthError>}
 
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="confirm"
-                  className="font-body text-[10px] font-medium text-ink/50 uppercase tracking-[0.15em]"
-                >
-                  Confirm password
-                </Label>
-                <Input
-                  id="confirm"
-                  type={showPass ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-10 rounded-none bg-white border-ink/20 text-ink placeholder:text-ink/30 focus:border-burgundy focus-visible:ring-0"
-                />
-              </div>
-
-              {error && (
-                <div className="bg-burgundy/5 border border-burgundy/20 px-3 py-2.5 text-xs text-burgundy">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full h-10 rounded-none text-white text-sm hover:opacity-90"
-                style={{ backgroundColor: BURGUNDY }}
-                disabled={phase === 'saving'}
-              >
-                {phase === 'saving' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Saving…
-                  </>
-                ) : (
-                  'Set password & enter'
-                )}
-              </Button>
-            </form>
-          )}
-        </div>
-
-        <p className="text-center font-body text-xs text-ink/40 mt-6">
-          House of Shakti · Admin system
-        </p>
-      </div>
-    </div>
+          <Button type="submit" className={SUBMIT_BUTTON} disabled={phase === 'saving'} aria-busy={phase === 'saving'}>
+            {phase === 'saving' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden />
+                Saving…
+              </>
+            ) : (
+              'Save password and continue'
+            )}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

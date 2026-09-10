@@ -1,7 +1,7 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service';
+import { isAdminSession } from '@/lib/auth/require-admin';
 
 // Public Storage buckets, one per kind of image. Uploads go through the
 // service role (bypasses RLS); reads are public via the URL. The client has
@@ -24,16 +24,8 @@ type UploadResult = { ok: true; url: string } | { ok: false; error: string };
 
 // Only an admin uploads: the proxy already gates /admin/*, and this repeats
 // the check at the action itself.
-async function requireAdmin(): Promise<boolean> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return !!user && user.user_metadata?.role === 'admin';
-}
-
 async function uploadImage(bucket: string, folder: string, formData: FormData): Promise<UploadResult> {
-  if (!(await requireAdmin())) return { ok: false, error: 'not_allowed' };
+  if (!(await isAdminSession())) return { ok: false, error: 'not_allowed' };
   const file = formData.get('file');
   if (!(file instanceof File)) return { ok: false, error: 'no_file' };
   if (file.size > MAX_BYTES) return { ok: false, error: 'too_large' };

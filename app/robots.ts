@@ -23,7 +23,7 @@ const PRIVATE_PATHS = [
   '/instructor',
   '/api',
   // Public-site paths exist in every language: `/booking` and `/es/booking`.
-  ...['/booking', '/paquetes/resultado', '/login', '/set-password'].flatMap((path) =>
+  ...['/booking', '/paquetes/resultado', '/login', '/forgot-password', '/set-password'].flatMap((path) =>
     ACTIVE_LOCALES.map((locale) => localizedPath(path, locale)),
   ),
 ];

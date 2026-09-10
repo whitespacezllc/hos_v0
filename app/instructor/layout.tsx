@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import InstructorLayout from '@/components/instructor/InstructorLayout';
+import { isInstructor } from '@/lib/auth/roles';
 import { BackofficeDocument, BACKOFFICE_METADATA } from '@/components/backoffice/BackofficeDocument';
 
 export const metadata: Metadata = {
@@ -27,9 +28,8 @@ export default async function InstructorPortalLayout({
     redirect('/instructor/login');
   }
 
-  // Verificar que el usuario tiene rol instructor
-  const role = user.user_metadata?.role;
-  if (role !== 'instructor') {
+  // Verificar que el usuario tiene rol instructor (app_metadata — ver lib/auth/roles.ts)
+  if (!isInstructor(user)) {
     redirect('/instructor/login');
   }
 

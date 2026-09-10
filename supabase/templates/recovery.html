@@ -1,0 +1,17 @@
+<!-- Supabase → Authentication → Email Templates → "Reset Password".
+     Subject: Choose a new password for the House of Shakti panel
+     The link carries the token itself and lands on /set-password, where it is
+     verified server-side — so it opens on any device, not only the browser
+     that asked for it. -->
+<div style="margin:0;padding:32px 0;background:#f2ebe7;font-family:Arial,Helvetica,sans-serif;color:#313131;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid rgba(49,49,49,0.1);padding:40px 36px;">
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(49,49,49,0.5);">House of Shakti · Admin panel</p>
+    <h1 style="margin:0 0 20px;font-size:22px;font-weight:normal;color:#000;">Choose a new password</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Someone asked to reset the password for <strong>{{ .Email }}</strong>. If that was you, the link below takes you to a page where you can choose a new one.</p>
+    <p style="margin:28px 0;">
+      <a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=recovery" style="display:inline-block;background:#8D0000;color:#f2ebe7;text-decoration:none;font-size:14px;letter-spacing:0.05em;padding:14px 28px;">Choose a new password</a>
+    </p>
+    <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:rgba(49,49,49,0.7);">The link works once and expires in an hour. If it has expired, ask for a new one from the sign-in page.</p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:rgba(49,49,49,0.7);">If you didn't ask for this, you can ignore this email — your password stays as it is.</p>
+  </div>
+</div>
