@@ -2,54 +2,48 @@
 
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { useMessages, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CalendarDays } from 'lucide-react';
 
 // ─── Upcoming retreats ───────────────────────────────────────────────────────
 // Facilitators bring their own retreats to the house, so each card hands the
-// reader straight over to whoever is running it. Only the training is ours, and
-// it is the one entry that stays on this site. Label, facilitator, title,
-// dates and description live in the catalogue under upcomingRetreats.items,
-// keyed by `id`; the photograph and the door are here.
-type Retreat = {
+// reader straight over to whoever is running it. The retreats themselves are
+// managed in the panel (/admin/retreats) and arrive here already sorted and
+// worded for the locale: what is coming, first-to-last, and — once anything
+// has finished — what has been, under its own heading, most recent first. A
+// past retreat keeps its card whole, door included: the facilitator's page is
+// where the next edition will be announced.
+export type RetreatCard = {
+  id: string;
   /** What kind of thing this is, set over the photograph. */
   label: string;
-  instructor: string;
+  instructors: string;
   title: string;
-  /** Written out rather than derived: these are read, never sorted or compared. */
+  /** Written out for the locale: "Sep 6–12, 2026" / "6–12 sep 2026". */
   dates: string;
   description: string;
   image: string;
   alt: string;
   href: string;
-  /** False only for the training, which lives on this site. */
+  /** False for a page on this site, which opens in place rather than in a new tab. */
   external: boolean;
 };
 
-const RETREATS = [
-  { id: 'solForSoul', image: '/images/upcoming/sol-for-soul.jpg', href: 'https://www.ellymiles.com/costaricaseptember', external: true },
-  { id: 'ytt', image: '/images/introduction/ytt-introduction-07.webp', href: '/yoga-teacher-training', external: false },
-  { id: 'nourish', image: '/images/upcoming/nourish.webp', href: 'https://sambianchini.com/retreats', external: true },
-  // Placeholder from our own bank: the facilitator's material lives in a Canva
-  // presentation with no extractable still. Swap once she sends artwork.
-  { id: 'salvaje', image: '/images/retreats/retreats-7.webp', href: 'https://www.canva.com/design/DAGlZEo1TOg/gc1GnLBciOIDxuLj6lhZVA/watch', external: true },
-] as const;
+const CTA =
+  'inline-block bg-dark text-cream font-body text-sm tracking-[0.05em] px-8 py-3.5 hover:bg-burgundy transition-colors duration-300';
 
-function RetreatCard({ retreat, delay }: { retreat: Retreat; delay: number }) {
+function RetreatCardView({ retreat, delay }: { retreat: RetreatCard; delay: number }) {
   const t = useTranslations('upcomingRetreats');
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
 
-  const ctaClass =
-    'inline-block bg-dark text-cream font-body text-sm tracking-[0.05em] px-8 py-3.5 hover:bg-burgundy transition-colors duration-300';
-
   const cta = retreat.external ? (
-    <a href={retreat.href} target="_blank" rel="noopener noreferrer" className={ctaClass}>
+    <a href={retreat.href} target="_blank" rel="noopener noreferrer" className={CTA}>
       {t('moreInfo')}
     </a>
   ) : (
-    <Link href={retreat.href} className={ctaClass}>
+    <Link href={retreat.href} className={CTA}>
       {t('moreInfo')}
     </Link>
   );
@@ -79,7 +73,7 @@ function RetreatCard({ retreat, delay }: { retreat: Retreat; delay: number }) {
       </div>
 
       <p className="font-body text-[11px] tracking-[0.22em] uppercase text-ink/60 mt-6">
-        {retreat.instructor}
+        {retreat.instructors}
       </p>
 
       <h3 className="font-display font-light text-ink text-2xl lg:text-[1.75rem] leading-[1.15] mt-3">
@@ -100,31 +94,57 @@ function RetreatCard({ retreat, delay }: { retreat: Retreat; delay: number }) {
   );
 }
 
-export function UpcomingGrid() {
+function CardGrid({ cards }: { cards: RetreatCard[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14 lg:gap-y-20 mt-14 lg:mt-20">
+      {cards.map((retreat, i) => (
+        <RetreatCardView key={retreat.id} retreat={retreat} delay={(i % 3) * 0.1} />
+      ))}
+    </div>
+  );
+}
+
+function SectionHeading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLHeadingElement | null>(null);
+  const inView = useInView(ref, { once: true, margin: '-100px' });
+  return (
+    <motion.h2
+      ref={ref}
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+      transition={{ duration: 1.0, ease: 'easeOut' }}
+      className={`font-display font-light text-ink text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-[-0.01em] ${className}`}
+    >
+      {children}
+    </motion.h2>
+  );
+}
+
+export function UpcomingGrid({ upcoming, past }: { upcoming: RetreatCard[]; past: RetreatCard[] }) {
   const t = useTranslations('upcomingRetreats');
-  const copy = useMessages().upcomingRetreats.items;
-  const retreats: Retreat[] = RETREATS.map((r) => ({ ...r, ...copy[r.id] }));
-  const headingRef = useRef<HTMLHeadingElement | null>(null);
-  const headingInView = useInView(headingRef, { once: true, margin: '-100px' });
 
   return (
     <section className="bg-warm-white py-20 lg:py-28">
       <div className="w-[90%] md:w-[80%] mx-auto">
-        <motion.h2
-          ref={headingRef}
-          initial={{ opacity: 0, y: 16 }}
-          animate={headingInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 1.0, ease: 'easeOut' }}
-          className="font-display font-light text-ink text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-[-0.01em]"
-        >
-          {t('heading')}
-        </motion.h2>
+        <SectionHeading>{t('heading')}</SectionHeading>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14 lg:gap-y-20 mt-14 lg:mt-20">
-          {retreats.map((retreat, i) => (
-            <RetreatCard key={retreat.href} retreat={retreat} delay={(i % 3) * 0.1} />
-          ))}
-        </div>
+        {upcoming.length > 0 ? (
+          <CardGrid cards={upcoming} />
+        ) : (
+          <p className="font-body text-sm text-ink/70 leading-[1.8] mt-10 max-w-xl">{t('empty')}</p>
+        )}
+
+        {/* What has been. Its own heading, a line that says these may come
+            round again, and the same cards — a rule above, and the room of a
+            section break, so it reads as a second chapter rather than as the
+            row above running on. */}
+        {past.length > 0 && (
+          <div className="mt-24 lg:mt-32 pt-16 lg:pt-20 border-t border-ink/10">
+            <SectionHeading>{t('past.heading')}</SectionHeading>
+            <p className="font-body text-sm text-ink/70 leading-[1.8] mt-6 max-w-xl">{t('past.subline')}</p>
+            <CardGrid cards={past} />
+          </div>
+        )}
       </div>
     </section>
   );

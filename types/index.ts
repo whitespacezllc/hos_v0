@@ -133,6 +133,28 @@ export type PackConfirmationReminder = {
   linkedBooking: LinkedPendingBooking | null;
 };
 
+// One retreat on /upcoming-retreats, as the panel edits it and the page
+// reads it. Dates are plain YYYY-MM-DD strings: they name days in Costa Rica,
+// not instants, and a Date object would drag a timezone into a day.
+export type RetreatListing = {
+  id: string;
+  title: string;
+  label: string;
+  instructors: string;
+  startsOn: string;
+  endsOn: string;
+  description: string;
+  url: string;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageAltEs: string | null;
+  labelEs: string | null;
+  descriptionEs: string | null;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RetreatSubmission = {
   id: string;
   retreat_name: string;

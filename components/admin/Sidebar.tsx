@@ -12,6 +12,7 @@ import {
   Tag,
   Ticket,
   Package,
+  Palmtree,
   LogOut,
   Menu,
   X,
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { href: '/admin/paquetes',   label: 'Packs',       icon: Package },
   { href: '/admin/upsells',    label: 'Upsells',     icon: Tag },
   { href: '/admin/refers',     label: 'Promo codes', icon: Ticket },
+  { href: '/admin/retreats',   label: 'Retreats',    icon: Palmtree },
 ];
 
 type PendingCounts = Partial<Record<string, number>>;
