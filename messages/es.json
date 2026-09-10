@@ -411,7 +411,7 @@
     },
     "testimonial": {
       "quote": "En julio, mi mejor amiga y yo participamos de la Shakti Experience en House of Shakti. Fue una semana mágica en la casa, llena de yoga, surf, breathwork y sanación con sonido. La casa está muy bien ubicada, a 10 minutos de la playa y a 15 del centro del pueblo. Despertar cada mañana con el sonido de los pájaros y los monos fue un regalo. Nancy es una profesora increíble; estoy muy agradecida de haberla encontrado a ella y a su oasis. ¡No podría recomendar más este lugar!",
-      "author": "Reseña de una huésped",
+      "author": "Allison",
       "role": "Shakti Experience · julio"
     },
     "whoFor": {
@@ -584,13 +584,11 @@
   },
   "about": {
     "opening": {
-      "place": "Santa Teresa, Costa Rica",
       "title": "Sobre House of Shakti",
       "second": "Unas palabras sobre la casa, y sobre la mujer que la construyó."
     },
     "nancy": {
       "numeral": "I",
-      "eyebrow": "La fundadora",
       "notes": [
         "Practica desde 1992",
         "Tradición Ashtanga Vinyasa",
@@ -608,7 +606,6 @@
     },
     "house": {
       "numeral": "II",
-      "eyebrow": "La casa",
       "notes": [
         "Santa Teresa, Costa Rica",
         "Lejos del turismo masivo",
@@ -1048,7 +1045,7 @@
         "Naturaleza",
         "Comunidad"
       ],
-      "body": "La Main House reúne cuatro suites en torno a un corazón compartido. La Casita y el Jungle Bungalow se adentran en el verde, cada uno por su cuenta. Shakti House se abre a la selva y al mar desde una única y amplia terraza."
+      "body": "La Main House reúne cuatro suites en torno a un corazón compartido. La Casita y el Jungle Bungalow se adentran en el verde, cada uno por su cuenta."
     },
     "faq": {
       "heading": "Antes de llegar",

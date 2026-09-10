@@ -7,10 +7,11 @@ import { useMessages } from 'next-intl';
 
 // ─── Opening ─────────────────────────────────────────────────────────────────
 // No hero, no film. The page opens the way a letter does: the brand's
-// hand-drawn mark, the place it is written from, and a first line — with the
-// second beat of the same phrase a step down, the couplet Stay With Us gives
-// its own intro. Mount-animated rather than scroll-triggered, since it sits
-// at the top of the page.
+// hand-drawn mark and a first line — with the second beat of the same phrase
+// a step down, the couplet Stay With Us gives its own intro. Mount-animated
+// rather than scroll-triggered, since it sits at the top of the page. No
+// dateline above the title: the page carries no eyebrows at all, on the
+// owners' call.
 export function AboutOpening() {
   const t = useMessages().about.opening;
 
@@ -19,16 +20,6 @@ export function AboutOpening() {
       <div className="w-[90%] md:w-[80%] mx-auto">
         <div className="max-w-3xl">
           <Ornament src="/logos/crescent-sun-rays.png" className="h-12 md:h-14 mb-8 lg:mb-10" />
-
-          {/* The dateline — where the letter is written from. */}
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.0, ease: 'easeOut', delay: 0.1 }}
-            className="font-body text-[11px] md:text-xs tracking-[0.26em] uppercase text-burgundy mb-6 md:mb-7"
-          >
-            {t.place}
-          </motion.p>
 
           <WordReveal
             as="h1"
