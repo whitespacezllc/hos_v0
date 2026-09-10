@@ -28,8 +28,15 @@ export const BUSINESS = Object.freeze({
   // name. The only value still outstanding; omitted from JSON-LD while null.
   legalName: null as string | null,
 
-  /** Canonical production origin. No trailing slash, no `www`. */
-  url: 'https://houseofshaktiyoga.com',
+  /**
+   * Canonical production origin. No trailing slash, no `www`.
+   *
+   * houseofshakticr.com since launch night (2026-09-10); houseofshaktiyoga.com
+   * was the working name until then and never went live. Every canonical,
+   * alternate, sitemap entry, JSON-LD @id and llms.txt link derives from
+   * this one value — change it here and nowhere else.
+   */
+  url: 'https://houseofshakticr.com',
 
   description:
     'House of Shakti is a yoga sanctuary and boutique retreat house in Santa Teresa, Costa Rica, offering daily yoga classes, retreats, teacher trainings and jungle accommodation five minutes from Playa Hermosa.',
@@ -59,6 +66,9 @@ export const BUSINESS = Object.freeze({
   phoneDisplay: '+506 8560 5115',
   whatsappUrl: WHATSAPP_URL_PLAIN,
 
+  // The mailboxes as the owners confirmed them; they live on the
+  // houseofshaktiyoga.com mail domain, which is separate from the website's.
+  // Change these only once the owners say the addresses themselves moved.
   email: Object.freeze({
     general: 'hello@houseofshaktiyoga.com',
     retreats: 'retreats@houseofshaktiyoga.com',

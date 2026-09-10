@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { buildMetadata } from '@/lib/seo';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { localeFromParams, type LocaleParams } from '@/i18n/routing';
 import { PageMessages } from '@/i18n/PageMessages';
 import { getClassesForWeek, ensureWeekMaterialized } from '@/lib/queries/classes';
 import { addDays, startOfWeek } from 'date-fns';
 import YogaPageClient from './YogaPageClient';
-import { YogaClassesJsonLd } from '@/components/seo/JsonLd';
+import { FaqJsonLd, YogaClassesJsonLd } from '@/components/seo/JsonLd';
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const locale = await localeFromParams(params);
@@ -27,6 +27,7 @@ export const dynamic = 'force-dynamic';
 export default async function YogaPage({ params }: LocaleParams) {
   const locale = await localeFromParams(params);
   setRequestLocale(locale);
+  const messages = await getMessages();
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -45,6 +46,8 @@ export default async function YogaPage({ params }: LocaleParams) {
 
   return (
     <PageMessages namespaces={['yoga']}>
+      {/* The page's questions, for the answer engines: what a guest asks, as they ask it. */}
+      <FaqJsonLd items={messages.yoga.faq.items} />
       {/* The week's real classes as Event structured data — dated, priced and
           bookable. Renders nothing when the week comes back empty. */}
       <YogaClassesJsonLd classes={classes} />
