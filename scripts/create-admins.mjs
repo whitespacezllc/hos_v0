@@ -25,8 +25,17 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 const emails = process.argv.slice(2).map((e) => e.trim().toLowerCase()).filter(Boolean);
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('Missing env: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (run with --env-file=.env.local).');
+// Name exactly what is missing: the anon key is not enough here, and
+// "both missing" when only the service key is sends people the wrong way.
+const missing = [
+  !SUPABASE_URL && 'NEXT_PUBLIC_SUPABASE_URL',
+  !SERVICE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+].filter(Boolean);
+if (missing.length) {
+  console.error(
+    `Missing in the environment: ${missing.join(', ')}.\n` +
+      'Add it to .env.local — the service_role key is under Supabase → Project Settings → API Keys (secret, never the anon key) — and run with --env-file=.env.local.',
+  );
   process.exit(1);
 }
 if (!PASSWORD || PASSWORD.length < 10) {

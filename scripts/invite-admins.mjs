@@ -35,10 +35,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 // The two admins requested by the client, overridable via CLI args.
 const DEFAULT_EMAILS = ['nancyshantishanti@gmail.com', 'houseofshaktiyoga@gmail.com'];
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
+// Name exactly what is missing: the anon key is not enough here, and
+// "both missing" when only the service key is sends people the wrong way.
+const missing = [
+  !SUPABASE_URL && 'NEXT_PUBLIC_SUPABASE_URL',
+  !SERVICE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+].filter(Boolean);
+if (missing.length) {
   console.error(
-    'Missing env. Need NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.\n' +
-      'Run with: node --env-file=.env.local scripts/invite-admins.mjs',
+    `Missing in the environment: ${missing.join(', ')}.\n` +
+      'Add it to .env.local — the service_role key is under Supabase → Project Settings → API Keys (secret, never the anon key) — and run with --env-file=.env.local.',
   );
   process.exit(1);
 }
