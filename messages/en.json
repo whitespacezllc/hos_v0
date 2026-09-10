@@ -1338,6 +1338,27 @@
       "cta": "Book an online class",
       "note": "Online classes appear on the same weekly schedule as the ones held at the house, and are booked there."
     },
+    "testimonials": {
+      "region": "Guest testimonials",
+      "previous": "Previous testimonial",
+      "next": "Next testimonial",
+      "slide": "Testimonial {n} of {total}",
+      "source": "Google review",
+      "items": [
+        {
+          "quote": "Nancy is exceptional and by far one of the best yoga teacher we have gotten to experience globally. Whether it is her practice, her approach, the flow and diversity of the classes, or with how much details she was able to guide us in our practice, it was a truly profound experience to meet her and join her over her classes. If you find yourself around Santa Teresa, this is a moment not to be missed.",
+          "author": "Sacha Revillard"
+        },
+        {
+          "quote": "The House of Shakti is a unique retreat center in Santa Teresa. Peaceful, surrounded by beautiful mountain views, with a stunning shala and vibrant, grounded energy. There is also a sauna and ice bath! And the owner – Nancy – happens to be a true legend in the yoga world. Highly recommend to anyone that needs a place to slow down, breathe, and fully reconnect.",
+          "author": "Pierre-Alexandre Balland"
+        },
+        {
+          "quote": "House of Shakti is a truly magical place. Is the perfect place to disconnect from the noise and reconnect with yourself. I love that is surrounded by nature and a few minutes from the beaches. The accommodations are so beautiful and everything is very clean and comfortable. The Yoga temple is gorgeous and the practice with Nancy is very inspiring, she is the best Yoga teacher in town. Another highly recommended features of this place are the sauna and the cold plunge, they are perfect to do after Yoga class. Thank you Nancy and her family for sharing this wonderful place with us.",
+          "author": "Jesús Alexander Rivera Arenas"
+        }
+      ]
+    },
     "team": {
       "heading": "Meet Our Team",
       "intro": "Meet the people who hold the space at House of Shakti — teachers and facilitators bringing their knowledge, presence, and unique practices to our community.",

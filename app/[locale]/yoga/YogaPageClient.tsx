@@ -14,6 +14,7 @@ import { Footer } from '@/components/landing/footer';
 import { ClassPacks } from '@/components/yoga/ClassPacks';
 import { SpecialActivities } from '@/components/yoga/SpecialActivities';
 import { OnlineClasses } from '@/components/yoga/OnlineClasses';
+import { YogaTestimonials } from '@/components/yoga/YogaTestimonials';
 import { MeetOurTeam } from '@/components/yoga/MeetOurTeam';
 import { YogaFAQ } from '@/components/yoga/YogaFAQ';
 import { HeroVideo, heroCuts } from '@/components/shared/HeroVideo';
@@ -676,6 +677,9 @@ export default function YogaPageClient({ initialClasses }: { initialClasses: Ser
       <ClassPacks />
       <SpecialActivities />
       <OnlineClasses />
+      {/* Three guests, in their own words — the full-height treatment from the
+          training landing, one photograph per voice. */}
+      <YogaTestimonials />
       <MeetOurTeam />
       <YogaFAQ />
       <YogaGallery galleryAria={t('galleryAria')} />

@@ -1338,6 +1338,27 @@
       "cta": "Reservar una clase online",
       "note": "Las clases online aparecen en el mismo calendario semanal que las presenciales, y se reservan allí."
     },
+    "testimonials": {
+      "region": "Testimonios de huéspedes",
+      "previous": "Testimonio anterior",
+      "next": "Siguiente testimonio",
+      "slide": "Testimonio {n} de {total}",
+      "source": "Reseña en Google",
+      "items": [
+        {
+          "quote": "Nancy es excepcional y, por lejos, una de las mejores profesoras de yoga que hemos tenido la oportunidad de conocer en el mundo. Ya sea por su práctica, su enfoque, la fluidez y diversidad de sus clases, o por el nivel de detalle con el que supo guiar nuestra práctica, conocerla y practicar con ella fue una experiencia profundamente transformadora. Si andas por Santa Teresa, es un momento que no te puedes perder.",
+          "author": "Sacha Revillard"
+        },
+        {
+          "quote": "House of Shakti es un centro de retiros único en Santa Teresa. Tranquilo, rodeado de hermosas vistas a las montañas, con un shala impresionante y una energía vibrante y con los pies en la tierra. ¡También hay sauna y baño de hielo! Y la dueña, Nancy, resulta ser una verdadera leyenda en el mundo del yoga. Muy recomendable para cualquiera que necesite un lugar para bajar el ritmo, respirar y reconectar por completo.",
+          "author": "Pierre-Alexandre Balland"
+        },
+        {
+          "quote": "House of Shakti es un lugar verdaderamente mágico. Es el lugar perfecto para desconectar del ruido y reconectar contigo mismo. Me encanta que esté rodeado de naturaleza y a pocos minutos de las playas. Los alojamientos son hermosos y todo está muy limpio y es muy cómodo. El templo de yoga es precioso y la práctica con Nancy es muy inspiradora: es la mejor profesora de yoga del pueblo. Otra cosa muy recomendable de este lugar son el sauna y el baño de hielo, perfectos después de la clase de yoga. Gracias a Nancy y a su familia por compartir este lugar maravilloso con nosotros.",
+          "author": "Jesús Alexander Rivera Arenas"
+        }
+      ]
+    },
     "team": {
       "heading": "Conoce a nuestro equipo",
       "intro": "Conoce a las personas que sostienen el espacio en House of Shakti: profesoras, profesores y facilitadores que traen su conocimiento, su presencia y sus prácticas únicas a nuestra comunidad.",
