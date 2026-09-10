@@ -23,7 +23,7 @@ export function AboutChapters() {
       {/* The moon cycle between the two chapters — the home's own breath
           between sections, one step below the marks that seal a heading. */}
       <div className="bg-warm-white flex justify-center">
-        <Ornament src="/logos/moon-phase.png" className="h-7 md:h-8" />
+        <Ornament src="/logos/moon-phase.png" className="h-9 md:h-[42px]" />
       </div>
 
       <AboutChapter copy={t.house} photo={PHOTO_HOUSE} photoSide="right" />

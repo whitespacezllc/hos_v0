@@ -75,7 +75,7 @@ export function SplashScreen() {
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: [0, 1, 1], scale: [0.94, 1, 0.99] }}
             transition={{ duration: 0.8, ease: "easeOut", times: [0, 0.55, 1] }}
-            className="h-20 w-auto select-none md:h-24"
+            className="h-[104px] w-auto select-none md:h-[124px]"
           />
         </motion.div>
       )}

@@ -155,7 +155,7 @@ export function OnlineClasses() {
                 gives the copy column a head of its own. */}
             <Ornament
               src="/logos/snake-sun-rays.png"
-              className="h-16 md:h-20 mb-6 lg:mb-8"
+              className="h-[84px] md:h-[104px] mb-6 lg:mb-8"
             />
 
             <h2 className="font-display font-light text-ink text-3xl md:text-4xl leading-[1.15]">

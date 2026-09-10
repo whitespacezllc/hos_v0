@@ -411,7 +411,7 @@
     },
     "testimonial": {
       "quote": "En julio, mi mejor amiga y yo participamos de la Shakti Experience en House of Shakti. Fue una semana mágica en la casa, llena de yoga, surf, breathwork y sanación con sonido. La casa está muy bien ubicada, a 10 minutos de la playa y a 15 del centro del pueblo. Despertar cada mañana con el sonido de los pájaros y los monos fue un regalo. Nancy es una profesora increíble; estoy muy agradecida de haberla encontrado a ella y a su oasis. ¡No podría recomendar más este lugar!",
-      "author": "Reseña de una huésped",
+      "author": "Allison",
       "role": "Shakti Experience · julio"
     },
     "whoFor": {
@@ -491,7 +491,7 @@
     "day": {
       "heading": "¿Cómo es un día aquí?",
       "intro": "Un ritmo suave, cada día a tu propio paso, con nuestro equipo de facilitadores cerca para acompañarte durante toda la estadía.",
-      "note": "Los masajes y las experiencias en la naturaleza se organizan con nuestro equipo según tus preferencias. El almuerzo y la cena son tuyos: una amplia cocina compartida, o los muchos buenos lugares que hay cerca. Para moverte con libertad, te recomendamos alquilar un cuatriciclo o un auto.",
+      "afterword": "Cada Shakti Experience cuenta con el apoyo de nuestro equipo profesional de facilitadores, que estará disponible para guiarte y asistirte durante toda tu estadía. La experiencia sigue siendo independiente: tienes la libertad de elegir cómo pasas tu tiempo y en qué quieres participar.",
       "trackAria": "Los momentos de un día en House of Shakti",
       "moments": [
         {
@@ -523,6 +523,24 @@
           "time": "6:30 PM",
           "title": "Sauna y baño de hielo",
           "detail": "Una experiencia restauradora de calor y frío para refrescar el cuerpo y los sentidos."
+        },
+        {
+          "slug": "massage-nature",
+          "time": "A pedido",
+          "title": "Masajes y experiencias en la naturaleza",
+          "detail": "Estas actividades se programan según tus preferencias y se pueden coordinar con nuestro equipo durante tu estadía."
+        },
+        {
+          "slug": "lunch-dinner",
+          "time": "A tu ritmo",
+          "title": "Almuerzo y cena",
+          "detail": "Tendrás acceso a una amplia cocina compartida donde puedes preparar tus propias comidas. También hay muchos lugares cerca para comer bien si prefieres salir."
+        },
+        {
+          "slug": "getting-around",
+          "time": "A tu ritmo",
+          "title": "Cómo moverte",
+          "detail": "Para más libertad e independencia durante tu estadía, te recomendamos alquilar un cuatriciclo o un auto. Así es más fácil explorar la zona y moverte a tu propio ritmo."
         }
       ]
     },
@@ -584,13 +602,11 @@
   },
   "about": {
     "opening": {
-      "place": "Santa Teresa, Costa Rica",
       "title": "Sobre House of Shakti",
       "second": "Unas palabras sobre la casa, y sobre la mujer que la construyó."
     },
     "nancy": {
       "numeral": "I",
-      "eyebrow": "La fundadora",
       "notes": [
         "Practica desde 1992",
         "Tradición Ashtanga Vinyasa",
@@ -608,7 +624,6 @@
     },
     "house": {
       "numeral": "II",
-      "eyebrow": "La casa",
       "notes": [
         "Santa Teresa, Costa Rica",
         "Lejos del turismo masivo",
@@ -747,13 +762,14 @@
       "intro": "El precio depende de las fechas, el tamaño del grupo y los servicios que elijas. Elige lo esencial y seguimos la conversación por WhatsApp.",
       "responseTime": "Solemos responder dentro de las 24 horas.",
       "what": "¿Qué tipo de retiro?",
+      "whatHint": "Elige hasta tres: un retiro puede ser más de una cosa.",
       "when": "¿Cuándo?",
-      "whenHint": "Con el mes y la duración alcanza: el precio varía según la temporada.",
+      "whenHint": "Con el mes y la duración alcanza: el precio varía según la temporada. ¿Todavía no lo tienes claro? Elige hasta tres de cada uno.",
       "month": "Mes",
       "length": "Duración",
       "flexible": "Fechas flexibles",
       "howMany": "¿Cuántas personas?",
-      "howManyHint": "Con un estimado alcanza.",
+      "howManyHint": "Con un estimado alcanza: elige hasta tres rangos si todavía no lo sabes.",
       "cta": "Pedir presupuesto por WhatsApp",
       "ctaNote": "Abre WhatsApp con tu mensaje ya escrito.",
       "kinds": {
@@ -1048,7 +1064,7 @@
         "Naturaleza",
         "Comunidad"
       ],
-      "body": "La Main House reúne cuatro suites en torno a un corazón compartido. La Casita y el Jungle Bungalow se adentran en el verde, cada uno por su cuenta. Shakti House se abre a la selva y al mar desde una única y amplia terraza."
+      "body": "La Main House reúne cuatro suites en torno a un corazón compartido. La Casita y el Jungle Bungalow se adentran en el verde, cada uno por su cuenta."
     },
     "faq": {
       "heading": "Antes de llegar",
@@ -1337,6 +1353,27 @@
       "body": "Lleva la práctica a casa. Clases online en vivo para moverte, respirar y reconectar, estés donde estés.",
       "cta": "Reservar una clase online",
       "note": "Las clases online aparecen en el mismo calendario semanal que las presenciales, y se reservan allí."
+    },
+    "testimonials": {
+      "region": "Testimonios de huéspedes",
+      "previous": "Testimonio anterior",
+      "next": "Siguiente testimonio",
+      "slide": "Testimonio {n} de {total}",
+      "source": "Reseña en Google",
+      "items": [
+        {
+          "quote": "Nancy es excepcional y, por lejos, una de las mejores profesoras de yoga que hemos tenido la oportunidad de conocer en el mundo. Ya sea por su práctica, su enfoque, la fluidez y diversidad de sus clases, o por el nivel de detalle con el que supo guiar nuestra práctica, conocerla y practicar con ella fue una experiencia profundamente transformadora. Si andas por Santa Teresa, es un momento que no te puedes perder.",
+          "author": "Sacha Revillard"
+        },
+        {
+          "quote": "House of Shakti es un centro de retiros único en Santa Teresa. Tranquilo, rodeado de hermosas vistas a las montañas, con un shala impresionante y una energía vibrante y con los pies en la tierra. ¡También hay sauna y baño de hielo! Y la dueña, Nancy, resulta ser una verdadera leyenda en el mundo del yoga. Muy recomendable para cualquiera que necesite un lugar para bajar el ritmo, respirar y reconectar por completo.",
+          "author": "Pierre-Alexandre Balland"
+        },
+        {
+          "quote": "House of Shakti es un lugar verdaderamente mágico. Es el lugar perfecto para desconectar del ruido y reconectar contigo mismo. Me encanta que esté rodeado de naturaleza y a pocos minutos de las playas. Los alojamientos son hermosos y todo está muy limpio y es muy cómodo. El templo de yoga es precioso y la práctica con Nancy es muy inspiradora: es la mejor profesora de yoga del pueblo. Otra cosa muy recomendable de este lugar son el sauna y el baño de hielo, perfectos después de la clase de yoga. Gracias a Nancy y a su familia por compartir este lugar maravilloso con nosotros.",
+          "author": "Jesús Alexander Rivera Arenas"
+        }
+      ]
     },
     "team": {
       "heading": "Conoce a nuestro equipo",

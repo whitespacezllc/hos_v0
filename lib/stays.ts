@@ -1,9 +1,11 @@
 // ─── The dwellings ───────────────────────────────────────────────────────────
 // The four places to sleep at House of Shakti, in the order Nancy presents
-// them. /stay-with-us shows all four with the Cloudbeds door beside each;
-// /host-your-retreat shows the three a group takes over, as a shop window
-// with no door at all. One record per dwelling, here, so the two pages can
-// never drift apart on a bed count or a capacity line.
+// them. /stay-with-us shows the ones on offer with the Cloudbeds door beside
+// each; /host-your-retreat shows the ones a group takes over, as a shop
+// window with no door at all. One record per dwelling, here, so the two pages
+// can never drift apart on a bed count or a capacity line — and a dwelling
+// that is not on offer for now is switched off here, once, with `hidden`,
+// its record kept whole for the day it comes back.
 //
 // Each record is language-neutral data — slug, photographs — plus its words
 // in every language under `copy`. Pages ask for a dwelling in a locale and
@@ -37,6 +39,11 @@ type StayRecord = {
   slug: StaySlug;
   images: string[];
   copy: Record<AppLocale, StayCopy>;
+  /**
+   * Kept out of every listing. The record stays — photographs, both
+   * languages — so putting the dwelling back on offer is flipping this off.
+   */
+  hidden?: boolean;
 };
 
 // The photographs are 3:4 portraits, shot and cropped for the cards, named
@@ -55,7 +62,7 @@ const RECORDS: StayRecord[] = [
         meta: 'Up to 10 guests · Four suites, each with a private bathroom',
         title: 'Main House Suite',
         short:
-          'Four spacious suites gathered around a shared heart, each with its own private bathroom — an elegant, serene base in a refined natural setting.',
+          'Four spacious suites gathered around a shared heart, each with its own private bathroom — an elegant, serene base in a refined natural setting. It is possible to reserve the entire Main House exclusively for your group, with accommodation for up to 10 people.',
         long: [
           'The Main House offers an elegant and serene experience, thoughtfully designed to provide both comfort and privacy within a refined natural setting. It features four spacious suites, each with its own private bathroom.',
           'Fully equipped with air conditioning in every suite and high-speed Wi-Fi throughout, the Main House blends modern comfort with a peaceful atmosphere — the right environment for rest and connection.',
@@ -65,15 +72,19 @@ const RECORDS: StayRecord[] = [
           items: [
             'Triple rooms — 3 single beds',
             'Double rooms — 2 single beds',
-            'Private rooms for single occupancy or couples — 1 queen-size bed each',
+            'Private rooms for single occupancy or couples — 1 king-size bed each',
           ],
         },
+        // The house's own wording. The four suites book one at a time or all
+        // together, and this is the line that says so, last, before the door.
+        capacity:
+          'It is possible to reserve the entire Main House exclusively for your group, with accommodation for up to 10 people.',
       },
       es: {
         meta: 'Hasta 10 huéspedes · Cuatro suites, cada una con baño privado',
         title: 'Main House Suite',
         short:
-          'Cuatro amplias suites reunidas en torno a un corazón compartido, cada una con su propio baño privado: una base elegante y serena en un entorno natural refinado.',
+          'Cuatro amplias suites reunidas en torno a un corazón compartido, cada una con su propio baño privado: una base elegante y serena en un entorno natural refinado. Es posible reservar la Main House completa en exclusiva para tu grupo, con alojamiento para hasta 10 personas.',
         long: [
           'La Main House ofrece una experiencia elegante y serena, pensada para brindar comodidad y privacidad en un entorno natural refinado. Cuenta con cuatro amplias suites, cada una con su propio baño privado.',
           'Con aire acondicionado en todas las suites y wifi de alta velocidad en toda la casa, la Main House combina el confort moderno con una atmósfera apacible: el entorno justo para el descanso y la conexión.',
@@ -83,9 +94,11 @@ const RECORDS: StayRecord[] = [
           items: [
             'Habitaciones triples — 3 camas individuales',
             'Habitaciones dobles — 2 camas individuales',
-            'Habitaciones privadas para una persona o parejas — 1 cama queen cada una',
+            'Habitaciones privadas para una persona o parejas — 1 cama king cada una',
           ],
         },
+        capacity:
+          'Es posible reservar la Main House completa en exclusiva para tu grupo, con alojamiento para hasta 10 personas.',
       },
     },
   },
@@ -154,6 +167,9 @@ const RECORDS: StayRecord[] = [
   {
     slug: 'shakti-house',
     images: shots('shakti-house', 10),
+    // Not on offer at launch (2026-09-10), on the owners' call. Hidden rather
+    // than deleted: the house may open again.
+    hidden: true,
     copy: {
       en: {
         meta: 'Up to 4 guests · Two bedrooms, two bathrooms',
@@ -189,16 +205,20 @@ function toStay(record: StayRecord, locale: AppLocale): Stay {
   return { slug: record.slug, images: record.images, ...record.copy[locale] };
 }
 
-/** All four dwellings, in the order named, in one language. */
+/** The dwellings on offer, in the order named, in one language. */
 export function getStays(locale: AppLocale): Stay[] {
-  return RECORDS.map((record) => toStay(record, locale));
+  return RECORDS.filter((record) => !record.hidden).map((record) => toStay(record, locale));
 }
 
-/** The dwellings named, in the order named — for a page that shows a subset. */
+/**
+ * The dwellings named, in the order named — for a page that shows a subset.
+ * A hidden dwelling is left out even when asked for by name, so switching one
+ * off in RECORDS takes it off every page at once.
+ */
 export function pickStays(slugs: StaySlug[], locale: AppLocale): Stay[] {
-  return slugs.map((slug) => {
+  return slugs.flatMap((slug) => {
     const record = RECORDS.find((r) => r.slug === slug);
     if (!record) throw new Error(`Unknown stay: ${slug}`);
-    return toStay(record, locale);
+    return record.hidden ? [] : [toStay(record, locale)];
   });
 }

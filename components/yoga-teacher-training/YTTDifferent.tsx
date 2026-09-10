@@ -50,7 +50,7 @@ export function YTTDifferent() {
             transition={{ duration: 1.0, ease: 'easeOut' }}
             className="w-fit"
           >
-            <Ornament src="/logos/moon-phase.png" className="h-8 md:h-9 mb-5 lg:mb-6" />
+            <Ornament src="/logos/moon-phase.png" className="h-[42px] md:h-12 mb-5 lg:mb-6" />
             <h2 className="font-display font-light text-ink text-3xl md:text-4xl leading-[1.15]">
               {t.different.heading}
             </h2>

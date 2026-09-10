@@ -44,7 +44,7 @@ export function Introduction() {
         className="max-w-5xl mx-auto px-6 lg:px-12"
       >
         {/* Brand seal — celestial submark opening the narrative */}
-        <Ornament src="/logos/crescent-sun-rays.png" className="h-16 md:h-20 mx-auto mb-10 lg:mb-14" />
+        <Ornament src="/logos/crescent-sun-rays.png" className="h-[84px] md:h-[104px] mx-auto mb-10 lg:mb-14" />
 
         <motion.h2
           variants={headlineVariants}

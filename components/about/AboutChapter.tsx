@@ -5,10 +5,11 @@ import { motion, Variants, useInView } from 'framer-motion';
 import { WordReveal } from '@/components/about/WordReveal';
 
 // ─── A chapter of the letter ─────────────────────────────────────────────────
-// Two of these make the page: the founder, then the house. Each is a numeral
-// and a title, a photograph clipped beside the text, a handful of margin
-// notes, the paragraphs in a narrow measure, and one line set large at the
-// end — the sentence the chapter was written to arrive at.
+// Two of these make the page: the founder, then the house. Each is a numeral,
+// a photograph clipped beside the text, a handful of margin notes, the
+// paragraphs in a narrow measure, and one line set large at the end — the
+// sentence the chapter was written to arrive at. No eyebrow under the numeral:
+// the page carries none, on the owners' call.
 //
 // On a desktop the photograph and the notes hold one side of the page and
 // stay put while the prose scrolls past, as a photograph pinned to a page
@@ -18,7 +19,6 @@ import { WordReveal } from '@/components/about/WordReveal';
 
 export type ChapterCopy = {
   numeral: string;
-  eyebrow: string;
   notes: string[];
   paragraphs: string[];
   pull: string;
@@ -68,9 +68,6 @@ export function AboutChapter({
                   section dividers, in the display face so it reads as drawn. */}
               <p aria-hidden className="font-display font-light text-ink text-5xl md:text-6xl leading-none">
                 {copy.numeral}
-              </p>
-              <p className="font-body text-[10px] tracking-[0.3em] uppercase text-burgundy mt-4">
-                {copy.eyebrow}
               </p>
             </motion.div>
 

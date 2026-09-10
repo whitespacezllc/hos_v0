@@ -68,7 +68,7 @@ export default async function Home({ params }: LocaleParams) {
           No opacity class here: Ornament animates opacity with framer-motion,
           which writes `opacity: 1` inline and beats any utility set on it. */}
       <div className="bg-warm-white flex justify-center">
-        <Ornament src="/logos/moon-phase.png" className="h-7 md:h-8" />
+        <Ornament src="/logos/moon-phase.png" className="h-9 md:h-[42px]" />
       </div>
       <Gallery />
       {/* <Testimonials /> — removed from render, kept in repo */}
