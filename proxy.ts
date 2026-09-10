@@ -2,6 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
+import { roleOf } from '@/lib/auth/roles';
 
 // ─── Proxy ───────────────────────────────────────────────────────────────────
 // (Next 16's name for the file that was middleware.ts. Same request, same
@@ -99,9 +100,11 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refresh session — do not remove this
+  // Refresh session — do not remove this. `getUser()` asks the auth server,
+  // so the role read here is the one the house granted, not a claim the
+  // browser could have edited.
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role as string | undefined;
+  const role = roleOf(user);
 
   // A redirect is a new response. The session cookies Supabase may just have
   // refreshed ride along, or the next request would arrive with the old token.

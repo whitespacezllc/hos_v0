@@ -39,7 +39,7 @@ const DWELL_MS = 4800;
 // the portal have their own document now and never mount this; the prefixes
 // stay so the list still reads as the full rule.) Compared against the
 // locale-less pathname, so `/es/booking/…` is excluded like `/booking/…`.
-const EXCLUDED_PREFIXES = ['/admin', '/instructor', '/login', '/booking'];
+const EXCLUDED_PREFIXES = ['/admin', '/instructor', '/login', '/forgot-password', '/set-password', '/booking'];
 
 // ─── The three doors ─────────────────────────────────────────────────────────
 // Same conversation, three prepared opening lines. The message is the routing:

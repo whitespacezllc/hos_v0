@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isInstructor } from '@/lib/auth/roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,9 +38,8 @@ export default function InstructorLoginPage() {
         return;
       }
 
-      // Verificar que el usuario tenga role='instructor' en user_metadata
-      const role = data.user?.user_metadata?.role;
-      if (role !== 'instructor') {
+      // Verificar que el usuario tenga role='instructor' (app_metadata — ver lib/auth/roles.ts)
+      if (!isInstructor(data.user)) {
         await supabase.auth.signOut();
         setError('Tu cuenta no tiene acceso al portal de instructores. Contactá al administrador.');
         return;

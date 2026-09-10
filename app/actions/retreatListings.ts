@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { ZodError } from 'zod';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { retreatListingSchema, type RetreatListingFormValues } from '@/lib/retreat-listings';
 import type { Database } from '@/types/supabase';
 
@@ -19,19 +19,6 @@ type Insert = Database['public']['Tables']['retreat_listings']['Insert'];
 type Result = { ok: true } | { ok: false; error: string };
 
 const BUCKET = 'retreat-images';
-
-// The proxy already turns away anyone without an admin session before a
-// request reaches /admin/*. Repeating the check at the action itself means a
-// call from anywhere else meets the same door.
-async function requireAdmin(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role !== 'admin') {
-    throw new Error('You need to be signed in as an admin.');
-  }
-}
 
 // The panel's list, and the public page under both locale prefixes.
 function revalidateRetreatPages(): void {

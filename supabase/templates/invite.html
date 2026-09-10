@@ -1,0 +1,15 @@
+<!-- Supabase → Authentication → Email Templates → "Invite user".
+     Subject: You've been invited to the House of Shakti panel
+     Same shape as the recovery mail: the token rides in the link and is
+     verified on /set-password, on whatever device opens it. -->
+<div style="margin:0;padding:32px 0;background:#f2ebe7;font-family:Arial,Helvetica,sans-serif;color:#313131;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid rgba(49,49,49,0.1);padding:40px 36px;">
+    <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(49,49,49,0.5);">House of Shakti · Admin panel</p>
+    <h1 style="margin:0 0 20px;font-size:22px;font-weight:normal;color:#000;">You've been invited</h1>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">An account has been created for <strong>{{ .Email }}</strong> on the House of Shakti admin panel. Set your password to start.</p>
+    <p style="margin:28px 0;">
+      <a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" style="display:inline-block;background:#8D0000;color:#f2ebe7;text-decoration:none;font-size:14px;letter-spacing:0.05em;padding:14px 28px;">Set your password</a>
+    </p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:rgba(49,49,49,0.7);">The link works once. If it has expired, ask the team for a new invitation, or use "Forgot your password?" on the sign-in page with this email.</p>
+  </div>
+</div>

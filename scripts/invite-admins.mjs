@@ -3,10 +3,12 @@
 //
 // For each email it:
 //   1. Creates the auth user (or reuses it if it already exists) with
-//      user_metadata.role = 'admin' — the flag proxy.ts checks to allow the
-//      panel. Setting a password never grants this; only the service key does,
-//      which is why this runs server-side and is not something the panel or the
-//      /set-password page can do.
+//      app_metadata.role = 'admin' — the flag the proxy, the sign-in page and
+//      every panel action check (lib/auth/roles.ts). Setting a password never
+//      grants this; only the service key writes app_metadata, which is why
+//      this runs server-side and is not something the panel or the
+//      /set-password page can do. (To create accounts with a password of your
+//      choosing instead of an invitation, see scripts/create-admins.mjs.)
 //   2. Generates a one-time link (invite for new users, recovery for existing)
 //      and prints a ready-to-share URL that lands on /set-password, where the
 //      person chooses their own password and is dropped into /admin.
@@ -19,7 +21,7 @@
 //   node --env-file=.env.local scripts/invite-admins.mjs someone@email.com other@email.com
 //
 // Requires in the env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-// and NEXT_PUBLIC_SITE_URL (the deployed origin, e.g. https://houseofshaktiyoga.com).
+// and NEXT_PUBLIC_SITE_URL (the deployed origin, e.g. https://houseofshakticr.com).
 // Also add "<SITE_URL>/set-password" to Supabase → Auth → URL Configuration →
 // Redirect URLs, or the links are rejected.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,20 +70,25 @@ async function inviteOne(email) {
   const existing = await findUserByEmail(email);
 
   if (!existing) {
-    // New user — invite link, role set at creation.
+    // New user — invite link, then the role: generateLink only writes
+    // user_metadata, and the role has to live in app_metadata.
     const { data, error } = await admin.auth.admin.generateLink({
       type: 'invite',
       email,
-      options: { data: { role: 'admin' }, redirectTo },
+      options: { redirectTo },
     });
     if (error) throw error;
+    const { error: roleError } = await admin.auth.admin.updateUserById(data.user.id, {
+      app_metadata: { ...(data.user.app_metadata ?? {}), role: 'admin' },
+    });
+    if (roleError) throw roleError;
     return { status: 'invited (new user)', link: shareLink(data.properties, 'invite') };
   }
 
   // Existing user — make sure the role is set, then send a recovery link so
   // they can (re)set their password.
   await admin.auth.admin.updateUserById(existing.id, {
-    user_metadata: { ...(existing.user_metadata ?? {}), role: 'admin' },
+    app_metadata: { ...(existing.app_metadata ?? {}), role: 'admin' },
   });
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'recovery',

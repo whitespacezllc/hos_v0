@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,10 +14,12 @@ import {
   Package,
   Palmtree,
   LogOut,
+  Loader2,
   Menu,
   X,
   LucideIcon,
 } from 'lucide-react';
+import { signOut } from '@/app/actions/auth';
 
 // ─── Navigation items ───────────────────────────────────────────────────────
 // English labels only — the chrome ships English-first per Phase 9.1.
@@ -42,11 +44,16 @@ type PendingCounts = Partial<Record<string, number>>;
 function SidebarBody({
   onNavigate,
   pendingCounts,
+  adminEmail,
 }: {
   onNavigate?: () => void;
   pendingCounts?: PendingCounts;
+  /** The signed-in admin, shown in the user block; the avatar takes its first letter. */
+  adminEmail?: string;
 }) {
   const pathname = usePathname();
+  const [signingOut, startSignOut] = useTransition();
+  const initial = (adminEmail?.trim()[0] ?? 'A').toUpperCase();
 
   const isActive = (item: NavItem): boolean => {
     if (item.exact) return pathname === item.href;
@@ -117,27 +124,35 @@ function SidebarBody({
 
       {/* BOTTOM — user block + language toggle */}
       <div className="border-t border-cream/15 px-6 py-6 space-y-4">
-        {/* User block */}
+        {/* User block — who is signed in, and the way out. Sign-out is a
+            server action: the cookies are cleared where they were set, and
+            the redirect to /login already arrives without a session. */}
         <div className="flex items-center gap-3">
           <div
             aria-hidden
             className="w-10 h-10 bg-black/25 flex items-center justify-center font-body text-sm font-medium text-cream rounded-full flex-shrink-0"
           >
-            A
+            {initial}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-body text-sm text-cream leading-tight">Admin</p>
-            <p className="font-body text-[10px] text-cream/50 mt-0.5 truncate">
-              House of Shakti
+            <p className="font-body text-sm text-cream leading-tight truncate" title={adminEmail}>
+              {adminEmail ?? 'Admin'}
             </p>
+            <p className="font-body text-[10px] text-cream/50 mt-0.5 truncate">Admin · House of Shakti</p>
           </div>
-          {/* TODO: wire to logout action when auth is implemented */}
           <button
             type="button"
-            aria-label="Log out"
-            className="text-cream/50 hover:text-cream transition-colors duration-200 cursor-pointer flex-shrink-0"
+            onClick={() => startSignOut(() => signOut())}
+            disabled={signingOut}
+            aria-label="Sign out"
+            title="Sign out"
+            className="text-cream/50 hover:text-cream transition-colors duration-200 cursor-pointer flex-shrink-0 disabled:opacity-60"
           >
-            <LogOut width={16} height={16} strokeWidth={1.5} />
+            {signingOut ? (
+              <Loader2 width={16} height={16} strokeWidth={1.5} className="animate-spin" />
+            ) : (
+              <LogOut width={16} height={16} strokeWidth={1.5} />
+            )}
           </button>
         </div>
 
@@ -173,7 +188,7 @@ function SidebarBody({
 // Renders all three modes from a single component:
 //  - md+: fixed desktop sidebar
 //  - <md: fixed hamburger button (top-left of viewport) + slide-in drawer
-export function Sidebar({ pendingCounts }: { pendingCounts?: PendingCounts }) {
+export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: PendingCounts; adminEmail?: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Close drawer on Escape.
@@ -203,7 +218,7 @@ export function Sidebar({ pendingCounts }: { pendingCounts?: PendingCounts }) {
         className="hidden md:flex fixed left-0 top-0 h-screen w-[260px] z-30"
         aria-label="Admin sidebar"
       >
-        <SidebarBody pendingCounts={pendingCounts} />
+        <SidebarBody pendingCounts={pendingCounts} adminEmail={adminEmail} />
       </aside>
 
       {/* Mobile hamburger button (<md) — fixed top-left of viewport */}
@@ -246,7 +261,7 @@ export function Sidebar({ pendingCounts }: { pendingCounts?: PendingCounts }) {
               className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-[260px]"
             >
               <div className="relative h-full">
-                <SidebarBody onNavigate={() => setDrawerOpen(false)} pendingCounts={pendingCounts} />
+                <SidebarBody onNavigate={() => setDrawerOpen(false)} pendingCounts={pendingCounts} adminEmail={adminEmail} />
 
                 {/* Close button inside drawer (top-right) */}
                 <button
