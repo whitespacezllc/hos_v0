@@ -1167,40 +1167,11 @@
       "subline": "Where nature, practice and connection meet."
     },
     "heading": "Upcoming",
+    "empty": "New retreats are announced here as soon as they are confirmed. Stay tuned.",
     "moreInfo": "More info",
-    "items": {
-      "solForSoul": {
-        "label": "Wellness Retreat",
-        "instructor": "Elly Miles",
-        "title": "Sol for Soul",
-        "dates": "Sep 6–12, 2026",
-        "description": "A portal into yourself, held in a container that feels light, supportive and fun — built around the way Santa Teresa naturally invites you to open up and come alive.",
-        "alt": "A guest stepping out into the morning at House of Shakti"
-      },
-      "ytt": {
-        "label": "Yoga Teacher Training",
-        "instructor": "Nancy Goodfellow",
-        "title": "The Awakened Body: A Tantric Yoga Intensive",
-        "dates": "Nov 21 – Dec 4, 2026",
-        "description": "A transformational immersion for those who wish to deepen their relationship with yoga beyond the physical practice. One hundred hours on the embodied path of Tantra — movement, breath, ritual and self-inquiry.",
-        "alt": "A group practising together in the open shala"
-      },
-      "nourish": {
-        "label": "Yoga Training",
-        "instructor": "Sam Bianchini",
-        "title": "NOURISH: 50hr Restorative + Yin Training",
-        "dates": "Dec 5–12, 2026",
-        "description": "A week-long retreat paired with a rich, life-affirming study of Restorative and Yin Yoga — and how to hold healing space in your own original medicine.",
-        "alt": "A group resting through a restorative practice in the shala"
-      },
-      "salvaje": {
-        "label": "Transformational Retreat",
-        "instructor": "Heather Nil",
-        "title": "SALVAJE",
-        "dates": "Jan 18–23, 2027",
-        "description": "More than a retreat — an awakening. For anyone seeking an experience to shake their world and bring their HELL YES energy back.",
-        "alt": "Bathing at the waterfall"
-      }
+    "past": {
+      "heading": "Past Retreats",
+      "subline": "Retreats that have taken place at House of Shakti — and may well return. Stay tuned."
     }
   },
   "retreatLanding": {
