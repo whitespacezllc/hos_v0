@@ -491,7 +491,7 @@
     "day": {
       "heading": "¿Cómo es un día aquí?",
       "intro": "Un ritmo suave, cada día a tu propio paso, con nuestro equipo de facilitadores cerca para acompañarte durante toda la estadía.",
-      "note": "Los masajes y las experiencias en la naturaleza se organizan con nuestro equipo según tus preferencias. El almuerzo y la cena son tuyos: una amplia cocina compartida, o los muchos buenos lugares que hay cerca. Para moverte con libertad, te recomendamos alquilar un cuatriciclo o un auto.",
+      "afterword": "Cada Shakti Experience cuenta con el apoyo de nuestro equipo profesional de facilitadores, que estará disponible para guiarte y asistirte durante toda tu estadía. La experiencia sigue siendo independiente: tienes la libertad de elegir cómo pasas tu tiempo y en qué quieres participar.",
       "trackAria": "Los momentos de un día en House of Shakti",
       "moments": [
         {
@@ -523,6 +523,24 @@
           "time": "6:30 PM",
           "title": "Sauna y baño de hielo",
           "detail": "Una experiencia restauradora de calor y frío para refrescar el cuerpo y los sentidos."
+        },
+        {
+          "slug": "massage-nature",
+          "time": "A pedido",
+          "title": "Masajes y experiencias en la naturaleza",
+          "detail": "Estas actividades se programan según tus preferencias y se pueden coordinar con nuestro equipo durante tu estadía."
+        },
+        {
+          "slug": "lunch-dinner",
+          "time": "A tu ritmo",
+          "title": "Almuerzo y cena",
+          "detail": "Tendrás acceso a una amplia cocina compartida donde puedes preparar tus propias comidas. También hay muchos lugares cerca para comer bien si prefieres salir."
+        },
+        {
+          "slug": "getting-around",
+          "time": "A tu ritmo",
+          "title": "Cómo moverte",
+          "detail": "Para más libertad e independencia durante tu estadía, te recomendamos alquilar un cuatriciclo o un auto. Así es más fácil explorar la zona y moverte a tu propio ritmo."
         }
       ]
     },

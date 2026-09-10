@@ -58,7 +58,7 @@ export function MeetOurTeam() {
         <div className="w-fit">
           <Ornament
             src="/logos/moon-phase.png"
-            className="h-8 md:h-9 mx-auto mb-5 lg:mb-6"
+            className="h-[42px] md:h-12 mx-auto mb-5 lg:mb-6"
           />
           <motion.h2
             initial={{ opacity: 0, y: 16 }}

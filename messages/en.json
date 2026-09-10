@@ -491,7 +491,7 @@
     "day": {
       "heading": "What does your day look like?",
       "intro": "A gentle rhythm, every day at your own pace — with our team of facilitators around to guide you throughout your stay.",
-      "note": "Massage and nature experiences are arranged with our team around your preferences. Lunch and dinner are yours — a spacious shared kitchen, or the many good places nearby — and to move around freely we recommend renting an ATV or a car.",
+      "afterword": "Each Shakti Experience is supported by our professional team of facilitators, who will be available to guide and assist you throughout your stay. The experience remains independent, giving you the freedom to choose how you spend your time and what you’d like to participate in.",
       "trackAria": "The moments of a day at House of Shakti",
       "moments": [
         {
@@ -523,6 +523,24 @@
           "time": "6:30 PM",
           "title": "Sauna & ice bath",
           "detail": "A restorative hot-and-cold experience to refresh your body and senses."
+        },
+        {
+          "slug": "massage-nature",
+          "time": "On request",
+          "title": "Massage & nature experiences",
+          "detail": "These activities are scheduled according to your preferences and can be arranged with our team during your stay."
+        },
+        {
+          "slug": "lunch-dinner",
+          "time": "At your pace",
+          "title": "Lunch & dinner",
+          "detail": "You’ll have access to a spacious shared kitchen where you can prepare your own meals. There are also plenty of nearby places to enjoy good food if you prefer to eat out."
+        },
+        {
+          "slug": "getting-around",
+          "time": "At your pace",
+          "title": "Getting around",
+          "detail": "For greater freedom and independence during your stay, we recommend renting an ATV or car. This makes it easier to explore the area and move around at your own pace."
         }
       ]
     },

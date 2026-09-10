@@ -40,6 +40,7 @@ export function ActivitiesTrack({
   items,
   ornament = '/logos/crescent-sun-rays.png',
   spacing = 'py-20 lg:py-28',
+  afterword,
 }: {
   heading: string;
   /** The invitation, one or two sentences. */
@@ -59,6 +60,12 @@ export function ActivitiesTrack({
   ornament?: string;
   /** Vertical rhythm — a section that follows straight on from another may drop its top padding. */
   spacing?: string;
+  /**
+   * What holds for the whole row, said once, under it — after the reader has
+   * walked the cards rather than before. Where `note` answers "how do I get
+   * these?" beside the first card, this is the sentence the row adds up to.
+   */
+  afterword?: string;
 }) {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const inView = useInView(sectionRef, { once: true, margin: '-100px' });
@@ -75,7 +82,7 @@ export function ActivitiesTrack({
         {/* ── Left — the invitation and the controls ─────────────────── */}
         <div className="lg:col-span-1 lg:pr-12">
           <div className="w-fit">
-            <Ornament src={ornament} className="h-8 md:h-9 mx-auto mb-5 lg:mb-6" />
+            <Ornament src={ornament} className="h-[42px] md:h-12 mx-auto mb-5 lg:mb-6" />
             <motion.h2
               initial={{ opacity: 0, y: 16 }}
               animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
@@ -205,6 +212,17 @@ export function ActivitiesTrack({
               </motion.article>
             ))}
           </div>
+
+          {afterword && (
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+              transition={{ duration: 1.0, ease: 'easeOut', delay: 0.3 }}
+              className="font-body text-sm text-ink/80 leading-[1.8] mt-8 lg:mt-10 max-w-2xl"
+            >
+              {afterword}
+            </motion.p>
+          )}
         </div>
       </div>
     </section>

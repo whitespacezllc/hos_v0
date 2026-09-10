@@ -99,7 +99,7 @@ export function SeasonalExperiences() {
         <div className="lg:col-span-1 lg:pr-12">
           {/* Moon phases centered over the title — echoes the "Moon cycles" gathering */}
           <div className="w-fit">
-            <Ornament src="/logos/moon-phase.png" className="h-8 md:h-9 mx-auto mb-5 lg:mb-6" />
+            <Ornament src="/logos/moon-phase.png" className="h-[42px] md:h-12 mx-auto mb-5 lg:mb-6" />
 
             <motion.h2
               initial={{ opacity: 0, y: 16 }}

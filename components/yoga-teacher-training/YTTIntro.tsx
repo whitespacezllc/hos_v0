@@ -164,7 +164,7 @@ export function YTTIntro() {
             headings, so the phone reading is the consistent one. */}
         <Ornament
           src="/logos/crescent-sun-rays.png"
-          className="h-14 md:h-16 mb-8 lg:mb-10 md:mx-auto"
+          className="h-[72px] md:h-[84px] mb-8 lg:mb-10 md:mx-auto"
         />
 
         <motion.h2

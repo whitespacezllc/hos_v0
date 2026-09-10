@@ -19,7 +19,7 @@ export function AboutOpening() {
     <section className="bg-warm-white pt-28 lg:pt-36 pb-12 lg:pb-16">
       <div className="w-[90%] md:w-[80%] mx-auto">
         <div className="max-w-3xl">
-          <Ornament src="/logos/crescent-sun-rays.png" className="h-12 md:h-14 mb-8 lg:mb-10" />
+          <Ornament src="/logos/crescent-sun-rays.png" className="h-[62px] md:h-[72px] mb-8 lg:mb-10" />
 
           <WordReveal
             as="h1"

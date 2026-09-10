@@ -57,7 +57,7 @@ export function Pillars() {
           className="text-center mb-16 lg:mb-20"
         >
           {/* Kundalini serpent — the Shakti energy, above the world of Shakti */}
-          <Ornament src="/logos/snake-sun-rays.png" className="h-20 md:h-24 mx-auto mb-6 lg:mb-8" />
+          <Ornament src="/logos/snake-sun-rays.png" className="h-[104px] md:h-[124px] mx-auto mb-6 lg:mb-8" />
 
           <h2 className="font-display font-light text-ink text-3xl md:text-4xl leading-[1.15]">
             {t("heading")}

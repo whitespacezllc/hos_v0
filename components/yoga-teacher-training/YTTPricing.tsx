@@ -120,7 +120,7 @@ export function YTTPricing() {
 
           {/* Right — invitation + apply */}
           <div className="text-center">
-            <Ornament src="/logos/moon-phase.png" className="h-8 md:h-9 mx-auto mb-8 opacity-80" />
+            <Ornament src="/logos/moon-phase.png" className="h-[42px] md:h-12 mx-auto mb-8 opacity-80" />
             <p className="font-display font-light text-cream text-3xl md:text-4xl leading-[1.2] max-w-md mx-auto">
               {t.pricing.invitation}
             </p>
