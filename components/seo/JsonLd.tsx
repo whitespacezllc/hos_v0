@@ -1,13 +1,16 @@
 import {
   breadcrumbSchema,
+  faqPageSchema,
   lodgingBusinessSchema,
   retreatEventSchema,
+  retreatListingEventsSchema,
   webSiteSchema,
   yogaClassEventsSchema,
+  type FaqItem,
   type JsonLd as JsonLdObject,
 } from '@/lib/schema';
 import type { Retreat } from '@/lib/retreats';
-import type { YogaClass } from '@/types';
+import type { RetreatListing, YogaClass } from '@/types';
 
 // ─── JSON-LD ─────────────────────────────────────────────────────────────────
 // Server components only. Rendering the graph on the server is the whole
@@ -41,6 +44,20 @@ export function SiteJsonLd() {
 /** One Event per upcoming class. Renders nothing when the week is empty. */
 export function YogaClassesJsonLd({ classes }: { classes: YogaClass[] }) {
   const events = yogaClassEventsSchema(classes);
+  if (events.length === 0) return null;
+  return <Script data={events} />;
+}
+
+/** The page's own questions and answers, as a FAQPage. Renders nothing without any. */
+export function FaqJsonLd({ items }: { items: FaqItem[] }) {
+  const faq = faqPageSchema(items);
+  if (!faq) return null;
+  return <Script data={faq} />;
+}
+
+/** One Event per retreat still to come on /upcoming-retreats. Renders nothing when there are none. */
+export function RetreatListingsJsonLd({ listings }: { listings: RetreatListing[] }) {
+  const events = retreatListingEventsSchema(listings);
   if (events.length === 0) return null;
   return <Script data={events} />;
 }

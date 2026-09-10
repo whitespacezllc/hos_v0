@@ -14,19 +14,31 @@ import { ACTIVE_LOCALES, localizedPath } from '@/lib/seo';
 // Answer engines are allowed on purpose. A guest planning a trip increasingly
 // asks an assistant "where should I do yoga in Santa Teresa" rather than a
 // search box, and for a house this small, being in that answer is worth more
-// than a rank. GPTBot, ClaudeBot, PerplexityBot and Google-Extended are named
-// explicitly so the permission survives any future default-deny.
+// than a rank. The crawlers behind the main assistants are named explicitly
+// so the permission survives any future default-deny: OpenAI's training and
+// search bots, Anthropic's, Perplexity's, Google's and Apple's. /llms.txt and
+// /llms-full.txt are written for them.
 const PRIVATE_PATHS = [
   '/admin',
   '/instructor',
   '/api',
   // Public-site paths exist in every language: `/booking` and `/es/booking`.
-  ...['/booking', '/paquetes/resultado'].flatMap((path) =>
+  ...['/booking', '/paquetes/resultado', '/login', '/set-password'].flatMap((path) =>
     ACTIVE_LOCALES.map((locale) => localizedPath(path, locale)),
   ),
 ];
 
-const ANSWER_ENGINES = ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended'];
+const ANSWER_ENGINES = [
+  'GPTBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'ClaudeBot',
+  'Claude-Web',
+  'anthropic-ai',
+  'PerplexityBot',
+  'Google-Extended',
+  'Applebot-Extended',
+];
 
 export default function robots(): MetadataRoute.Robots {
   return {

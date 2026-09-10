@@ -18,7 +18,8 @@
 
 import { BUSINESS } from '@/lib/business';
 import type { Retreat } from '@/lib/retreats';
-import type { YogaClass } from '@/types';
+import type { RetreatListing, YogaClass } from '@/types';
+import { isSitePath, DEFAULT_RETREAT_IMAGE } from '@/lib/retreat-listings';
 
 export type JsonLd = Record<string, unknown>;
 
@@ -251,8 +252,74 @@ export function breadcrumbSchema(trail: { name: string; path: string }[]): JsonL
   };
 }
 
-// FAQPage is deliberately absent. `components/accommodations/AccommodationsFAQ.tsx`
-// says its answers are placeholder copy, and marking up placeholder content as
-// a rich result is worse than not marking it up — it puts words in the
-// business's mouth in Google's own interface. Add a `faqPageSchema` builder
-// here the day the real answers land.
+export type FaqItem = { question: string; answer: string };
+
+/**
+ * FAQPage — the questions a page already answers, in the language the page
+ * is rendered in. Google stopped showing FAQ rich results for businesses in
+ * 2023, but the answer engines still read the markup, and a question phrased
+ * the way a guest asks it is the shape of what they retrieve. Only the
+ * published answers go in: what the page says, nothing more.
+ */
+export function faqPageSchema(items: FaqItem[]): JsonLd | null {
+  const entries = items.filter((i) => i.question?.trim() && i.answer?.trim());
+  if (entries.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: entries.map((i) => ({
+      '@type': 'Question',
+      name: i.question.trim(),
+      acceptedAnswer: { '@type': 'Answer', text: i.answer.trim() },
+    })),
+  };
+}
+
+// "Sam Bianchini & Ana Ruiz", "Nancy Goodfellow and Elly Miles" → one Person each.
+function performers(instructors: string): JsonLd[] {
+  return instructors
+    .split(/\s*(?:,|&|\band\b|\by\b)\s*/i)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ '@type': 'Person', name }));
+}
+
+/**
+ * Event for a retreat managed in the panel (retreat_listings). Dates are
+ * whole days in Costa Rica, so they go out as dates, not instants. The
+ * facilitator's own page is the event's URL when the listing points off the
+ * site; a retreat of the house's own points at its page here. No offer: the
+ * panel holds no price, and a guess is worse than a gap.
+ */
+export function retreatListingEventSchema(listing: RetreatListing): JsonLd | null {
+  if (!listing.title || !listing.startsOn || !listing.endsOn) return null;
+  const url = isSitePath(listing.url) ? `${BUSINESS.url}${listing.url}` : listing.url;
+  const image = listing.imageUrl || DEFAULT_RETREAT_IMAGE;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: listing.title,
+    description: listing.description,
+    startDate: listing.startsOn,
+    endDate: listing.endsOn,
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    eventStatus: 'https://schema.org/EventScheduled',
+    location: placeFor(),
+    organizer: {
+      '@type': 'Organization',
+      '@id': BUSINESS_ID,
+      name: BUSINESS.name,
+      url: BUSINESS.url,
+    },
+    performer: performers(listing.instructors),
+    image: image.startsWith('http') ? image : `${BUSINESS.url}${image}`,
+    url,
+  };
+}
+
+/** Only the retreats still to come, as valid Events. */
+export function retreatListingEventsSchema(listings: RetreatListing[]): JsonLd[] {
+  return listings
+    .map(retreatListingEventSchema)
+    .filter((s): s is JsonLd => s !== null);
+}

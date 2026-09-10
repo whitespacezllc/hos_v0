@@ -116,6 +116,62 @@ export const SITE_ICONS: NonNullable<Metadata['icons']> = {
   apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
 };
 
+/**
+ * The social card per page: the photograph that page opens on, cut to 1200×630
+ * in public/og/. A page without one shares the site card. Keyed by the
+ * English path, which is what every page passes to buildMetadata.
+ */
+const PAGE_IMAGES: Record<string, PageImage> = {
+  '/yoga': {
+    url: '/og/yoga.jpg',
+    alt: 'The open-air yoga shala at House of Shakti, looking out over the jungle of Santa Teresa',
+    width: 1200,
+    height: 630,
+  },
+  '/stay-with-us': {
+    url: '/og/stay-with-us.jpg',
+    alt: 'The house and its saltwater pool at House of Shakti, Santa Teresa',
+    width: 1200,
+    height: 630,
+  },
+  '/retreats': {
+    url: '/og/retreats.jpg',
+    alt: 'Mats laid out in the yoga shala at House of Shakti before a retreat session',
+    width: 1200,
+    height: 630,
+  },
+  '/upcoming-retreats': {
+    url: '/og/upcoming-retreats.jpg',
+    alt: 'The yoga shala at House of Shakti seen from the garden during a class',
+    width: 1200,
+    height: 630,
+  },
+  '/shakti-experience': {
+    url: '/og/shakti-experience.jpg',
+    alt: 'Two guests walking the beach at low tide in Santa Teresa, Costa Rica',
+    width: 1200,
+    height: 630,
+  },
+  '/host-your-retreat': {
+    url: '/og/host-your-retreat.jpg',
+    alt: 'The Santa Teresa coastline seen from above, jungle meeting the Pacific',
+    width: 1200,
+    height: 630,
+  },
+  '/yoga-teacher-training': {
+    url: '/og/yoga-teacher-training.jpg',
+    alt: 'A yoga posture on the beach at sunset in Santa Teresa',
+    width: 1200,
+    height: 630,
+  },
+};
+// The class-pack shop is a door into the same classes.
+PAGE_IMAGES['/paquetes'] = PAGE_IMAGES['/yoga'];
+
+export function pageImage(path: string): PageImage {
+  return PAGE_IMAGES[path] ?? DEFAULT_OG_IMAGE;
+}
+
 export type BuildMetadataInput = {
   /** Site-relative path, English form, e.g. `/stay-with-us`. */
   path: string;
@@ -123,7 +179,7 @@ export type BuildMetadataInput = {
   title: string;
   /** Under 160 characters. */
   description: string;
-  /** Defaults to the site card. */
+  /** Defaults to the page's own card (see PAGE_IMAGES), then to the site card. */
   image?: PageImage;
   /** The locale the page is rendering in — the `[locale]` segment. */
   locale?: Locale;
@@ -139,10 +195,11 @@ export function buildMetadata({
   path,
   title,
   description,
-  image = DEFAULT_OG_IMAGE,
+  image: explicitImage,
   locale = DEFAULT_LOCALE,
   absoluteTitle = false,
 }: BuildMetadataInput): Metadata {
+  const image = explicitImage ?? pageImage(path);
   // Self-referencing: the Spanish page's canonical is the Spanish URL. The
   // alternates below are what tie the two versions together.
   const canonical = canonicalUrl(path, locale);

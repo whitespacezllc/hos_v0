@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { buildMetadata } from '@/lib/seo';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { localeFromParams, type LocaleParams } from '@/i18n/routing';
 import { PageMessages } from '@/i18n/PageMessages';
+import { FaqJsonLd } from '@/components/seo/JsonLd';
 import { Navigation } from '@/components/landing/navigation';
 import { Footer } from '@/components/landing/footer';
 import { YTTHero } from '@/components/yoga-teacher-training/YTTHero';
@@ -40,9 +41,11 @@ const ANCHOR = 'scroll-mt-20 lg:scroll-mt-28';
 export default async function YogaTeacherTrainingPage({ params }: LocaleParams) {
   const locale = await localeFromParams(params);
   setRequestLocale(locale);
+  const messages = await getMessages();
 
   return (
     <PageMessages namespaces={['ytt']}>
+      <FaqJsonLd items={messages.ytt.faq.items.map((i) => ({ question: i.q, answer: i.a }))} />
     <main id="main-content" className="bg-warm-white overflow-hidden">
       <Navigation />
       <YTTHero />

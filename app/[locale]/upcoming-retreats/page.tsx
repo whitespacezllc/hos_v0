@@ -8,6 +8,7 @@ import { Footer } from '@/components/landing/footer';
 import { UpcomingHero } from '@/components/upcoming-retreats/UpcomingHero';
 import { UpcomingGrid, type RetreatCard } from '@/components/upcoming-retreats/UpcomingGrid';
 import { getPublishedRetreatListings } from '@/lib/queries/retreatListings';
+import { RetreatListingsJsonLd } from '@/components/seo/JsonLd';
 import {
   DEFAULT_RETREAT_IMAGE,
   SEED_RETREAT_LISTINGS,
@@ -75,6 +76,9 @@ export default async function UpcomingRetreatsPage({ params }: LocaleParams) {
   return (
     <PageMessages namespaces={['upcomingRetreats']}>
       <main id="main-content" className="bg-warm-white overflow-hidden">
+        {/* One Event per retreat still to come — dated, located, with whoever
+            runs it — so "retreats in Santa Teresa" can resolve to these. */}
+        <RetreatListingsJsonLd listings={upcoming} />
         <Navigation />
         <UpcomingHero />
         <UpcomingGrid upcoming={upcoming.map(toCard)} past={past.map(toCard)} />
