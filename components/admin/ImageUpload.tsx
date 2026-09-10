@@ -8,13 +8,29 @@ import { uploadClassImage } from '@/app/actions/uploads';
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
+type UploadResult = { ok: true; url: string } | { ok: false; error: string };
+
 // Admin image picker: uploads to Supabase Storage via a server action and hands
 // back the public URL. Shows a live preview with replace/remove controls.
+//
+// Built for class images and reused as is by the retreats panel: the action
+// that receives the file, the frame the preview is shown in and the words
+// under the picker are the only things that change between the two.
 type Props = {
   value?: string | null;
   onChange: (url: string | null) => void;
   label?: string;
   helper?: string;
+  /** The server action that stores the file. Defaults to the class-image bucket. */
+  upload?: (formData: FormData) => Promise<UploadResult>;
+  /** Tailwind aspect class for the preview and the empty frame — match the frame the site shows it in. */
+  aspect?: string;
+  /** The small line inside the empty frame ("JPG, PNG, WebP · max 5 MB"). */
+  hint?: string;
+  /** Alt text for the preview. */
+  previewAlt?: string;
+  /** Id for the hidden file input, so the field's label is bound to it. */
+  inputId?: string;
 };
 
 export function ImageUpload({
@@ -22,6 +38,11 @@ export function ImageUpload({
   onChange,
   label = 'Image',
   helper = 'Shown on the public booking page. Optional — falls back to a default photo.',
+  upload = uploadClassImage,
+  aspect = 'aspect-[16/9]',
+  hint = 'JPG, PNG, WebP · max 5 MB',
+  previewAlt = 'Class',
+  inputId,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +62,7 @@ export function ImageUpload({
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await uploadClassImage(fd);
+      const res = await upload(fd);
       if (res.ok) {
         onChange(res.url);
       } else {
@@ -66,9 +87,10 @@ export function ImageUpload({
   }
 
   return (
-    <Field label={label} helper={error ? undefined : helper} error={error ?? undefined}>
+    <Field label={label} helper={error ? undefined : helper} error={error ?? undefined} htmlFor={inputId}>
       <input
         ref={inputRef}
+        id={inputId}
         type="file"
         accept={ALLOWED.join(',')}
         onChange={onInputChange}
@@ -76,9 +98,9 @@ export function ImageUpload({
       />
 
       {value ? (
-        <div className="mt-2 relative w-full aspect-[16/9] overflow-hidden border border-ink/10 bg-neutral-50 group">
+        <div className={`mt-2 relative w-full ${aspect} overflow-hidden border border-ink/10 bg-neutral-50 group`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="Class" className="w-full h-full object-cover" />
+          <img src={value} alt={previewAlt} className="w-full h-full object-cover" />
           {uploading && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
               <Loader2 className="w-5 h-5 animate-spin text-ink/60" />
@@ -113,7 +135,7 @@ export function ImageUpload({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="mt-2 w-full aspect-[16/9] flex flex-col items-center justify-center gap-2 border border-dashed border-ink/25 bg-neutral-50/50 text-ink/50 hover:border-ink/40 hover:text-ink/70 transition-colors cursor-pointer disabled:opacity-60"
+          className={`mt-2 w-full ${aspect} flex flex-col items-center justify-center gap-2 border border-dashed border-ink/25 bg-neutral-50/50 text-ink/50 hover:border-ink/40 hover:text-ink/70 transition-colors cursor-pointer disabled:opacity-60`}
         >
           {uploading ? (
             <>
@@ -124,7 +146,7 @@ export function ImageUpload({
             <>
               <ImagePlus width={22} height={22} strokeWidth={1.3} />
               <span className="font-body text-xs">Upload an image</span>
-              <span className="font-body text-[10px] text-ink/40">JPG, PNG, WebP · max 5 MB</span>
+              <span className="font-body text-[10px] text-ink/40">{hint}</span>
             </>
           )}
         </button>

@@ -378,6 +378,63 @@ export interface Database {
         };
         Relationships: [];
       };
+      retreat_listings: {
+        Row: {
+          id: string;
+          title: string;
+          label: string;
+          instructors: string;
+          starts_on: string;
+          ends_on: string;
+          description: string;
+          url: string;
+          image_url: string | null;
+          image_alt: string | null;
+          image_alt_es: string | null;
+          label_es: string | null;
+          description_es: string | null;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          label: string;
+          instructors: string;
+          starts_on: string;
+          ends_on: string;
+          description: string;
+          url: string;
+          image_url?: string | null;
+          image_alt?: string | null;
+          image_alt_es?: string | null;
+          label_es?: string | null;
+          description_es?: string | null;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          label?: string;
+          instructors?: string;
+          starts_on?: string;
+          ends_on?: string;
+          description?: string;
+          url?: string;
+          image_url?: string | null;
+          image_alt?: string | null;
+          image_alt_es?: string | null;
+          label_es?: string | null;
+          description_es?: string | null;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       retreat_submissions: {
         Row: {
           id: string;

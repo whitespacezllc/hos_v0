@@ -1167,40 +1167,11 @@
       "subline": "Donde la naturaleza, la práctica y la conexión se encuentran."
     },
     "heading": "Próximamente",
+    "empty": "Los próximos retiros se anuncian aquí apenas se confirman. Mantente atento.",
     "moreInfo": "Más información",
-    "items": {
-      "solForSoul": {
-        "label": "Retiro de bienestar",
-        "instructor": "Elly Miles",
-        "title": "Sol for Soul",
-        "dates": "6–12 sep 2026",
-        "description": "Un portal hacia ti, sostenido en un contenedor ligero, acompañado y divertido, construido alrededor de la manera en que Santa Teresa te invita naturalmente a abrirte y sentirte con vida.",
-        "alt": "Una huésped saliendo a la mañana en House of Shakti"
-      },
-      "ytt": {
-        "label": "Yoga Teacher Training",
-        "instructor": "Nancy Goodfellow",
-        "title": "The Awakened Body: A Tantric Yoga Intensive",
-        "dates": "21 nov – 4 dic 2026",
-        "description": "Una inmersión transformadora para quienes desean profundizar su relación con el yoga más allá de la práctica física. Cien horas en el camino encarnado del Tantra: movimiento, respiración, ritual e indagación interior.",
-        "alt": "Un grupo practicando junto en la shala abierta"
-      },
-      "nourish": {
-        "label": "Formación de yoga",
-        "instructor": "Sam Bianchini",
-        "title": "NOURISH: 50hr Restorative + Yin Training",
-        "dates": "5–12 dic 2026",
-        "description": "Un retiro de una semana unido a un estudio rico y vital del Yoga Restaurativo y el Yin, y de cómo sostener un espacio de sanación desde tu propia medicina original.",
-        "alt": "Un grupo descansando en una práctica restaurativa en la shala"
-      },
-      "salvaje": {
-        "label": "Retiro transformacional",
-        "instructor": "Heather Nil",
-        "title": "SALVAJE",
-        "dates": "18–23 ene 2027",
-        "description": "Más que un retiro: un despertar. Para quien busca una experiencia que sacuda su mundo y le devuelva la energía del HELL YES.",
-        "alt": "Baño en la cascada"
-      }
+    "past": {
+      "heading": "Retiros pasados",
+      "subline": "Retiros que ya pasaron por House of Shakti y que pueden volver. Mantente atento."
     }
   },
   "retreatLanding": {
