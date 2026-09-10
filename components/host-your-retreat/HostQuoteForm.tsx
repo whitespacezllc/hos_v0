@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
   Flower2,
@@ -30,6 +30,15 @@ import { whatsappUrl } from '@/lib/whatsapp';
 // WhatsApp already written. Exact dates and head counts are what the
 // conversation itself is for; a month, a length and a bracket are enough to
 // quote a season and a house.
+//
+// Every question takes up to three answers, not one. A host's retreat is
+// often two things at once — yoga and tantra, breathwork and sound — and a
+// host who hasn't fixed a date yet has two or three months in mind, not one;
+// a form that made them pick would be asking for a certainty they came here
+// to get. Three is enough room for "one of these" without turning the chips
+// into a survey. The message lists what was chosen the way the language
+// would say it: what a retreat *is* joins with "and", the months, lengths and
+// sizes it could be with "or".
 //
 // Every word — chip labels, legends, and each line of the message — comes
 // from the catalogue under hostYourRetreat.quote. The message lines are ICU
@@ -78,29 +87,42 @@ type GroupId = (typeof GROUPS)[number]['id'];
 
 const FLEXIBLE = 'flexible';
 
+// How many answers one question takes.
+const MAX_PICKS = 3;
+
 type Answers = {
-  kind: KindId | null;
-  /** A month as YYYY-MM, or FLEXIBLE. */
-  month: string | null;
-  length: LengthId | null;
-  group: GroupId | null;
+  kinds: KindId[];
+  /** Months as YYYY-MM, or FLEXIBLE on its own. */
+  months: string[];
+  lengths: LengthId[];
+  groups: GroupId[];
 };
 
-const EMPTY: Answers = { kind: null, month: null, length: null, group: null };
+const EMPTY: Answers = { kinds: [], months: [], lengths: [], groups: [] };
 
 const LABEL = 'block font-body text-[10px] tracking-[0.25em] uppercase text-ink/70';
+const HINT = 'font-body text-xs text-ink/75 leading-[1.7] mt-2';
 
 type Option = { id: string; icon?: LucideIcon; label: string };
 
-// The next twelve months from today, as YYYY-MM keys. Computed on the client
-// only (see the effect below), so the server and the first client render
-// agree on the markup whatever month or timezone either is in.
+// The next twelve months from today, as YYYY-MM keys.
 function upcomingMonths(from: Date, count = 12): string[] {
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(from.getFullYear(), from.getMonth() + i, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 }
+
+// The months on offer are read on the client only, once, so the server and
+// the hydrating render agree on the markup (no month chips) whatever month
+// or timezone either is in, and the reader's own calendar fills them in
+// right after. An external-store read rather than an effect that sets
+// state: same timing, one render fewer, and nothing to clean up.
+const NO_MONTHS: string[] = [];
+let monthsOnThisDevice: string[] | null = null;
+const readMonths = () => (monthsOnThisDevice ??= upcomingMonths(new Date()));
+const readNoMonths = () => NO_MONTHS;
+const subscribeToNothing = () => () => {};
 
 // "March 2027" / "Marzo 2027" — the chip and the message use the same words.
 function monthLabel(key: string, tag: string): string {
@@ -109,30 +131,62 @@ function monthLabel(key: string, tag: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
 }
 
+// "Flexible dates" answers the month question by itself: picked, it lets go
+// of any months; a month picked after it lets go of it.
+function reconcileFlexible(prev: string[], next: string[]): string[] {
+  const added = next.find((id) => !prev.includes(id));
+  if (added === FLEXIBLE) return [FLEXIBLE];
+  if (added) return next.filter((id) => id !== FLEXIBLE);
+  return next;
+}
+
+// The chosen ids in the order the chips show them, whatever order they were
+// tapped in — so the message reads "March, April or May", never the reverse.
+function inChipOrder<Id extends string>(options: readonly { id: Id }[], picked: readonly Id[]): Id[] {
+  return options.filter((o) => picked.includes(o.id)).map((o) => o.id);
+}
+
+// "Yoga, breathwork and sound healing" / "March, April or May" — the list
+// the language would write, with its own separators and conjunction. The
+// formatter is in every browser this site supports; the fallback is for the
+// odd one that lacks it, and only loses the last "and".
+function listPhrase(tag: string, items: string[], type: 'conjunction' | 'disjunction'): string {
+  if (items.length < 2) return items.join('');
+  if (typeof Intl.ListFormat === 'function') {
+    return new Intl.ListFormat(tag, { type, style: 'long' }).format(items);
+  }
+  return items.join(', ');
+}
+
 type Translate = ReturnType<typeof useTranslations<'hostYourRetreat.quote'>>;
 
-function composeMessage(t: Translate, tag: string, a: Answers): string {
+function composeMessage(t: Translate, tag: string, a: Answers, monthOptions: readonly Option[]): string {
   const lines: string[] = [];
 
-  if (a.kind) lines.push(t('message.retreatLine', { kind: t(`kinds.${a.kind}`) }));
+  const kinds = inChipOrder(KINDS, a.kinds).map((id) => t(`kinds.${id}`));
+  if (kinds.length) lines.push(t('message.retreatLine', { kind: listPhrase(tag, kinds, 'conjunction') }));
 
   const when: string[] = [];
-  if (a.month === FLEXIBLE) when.push(t('message.flexibleDates'));
-  else if (a.month) when.push(monthLabel(a.month, tag));
-  if (a.length) when.push(t(`lengths.${a.length}`).toLowerCase());
+  const months = inChipOrder(monthOptions, a.months).map((id) =>
+    id === FLEXIBLE ? t('message.flexibleDates') : monthLabel(id, tag),
+  );
+  if (months.length) when.push(listPhrase(tag, months, 'disjunction'));
+  const lengths = inChipOrder(
+    LENGTHS.map((id) => ({ id })),
+    a.lengths,
+  ).map((id) => t(`lengths.${id}`).toLowerCase());
+  if (lengths.length) when.push(listPhrase(tag, lengths, 'disjunction'));
   if (when.length) lines.push(t('message.whenLine', { when: when.join(', ') }));
 
-  const group = GROUPS.find((g) => g.id === a.group);
-  if (group) {
-    const { people } = group;
-    const phrase =
-      people.shape === 'upTo'
-        ? t('message.peopleUpTo', { n: people.n })
-        : people.shape === 'moreThan'
-          ? t('message.peopleMoreThan', { n: people.n })
-          : t('message.peopleRange', { from: people.from, to: people.to });
-    lines.push(t('message.groupLine', { people: phrase }));
-  }
+  const groups = inChipOrder(GROUPS, a.groups).map((id) => {
+    const { people } = GROUPS.find((g) => g.id === id)!;
+    return people.shape === 'upTo'
+      ? t('message.peopleUpTo', { n: people.n })
+      : people.shape === 'moreThan'
+        ? t('message.peopleMoreThan', { n: people.n })
+        : t('message.peopleRange', { from: people.from, to: people.to });
+  });
+  if (groups.length) lines.push(t('message.groupLine', { people: listPhrase(tag, groups, 'disjunction') }));
 
   return [t('message.opening'), lines.join('\n'), t('message.closing')].filter(Boolean).join('\n\n');
 }
@@ -145,31 +199,47 @@ function Legend({ children }: { children: ReactNode }) {
   return <legend className={`${LABEL} pr-3`}>{children}</legend>;
 }
 
-// One row of choices, one of which can be down. Square, hairline, and the
-// chosen one inverts to ink — the same states the track arrows and the
-// lightbox thumbnails already use. Tapping the chosen chip lets go of it.
+// One row of choices, up to `max` of which can be down. Square, hairline, and
+// a chosen one inverts to ink — the same states the track arrows and the
+// lightbox thumbnails already use. Tapping a chosen chip lets go of it. Once
+// the question has all the answers it takes, the rest step back — dimmed and
+// marked unavailable, still where they were — until one is let go of; a chip
+// that changed the answer behind the reader's back would be worse than one
+// that waits.
 function Chips<Id extends string>({
   options,
-  value,
+  values,
+  max = MAX_PICKS,
   onChange,
 }: {
   options: readonly (Option & { id: Id })[];
-  value: Id | null;
-  onChange: (next: Id | null) => void;
+  values: readonly Id[];
+  max?: number;
+  onChange: (next: Id[]) => void;
 }) {
+  const full = values.length >= max;
   return (
     <div className="flex flex-wrap gap-2.5">
       {options.map((option) => {
-        const selected = value === option.id;
+        const selected = values.includes(option.id);
+        const blocked = full && !selected;
         const Icon = option.icon;
         return (
           <button
             key={option.id}
             type="button"
             aria-pressed={selected}
-            onClick={() => onChange(selected ? null : option.id)}
+            aria-disabled={blocked || undefined}
+            onClick={() => {
+              if (blocked) return;
+              onChange(selected ? values.filter((v) => v !== option.id) : [...values, option.id]);
+            }}
             className={`flex items-center gap-2.5 border px-4 py-2.5 font-body text-[13px] leading-none transition-colors duration-300 ${
-              selected ? 'border-ink bg-ink text-cream' : 'border-ink/25 text-ink hover:border-ink'
+              selected
+                ? 'border-ink bg-ink text-cream'
+                : blocked
+                  ? 'border-ink/10 text-ink/35 cursor-not-allowed'
+                  : 'border-ink/25 text-ink hover:border-ink'
             }`}
           >
             {Icon && <Icon className="h-4 w-4 shrink-0" strokeWidth={1.25} aria-hidden />}
@@ -191,9 +261,8 @@ export function HostQuoteForm() {
   const set = <K extends keyof Answers>(key: K, value: Answers[K]) =>
     setAnswers((prev) => ({ ...prev, [key]: value }));
 
-  // The months on offer start from today — read after mount, see upcomingMonths.
-  const [months, setMonths] = useState<string[]>([]);
-  useEffect(() => setMonths(upcomingMonths(new Date())), []);
+  // The months on offer start from today — see readMonths.
+  const months = useSyncExternalStore(subscribeToNothing, readMonths, readNoMonths);
 
   const kindOptions = KINDS.map((k) => ({ id: k.id, icon: k.icon, label: t(`kinds.${k.id}`) }));
   const lengthOptions = LENGTHS.map((id) => ({ id, label: t(`lengths.${id}`) }));
@@ -206,7 +275,10 @@ export function HostQuoteForm() {
     [months, t, tag],
   );
 
-  const message = useMemo(() => composeMessage(t, tag, answers), [t, tag, answers]);
+  const message = useMemo(
+    () => composeMessage(t, tag, answers, monthOptions),
+    [t, tag, answers, monthOptions],
+  );
   const href = whatsappUrl(message);
 
   return (
@@ -257,26 +329,31 @@ export function HostQuoteForm() {
           {/* What */}
           <fieldset className="min-w-0 border-t border-ink/10 pt-8 pb-10">
             <Legend>{t('what')}</Legend>
+            <p className={HINT}>{t('whatHint')}</p>
             <div className="mt-5">
-              <Chips options={kindOptions} value={answers.kind} onChange={(v) => set('kind', v)} />
+              <Chips options={kindOptions} values={answers.kinds} onChange={(v) => set('kinds', v)} />
             </div>
           </fieldset>
 
           {/* When */}
           <fieldset className="min-w-0 border-t border-ink/10 pt-8 pb-10">
             <Legend>{t('when')}</Legend>
-            <p className="font-body text-xs text-ink/75 leading-[1.7] mt-2">{t('whenHint')}</p>
+            <p className={HINT}>{t('whenHint')}</p>
             <div className="mt-5 space-y-6">
               <div>
                 <p className={LABEL}>{t('month')}</p>
                 <div className="mt-3">
-                  <Chips options={monthOptions} value={answers.month} onChange={(v) => set('month', v)} />
+                  <Chips
+                    options={monthOptions}
+                    values={answers.months}
+                    onChange={(v) => set('months', reconcileFlexible(answers.months, v))}
+                  />
                 </div>
               </div>
               <div>
                 <p className={LABEL}>{t('length')}</p>
                 <div className="mt-3">
-                  <Chips options={lengthOptions} value={answers.length} onChange={(v) => set('length', v)} />
+                  <Chips options={lengthOptions} values={answers.lengths} onChange={(v) => set('lengths', v)} />
                 </div>
               </div>
             </div>
@@ -285,9 +362,9 @@ export function HostQuoteForm() {
           {/* How many */}
           <fieldset className="min-w-0 border-t border-ink/10 pt-8 pb-10">
             <Legend>{t('howMany')}</Legend>
-            <p className="font-body text-xs text-ink/75 leading-[1.7] mt-2">{t('howManyHint')}</p>
+            <p className={HINT}>{t('howManyHint')}</p>
             <div className="mt-5">
-              <Chips options={groupOptions} value={answers.group} onChange={(v) => set('group', v)} />
+              <Chips options={groupOptions} values={answers.groups} onChange={(v) => set('groups', v)} />
             </div>
           </fieldset>
 
