@@ -12,8 +12,8 @@ import { getBookingReceipt, type BookingReceipt } from '@/lib/queries/receipts';
 import { BookingHeader } from '@/components/booking/BookingHeader';
 
 // ─── The receipt a card payment comes back to ────────────────────────────────
-// Tilopay's callback sends the customer here with their booking reference and
-// what happened (ok / declined / review / error). Cash, Venmo and free
+// Tilopay's callback sends the customer here with their order id and what
+// happened (ok / declined / review / error). Cash, Venmo and free
 // bookings show their receipt inside the flow itself (BookingConfirmation);
 // this page exists for the customer who left the site to pay and is coming
 // back, and for anyone who opens the link in their email later.
@@ -31,33 +31,30 @@ function stillBookable(startsAt: string): boolean {
   return new Date(startsAt).getTime() - Date.now() > 3_600_000;
 }
 
+// The row is the truth; the query string only colours a booking that is
+// still open (a declined return that was later paid is confirmed, whatever
+// the old link in the customer's history says).
 function viewFor(receipt: BookingReceipt | null, status: string | undefined): View {
   if (!receipt) return 'notFound';
+  if (receipt.status === 'confirmed') return 'confirmed';
+  if (receipt.status !== 'pending') return 'declined';
+  if (status === 'review' || status === 'error') return status;
   if (status === 'declined') return 'declined';
-  if (status === 'review') return 'review';
-  if (status === 'error') return 'error';
-  switch (receipt.status) {
-    case 'confirmed':
-      return 'confirmed';
-    case 'pending':
-      // A card booking still pending after its return is one under review.
-      return receipt.paymentMethod === 'card' ? 'review' : 'pending';
-    default:
-      return 'declined';
-  }
+  // A card booking still pending after its return is one under review.
+  return receipt.paymentMethod === 'card' ? 'review' : 'pending';
 }
 
 export default async function ConfirmacionPage({
   params,
   searchParams,
 }: LocaleParams & {
-  searchParams: Promise<{ ref?: string; status?: string }>;
+  searchParams: Promise<{ order?: string; status?: string }>;
 }) {
   const locale = await localeFromParams(params);
   setRequestLocale(locale);
   const t = await getTranslations('booking.receipt');
-  const { ref, status } = await searchParams;
-  const receipt = ref ? await getBookingReceipt(ref) : null;
+  const { order, status } = await searchParams;
+  const receipt = order ? await getBookingReceipt(order) : null;
   const view = viewFor(receipt, status);
   const showDetails = receipt && (view === 'confirmed' || view === 'pending' || view === 'review');
   const canRebook = receipt ? stillBookable(receipt.startsAt) : false;

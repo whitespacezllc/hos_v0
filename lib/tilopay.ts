@@ -17,6 +17,11 @@ import { createHmac } from 'crypto';
 // production never sets it.
 const BASE_URL = process.env.TILOPAY_API_BASE?.replace(/\/+$/, '') || 'https://app.tilopay.com/api/v1';
 
+// No call to Tilopay may hang a request: a slow gateway answers "unknown",
+// and the order waits for the studio instead of the customer waiting for us.
+const TIMEOUT_MS = 10_000;
+const deadline = () => AbortSignal.timeout(TIMEOUT_MS);
+
 // Recomputes the OrderHash Tilopay returns on the callback, per their
 // WooCommerce plugin: HMAC-SHA256(http_build_query(params), "{tpt}|{key}|{pass}").
 // Tilopay does not publish the algorithm (their docs say to ask sac@tilopay.com
@@ -69,6 +74,7 @@ export async function login(): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ apiuser, password, key }),
     cache: 'no-store',
+    signal: deadline(),
   });
   if (!res.ok) {
     // Capture Tilopay's error body so production logs reveal the real cause
@@ -128,6 +134,7 @@ export async function createPayment(params: CreatePaymentParams): Promise<string
       billToCity: params.billToCity ?? '',
     }),
     cache: 'no-store',
+    signal: deadline(),
   });
 
   if (!res.ok) {
@@ -185,6 +192,7 @@ export async function consultOrder(orderNumber: string): Promise<ConsultResult> 
     },
     body: JSON.stringify({ key, orderNumber, merchantId: '' }),
     cache: 'no-store',
+    signal: deadline(),
   });
   const text = await res.text().catch(() => '');
   if (!res.ok) {

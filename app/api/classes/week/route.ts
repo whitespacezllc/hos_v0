@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ensureWeekMaterialized } from '@/lib/queries/classes';
 import type { DbClass } from '@/types';
@@ -30,8 +30,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Auto-create the week's occurrences from the recurring schedule before
-    // reading, and release the spots of abandoned card checkouts.
-    await Promise.all([ensureWeekMaterialized(startDate), releaseStaleCardHolds()]);
+    // reading; the spots of abandoned card checkouts are released after the
+    // response has gone out.
+    await ensureWeekMaterialized(startDate);
+    // `sweep=1` forces the throttled sweep — for tests, never in production.
+    const force = process.env.NODE_ENV !== 'production' && searchParams.get('sweep') === '1';
+    after(() => releaseStaleCardHolds(force));
 
     const supabase = await createClient();
     const { data, error } = await supabase

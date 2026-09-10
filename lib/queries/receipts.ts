@@ -2,11 +2,11 @@ import { createServiceRoleClient } from '@/lib/supabase/service';
 
 // ─── What the receipt pages read ─────────────────────────────────────────────
 // The pages a customer lands on after paying (/booking/confirmacion,
-// /paquetes/resultado) are public and addressed by a reference the customer
-// holds. They show what the customer already knows — their class, their code —
-// and nothing that identifies them beyond a first name.
+// /paquetes/resultado) are public and addressed by the order's id — a uuid
+// nobody can guess, unlike the short reference printed on the receipt. They
+// show what the customer already knows — their class, their code — and
+// nothing that identifies them beyond a first name.
 
-const REFERENCE = /^HOS-\d{8}-[A-Z0-9]{4}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type BookingReceipt = {
@@ -26,9 +26,8 @@ export type BookingReceipt = {
   withPack: boolean;
 };
 
-export async function getBookingReceipt(reference: string): Promise<BookingReceipt | null> {
-  const ref = reference.trim().toUpperCase();
-  if (!REFERENCE.test(ref)) return null;
+export async function getBookingReceipt(id: string): Promise<BookingReceipt | null> {
+  if (!UUID.test(id)) return null;
   try {
     const supabase = createServiceRoleClient();
     const { data, error } = await supabase
@@ -36,7 +35,7 @@ export async function getBookingReceipt(reference: string): Promise<BookingRecei
       .select(
         'booking_reference, first_name, payment_status, payment_method, total_usd, class_id, pack_purchase_id, classes ( name, starts_at, duration_minutes, location, instructors ( name ) )',
       )
-      .eq('booking_reference', ref)
+      .eq('id', id)
       .maybeSingle();
     if (error || !data) return null;
     const row = data as unknown as {

@@ -139,28 +139,30 @@ export async function markNoShow(id: string) {
   refreshAdmin();
 }
 
-// Cancels a booking from the admin: the spot goes back, a pending pack bought
-// with it is cancelled so no code is ever generated, a pack credit it had
-// spent is returned, and the customer is told.
+// Cancels a booking from the admin: its spots go back, a pending pack bought
+// with it is cancelled so no code is ever generated, the pack credit it had
+// spent is returned, and the customer is told. Only the caller whose update
+// lands does the bookkeeping, so two admins cancelling at once free one seat.
 export async function cancelBookingAdmin(id: string) {
   await requireAdmin();
   const supabase = service();
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('class_id, payment_status, pack_purchase_id, referral_code')
+    .select('class_id, persons, payment_status, pack_purchase_id, referral_code')
     .eq('id', id)
     .maybeSingle();
   if (!booking) throw new Error('booking_not_found');
   if (booking.payment_status === 'cancelled') return;
 
-  const wasConfirmed = booking.payment_status === 'confirmed';
-
-  await supabase
+  const { data: flipped } = await supabase
     .from('bookings')
     .update({ payment_status: 'cancelled', updated_at: new Date().toISOString() })
-    .eq('id', id);
-  await releaseSpot(supabase, booking.class_id);
+    .eq('id', id)
+    .eq('payment_status', booking.payment_status)
+    .select('id');
+  if (!flipped || flipped.length === 0) return;
+  await releaseSpot(supabase, booking.class_id, booking.persons ?? 1);
 
   let creditReturned = false;
   if (booking.pack_purchase_id) {
@@ -173,10 +175,11 @@ export async function cancelBookingAdmin(id: string) {
       .maybeSingle();
     if (purchase?.status === 'pending') {
       await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', booking.pack_purchase_id);
-    } else if (purchase?.status === 'paid' && purchase.code && wasConfirmed) {
+    } else if (purchase?.status === 'paid' && purchase.code && booking.payment_status === 'confirmed') {
       creditReturned = await returnPackCredit(supabase, purchase.code);
     }
-  } else if (wasConfirmed && isPackCode(booking.referral_code)) {
+  } else if (isPackCode(booking.referral_code) && booking.payment_status !== 'no-show') {
+    // The credit was spent when the booking was made, paid or not.
     creditReturned = await returnPackCredit(supabase, booking.referral_code);
   }
 

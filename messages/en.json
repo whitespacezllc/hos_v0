@@ -1589,7 +1589,8 @@
         "noSpots": "Sorry, this class is now fully booked.",
         "tooLate": "Bookings close 1 hour before class.",
         "generic": "Something went wrong. Please try again.",
-        "codeInvalid": "That code is no longer valid — remove it and try again."
+        "codeInvalid": "That code is no longer valid — remove it and try again.",
+        "alreadyPending": "You already have a reservation waiting for payment on this class — check your email."
       },
       "pay": {
         "card": "Confirm and pay",

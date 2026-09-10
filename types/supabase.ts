@@ -191,6 +191,7 @@ export interface Database {
           created_at: string;
           paid_at: string | null;
           locale: 'en' | 'es';
+          tilopay_transaction: string | null;
         };
         Insert: {
           id?: string;
@@ -208,6 +209,7 @@ export interface Database {
           created_at?: string;
           paid_at?: string | null;
           locale?: 'en' | 'es';
+          tilopay_transaction?: string | null;
         };
         Update: {
           id?: string;
@@ -225,6 +227,7 @@ export interface Database {
           created_at?: string;
           paid_at?: string | null;
           locale?: 'en' | 'es';
+          tilopay_transaction?: string | null;
         };
         Relationships: [];
       };

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { buildMetadata } from '@/lib/seo';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
+import { after } from 'next/server';
 import { localeFromParams, type LocaleParams } from '@/i18n/routing';
 import { PageMessages } from '@/i18n/PageMessages';
 import { getClassesForWeek, ensureWeekMaterialized } from '@/lib/queries/classes';
@@ -38,9 +39,12 @@ export default async function YogaPage({ params }: LocaleParams) {
   const weekStart = costaRicaWeekStart();
   const weekEnd = endOfDay(addDays(weekStart, 6));
 
-  // Fill the current week from the recurring schedule before reading it, and
-  // give back the spots of card checkouts that never came back from Tilopay.
-  await Promise.all([ensureWeekMaterialized(weekStart), releaseStaleCardHolds()]);
+  // Fill the current week from the recurring schedule before reading it. The
+  // spots of card checkouts that never came back from Tilopay are given back
+  // after the page has been sent — the sweep talks to Tilopay and must never
+  // slow a visitor down.
+  await ensureWeekMaterialized(weekStart);
+  after(() => releaseStaleCardHolds());
 
   const classes = await getClassesForWeek(weekStart, weekEnd);
 

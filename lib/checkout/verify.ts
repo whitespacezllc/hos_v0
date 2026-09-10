@@ -1,4 +1,4 @@
-import { computeOrderHash, consultOrder } from '@/lib/tilopay';
+import { computeOrderHash, consultOrder, type ConsultResult } from '@/lib/tilopay';
 
 // ─── Was this payment real? ──────────────────────────────────────────────────
 // The customer's browser brings the result back as a query string anyone can
@@ -8,20 +8,24 @@ import { computeOrderHash, consultOrder } from '@/lib/tilopay';
 // amount we charged.
 //
 // Outcomes:
-//   verified  — Tilopay confirms an approved payment for the right amount
-//   mismatch  — Tilopay knows the order but it is not approved, or not for
-//               that amount: nothing is confirmed, nothing is released
-//   unknown   — Tilopay could not be asked (network, credentials); the
-//               OrderHash is tried as a fallback, and if it does not match
-//               the order is held for the studio to check by hand
+//   verified        — Tilopay confirms an approved payment for the right amount
+//   not_approved    — Tilopay knows the order and says it was not approved:
+//                     the "approval" on the query string was not Tilopay's
+//   not_found       — Tilopay has no transaction for the order (a forged
+//                     return, or one that arrived before Tilopay indexed it):
+//                     nothing is confirmed, nothing is released, the
+//                     stale-hold sweep asks again later
+//   amount_mismatch — approved, but not for what we charged: a human decides
+//   unknown         — Tilopay could not be asked (network, credentials); the
+//                     OrderHash is tried as a fallback, and if it does not
+//                     match the order is held for the studio to check by hand
 //
 // TILOPAY_TRUST_CALLBACK=true skips all of this and believes the query
 // string. Emergency use only, while something upstream is broken.
 
 export type Verification =
   | { outcome: 'verified'; via: 'consult' | 'hash' | 'trust'; transactionId: string | null }
-  | { outcome: 'mismatch'; reason: string }
-  | { outcome: 'unknown'; reason: string };
+  | { outcome: 'not_approved' | 'not_found' | 'amount_mismatch' | 'unknown'; reason: string; transactionId: string | null };
 
 export type CallbackParams = {
   order: string;
@@ -30,6 +34,16 @@ export type CallbackParams = {
   tx: string | null;
   receivedHash: string | null;
 };
+
+const sameAmount = (a: number, b: number) => Math.abs(a - b) < 0.005;
+
+// A return can beat Tilopay's own index by a moment: one short second look.
+async function consultTwice(order: string): Promise<ConsultResult> {
+  const first = await consultOrder(order);
+  if (first.found) return first;
+  await new Promise((r) => setTimeout(r, 1500));
+  return consultOrder(order);
+}
 
 export async function verifyApprovedPayment(
   p: CallbackParams,
@@ -42,16 +56,15 @@ export async function verifyApprovedPayment(
 
   const expectedAmount = Number(expected.amount.toFixed(2));
   try {
-    const c = await consultOrder(p.order);
+    const c = await consultTwice(p.order);
     if (c.found) {
-      if (!c.approved) return { outcome: 'mismatch', reason: `tilopay says code ${c.code}: ${c.description}` };
-      if (Math.abs(c.amount - expectedAmount) > 0.005) {
-        return { outcome: 'mismatch', reason: `tilopay processed ${c.amount} ${c.currency}, expected ${expectedAmount} USD` };
+      if (!c.approved) return { outcome: 'not_approved', reason: `tilopay says code ${c.code}: ${c.description}`, transactionId: c.transactionId };
+      if (!sameAmount(c.amount, expectedAmount)) {
+        return { outcome: 'amount_mismatch', reason: `tilopay processed ${c.amount} ${c.currency}, expected ${expectedAmount} USD`, transactionId: c.transactionId };
       }
       return { outcome: 'verified', via: 'consult', transactionId: c.transactionId ?? p.tx };
     }
-    // Tilopay has no transaction for this order: the "approval" came from nowhere.
-    return { outcome: 'mismatch', reason: 'tilopay has no transaction for this order' };
+    return { outcome: 'not_found', reason: 'tilopay has no transaction for this order', transactionId: p.tx };
   } catch (err) {
     console.error('[tilopay] consult unavailable', p.order, err instanceof Error ? err.message : err);
   }
@@ -71,22 +84,27 @@ export async function verifyApprovedPayment(
     console.log('[tilopay] hash fallback', { order: p.order, ok });
     if (ok) return { outcome: 'verified', via: 'hash', transactionId: p.tx };
   }
-  return { outcome: 'unknown', reason: 'consult unavailable and hash not verifiable' };
+  return { outcome: 'unknown', reason: 'consult unavailable and hash not verifiable', transactionId: p.tx };
 }
 
+export type SweepAnswer =
+  | { outcome: 'paid'; transactionId: string | null }
+  | { outcome: 'not_found' | 'not_approved'; transactionId: string | null }
+  | { outcome: 'amount_mismatch'; transactionId: string | null; reason: string };
+
 /**
- * For an order whose return never arrived: did the customer pay anyway?
- * Answers only when Tilopay could be asked; `null` means "could not tell".
+ * For an order whose return never arrived: what happened to it? `null` means
+ * Tilopay could not be asked — leave the order alone until it can.
  */
-export async function orderWasPaid(
-  order: string,
-  expectedAmount: number,
-): Promise<{ paid: boolean; transactionId: string | null } | null> {
+export async function consultForSweep(order: string, expectedAmount: number): Promise<SweepAnswer | null> {
   try {
     const c = await consultOrder(order);
-    if (!c.found) return { paid: false, transactionId: null };
-    const paid = c.approved && Math.abs(c.amount - Number(expectedAmount.toFixed(2))) < 0.005;
-    return { paid, transactionId: c.transactionId };
+    if (!c.found) return { outcome: 'not_found', transactionId: null };
+    if (!c.approved) return { outcome: 'not_approved', transactionId: c.transactionId };
+    if (!sameAmount(c.amount, Number(expectedAmount.toFixed(2)))) {
+      return { outcome: 'amount_mismatch', transactionId: c.transactionId, reason: `tilopay processed ${c.amount} ${c.currency}, expected ${expectedAmount.toFixed(2)} USD` };
+    }
+    return { outcome: 'paid', transactionId: c.transactionId };
   } catch (err) {
     console.error('[tilopay] consult unavailable (sweep)', order, err instanceof Error ? err.message : err);
     return null;

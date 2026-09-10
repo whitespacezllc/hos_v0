@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { inCostaRica } from '@/lib/costa-rica-time';
+import { inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -65,7 +65,7 @@ const TOOLTIP_STYLE: React.CSSProperties = {
 };
 
 export default function DashboardClient({ data }: { data: DashboardData }) {
-  const now = new Date();
+  const now = nowInCostaRica();
   const { metrics, charts, instructors, upcoming } = data;
 
   const pieDataView = useMemo(

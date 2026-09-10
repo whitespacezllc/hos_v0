@@ -23,7 +23,7 @@ function formatICSDate(date: Date): string {
 function escapeICSText(s: string): string {
   return s
     .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\;')
+    .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r?\n/g, '\\n');
 }

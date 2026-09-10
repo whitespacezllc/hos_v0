@@ -1589,7 +1589,8 @@
         "noSpots": "Lo sentimos, esta clase ya está completa.",
         "tooLate": "Las reservas cierran 1 hora antes de la clase.",
         "generic": "Algo salió mal. Inténtalo de nuevo.",
-        "codeInvalid": "Ese código ya no es válido: quítalo e inténtalo de nuevo."
+        "codeInvalid": "Ese código ya no es válido: quítalo e inténtalo de nuevo.",
+        "alreadyPending": "Ya tienes una reserva pendiente de pago para esta clase; revisa tu correo."
       },
       "pay": {
         "card": "Confirmar y pagar",

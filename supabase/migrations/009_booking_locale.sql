@@ -40,19 +40,19 @@ BEGIN
 END;
 $$;
 
--- ── The browser key can only open a pending order ────────────────────────────
+-- ── The browser key writes no orders ─────────────────────────────────────────
 -- Every insert on the money path goes through the service role on the
--- server; these policies exist for the public key and used to let it write
--- any row at all — a pack marked paid, with a code and credits, included.
+-- server. These policies existed for the public key and let it write any
+-- row at all — a pack marked paid, with a code and credits, included — and
+-- nothing in the site uses them any more.
 DROP POLICY IF EXISTS "pack_purchases_insert_public" ON pack_purchases;
-CREATE POLICY "pack_purchases_insert_public"
-  ON pack_purchases FOR INSERT
-  WITH CHECK (status = 'pending' AND code IS NULL AND classes_used = 0);
-
 DROP POLICY IF EXISTS "bookings_insert_public" ON bookings;
-CREATE POLICY "bookings_insert_public"
-  ON bookings FOR INSERT
-  WITH CHECK (payment_status = 'pending');
+
+-- ── A pack remembers its Tilopay transaction, like a booking does ────────────
+-- Also the marker of "held for the studio to verify", which keeps the
+-- stale-hold sweep away from a pack whose payment is being checked by hand.
+ALTER TABLE pack_purchases
+  ADD COLUMN IF NOT EXISTS tilopay_transaction text;
 
 -- ── Spending credits and spots is the server's job ───────────────────────────
 -- These run with SECURITY DEFINER and were callable with the public key: a

@@ -57,9 +57,10 @@ export async function loadBookingEmailData(
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase
     .from('bookings')
+    // `*` rather than a column list: `locale` only exists once migration 009
+    // has run, and naming a missing column fails the whole read.
     .select(
-      `id, first_name, last_name, email, booking_reference, payment_method, payment_status,
-       referral_code, pack_purchase_id, upsell_ids, total_usd, locale,
+      `*,
        classes ( name, starts_at, duration_minutes, location, price_dropin_usd, instructors ( name ) ),
        pack_purchases ( code, class_packs ( name ) )`,
     )

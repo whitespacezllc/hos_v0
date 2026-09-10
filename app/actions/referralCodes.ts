@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { createServiceClient } from '@/lib/supabase/server';
 import { costaRicaInstant } from '@/lib/costa-rica-time';
 
@@ -25,6 +26,7 @@ type CodeInput = {
 };
 
 export async function createReferralCode(data: CodeInput) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('referral_codes').insert({
     code: data.code.toUpperCase(),
@@ -45,6 +47,7 @@ export async function createReferralCode(data: CodeInput) {
 }
 
 export async function updateReferralCode(id: string, data: CodeInput) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('referral_codes').update({
     code: data.code.toUpperCase(),
@@ -65,6 +68,7 @@ export async function updateReferralCode(id: string, data: CodeInput) {
 }
 
 export async function toggleReferralCodeActive(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { data: current, error: fetchError } = await supabase
     .from('referral_codes').select('is_active').eq('id', id).single();
@@ -76,6 +80,7 @@ export async function toggleReferralCodeActive(id: string) {
 }
 
 export async function deleteReferralCode(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('referral_codes').delete().eq('id', id);
   if (error) throw new Error(error.message);

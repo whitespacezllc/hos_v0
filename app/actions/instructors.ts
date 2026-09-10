@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/supabase';
 
@@ -18,6 +19,7 @@ function revalidate() {
 export async function createInstructor(
   data: InstructorInsert,
 ): Promise<InstructorActionResult> {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('instructors').insert(data);
   if (error) return { ok: false, error: error.message };
@@ -29,6 +31,7 @@ export async function updateInstructor(
   id: string,
   data: InstructorUpdate,
 ): Promise<InstructorActionResult> {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('instructors').update(data).eq('id', id);
   if (error) return { ok: false, error: error.message };
@@ -39,6 +42,7 @@ export async function updateInstructor(
 export async function deleteInstructor(
   id: string,
 ): Promise<InstructorActionResult> {
+  await requireAdmin();
   const supabase = await createServiceClient();
 
   // Los FK instructor_id (class_templates / classes) no tienen ON DELETE CASCADE,

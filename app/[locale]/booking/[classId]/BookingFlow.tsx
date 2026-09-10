@@ -99,7 +99,7 @@ const PAYMENT_METHODS: { id: PaymentMethod; Icon: typeof CreditCard }[] = [
   { id: 'cash',  Icon: Banknote },
 ];
 
-type BookingError = 'no_spots' | 'too_late' | 'code_invalid' | 'generic' | null;
+type BookingError = 'no_spots' | 'too_late' | 'code_invalid' | 'already_pending' | 'generic' | null;
 
 async function validateReferralCodeFromDB(
   code: string,
@@ -451,6 +451,7 @@ export default function BookingFlow({
     if (bookingError === 'no_spots') return t('step4.errors.noSpots');
     if (bookingError === 'too_late') return t('step4.errors.tooLate');
     if (bookingError === 'code_invalid') return t('step4.errors.codeInvalid');
+    if (bookingError === 'already_pending') return t('step4.errors.alreadyPending');
     return t('step4.errors.generic');
   }
 
@@ -1004,6 +1005,7 @@ function errorKind(error: CheckoutError): BookingError {
   if (error === 'no_spots_available') return 'no_spots';
   if (error === 'booking_too_late') return 'too_late';
   if (error === 'code_invalid') return 'code_invalid';
+  if (error === 'already_pending') return 'already_pending';
   return 'generic';
 }
 

@@ -4,6 +4,8 @@ import { createPayment } from '@/lib/tilopay';
 import { tilopayReturnUrl } from '@/lib/tilopay-return';
 import { notifyBooking } from '@/lib/booking-notify';
 import {
+  cancelPendingBooking,
+  consumeReferralUse,
   isMissingLocaleColumn,
   isPackCode,
   localeOf,
@@ -11,6 +13,7 @@ import {
   redeemPackCode,
   releaseSpot,
   reserveSpot,
+  returnPackCredit,
   service,
   type Service,
 } from '@/lib/checkout/core';
@@ -56,6 +59,7 @@ export type CheckoutError =
   | 'no_spots_available'
   | 'pack_not_found'
   | 'code_invalid'
+  | 'already_pending'
   | 'payment_init_failed'
   | 'database_error';
 
@@ -168,6 +172,17 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
     cloudbeds_ref: clean(personalData.cloudbedsRef),
   };
 
+  // One open hold per person per class. A second one is almost always a
+  // double click or a retry — and cash / Venmo holds cost nothing to make.
+  const { data: open } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('class_id', classId)
+    .eq('email', person.email)
+    .eq('payment_status', 'pending')
+    .limit(1);
+  if (open && open.length > 0) return { ok: false, error: 'already_pending' };
+
   // ══ PACK: buy a pack that also books this class ══════════════════════════════
   if (packId) {
     const { data: pack } = await supabase
@@ -246,7 +261,7 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
       return { ok: true, status: 'redirect', url };
     } catch (err) {
       console.error('[checkout] tilopay (pack)', err);
-      await abandon(supabase, bookingId, classId, purchaseId);
+      await abandon(supabase, bookingId, purchaseId);
       return { ok: false, error: 'payment_init_failed' };
     }
   }
@@ -262,9 +277,10 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
 
   if (!(await reserveSpot(supabase, classId))) return { ok: false, error: 'no_spots_available' };
 
-  // Nothing to pay: the code is spent now, before the booking exists, so a
-  // pack that ran out a second ago cannot book for free.
-  if (total <= 0 && outcome.kind === 'pack') {
+  // A pack code is spent now, before the booking exists, whatever the total:
+  // a pack that ran out a second ago cannot book, and a booking that dies
+  // (declined, abandoned, cancelled) gives the credit back.
+  if (outcome.kind === 'pack') {
     const redeemed = await redeemPackCode(supabase, outcome.code);
     if (!redeemed.success) {
       await releaseSpot(supabase, classId);
@@ -291,6 +307,7 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
   }
   if (bookingRes.error || !bookingRes.data) {
     await releaseSpot(supabase, classId);
+    if (outcome.kind === 'pack') await returnPackCredit(supabase, outcome.code);
     console.error('[checkout] booking insert failed', bookingRes.error?.message);
     return { ok: false, error: 'database_error' };
   }
@@ -298,10 +315,7 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
 
   if (total <= 0) {
     // A referral code that covered everything counts as used too.
-    if (outcome.kind === 'referral') {
-      const { data: ref } = await supabase.from('referral_codes').select('id, usage_count').eq('code', outcome.code).maybeSingle();
-      if (ref) await supabase.from('referral_codes').update({ usage_count: ref.usage_count + 1 }).eq('id', ref.id);
-    }
+    if (outcome.kind === 'referral') await consumeReferralUse(supabase, outcome.code);
     await notifyBooking(bookingId, 'confirmed');
     return { ok: true, status: 'free', bookingReference };
   }
@@ -329,18 +343,15 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
     return { ok: true, status: 'redirect', url };
   } catch (err) {
     console.error('[checkout] tilopay (drop-in)', err);
-    await abandon(supabase, bookingId, classId, null);
+    await abandon(supabase, bookingId, null);
     return { ok: false, error: 'payment_init_failed' };
   }
 }
 
 // Tilopay could not open a payment session: the rows just created are not an
-// order anyone will pay, so they are cancelled and the spot goes back.
-async function abandon(supabase: Service, bookingId: string, classId: string, purchaseId: string | null): Promise<void> {
-  await supabase
-    .from('bookings')
-    .update({ payment_status: 'cancelled', updated_at: new Date().toISOString() })
-    .eq('id', bookingId);
-  await releaseSpot(supabase, classId);
+// order anyone will pay, so they are cancelled, the spot goes back and a pack
+// credit the code had spent is returned.
+async function abandon(supabase: Service, bookingId: string, purchaseId: string | null): Promise<void> {
+  await cancelPendingBooking(supabase, bookingId);
   if (purchaseId) await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', purchaseId);
 }

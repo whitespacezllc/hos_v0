@@ -41,18 +41,18 @@ if (apiKey && !process.env.EMAIL_FROM && process.env.NODE_ENV === 'production') 
 export type SendResult = { sent: boolean; skipped?: boolean; error?: string };
 
 type Deliverable = {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text: string;
   attachments?: { filename: string; content: string; contentType?: string }[];
-  /** Short label for the logs. */
+  /** Short label for the logs — never an address or a code. */
   tag: string;
 };
 
 async function deliver(mail: Deliverable): Promise<SendResult> {
   if (!resend) {
-    console.warn(`[email] RESEND_API_KEY not set — skipping ${mail.tag} to`, mail.to);
+    console.warn(`[email] RESEND_API_KEY not set — skipping ${mail.tag}`);
     return { sent: false, skipped: true };
   }
   try {
@@ -69,7 +69,7 @@ async function deliver(mail: Deliverable): Promise<SendResult> {
       console.error(`[email] ${mail.tag} send failed:`, error);
       return { sent: false, error: error.message ?? String(error) };
     }
-    console.log(`[email] ${mail.tag} sent`, data?.id ?? '', 'to', mail.to);
+    console.log(`[email] ${mail.tag} sent`, data?.id ?? '');
     return { sent: true };
   } catch (err) {
     console.error(`[email] ${mail.tag} send threw:`, err);
@@ -94,11 +94,15 @@ export function formatUsd(amount: number): string {
   return Number.isInteger(n) ? `$${n} USD` : `$${n.toFixed(2)} USD`;
 }
 
-/** "Friday, September 11, 2026" / "viernes 11 de septiembre de 2026", in Santa Teresa. */
-export function formatEmailDate(startsAt: string | Date, locale: AppLocale): string {
+/**
+ * "Friday, September 11, 2026" / "viernes 11 de septiembre de 2026", in Santa
+ * Teresa. Capitalised for a labelled row; as-is inside a sentence, where a
+ * Spanish weekday stays lowercase.
+ */
+export function formatEmailDate(startsAt: string | Date, locale: AppLocale, inSentence = false): string {
   const pattern = locale === 'es' ? "EEEE d 'de' MMMM 'de' yyyy" : 'EEEE, MMMM d, yyyy';
   const s = format(inCostaRica(startsAt), pattern, { locale: dateFnsLocale(locale) });
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return inSentence ? s : s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** "Fri, Sep 11" / "vie 11 sep" — for subject lines. */
@@ -266,7 +270,7 @@ export function bookingEmailHtml(d: BookingEmailData): string {
 
   if (isCancelled) {
     parts.push(
-      paragraph(t.markup('intro.cancelled', { reference: escapeHtml(d.reference), className, date, time, strong })),
+      paragraph(t.markup('intro.cancelled', { reference: escapeHtml(d.reference), className, date: formatEmailDate(d.startsAt, d.locale, true), time, strong })),
     );
     if (d.creditReturned) parts.push(paragraph(escapeHtml(t('creditReturned'))));
     parts.push(paragraph(escapeHtml(t('cancelledPayment')), { muted: true, size: 13 }));
@@ -375,7 +379,7 @@ function bookingEmailText(d: BookingEmailData): string {
     c('questions'),
     `${BUSINESS.phoneDisplay} · ${BUSINESS.email.general}`,
   ];
-  return lines.filter((l) => l !== '' || true).join('\n');
+  return lines.filter((l, i) => l !== '' || lines[i - 1] !== '').join('\n');
 }
 
 function bookingIcs(d: BookingEmailData): { filename: string; content: string; contentType: string } {
@@ -451,7 +455,7 @@ export async function sendPackCodeEmail(params: PackCodeEmail): Promise<SendResu
     subject: t('subject', { packName }),
     html: packCodeHtml(params),
     text: [t('hello', { firstName: params.firstName }), '', t('useCode'), '', code, '', t('works', { count: classesTotal })].join('\n'),
-    tag: `pack-code:${code}`,
+    tag: `pack-code:${classesTotal}`,
   });
 }
 
@@ -461,7 +465,8 @@ export async function sendPackCodeEmail(params: PackCodeEmail): Promise<SendResu
 // most usefully a cash or Venmo hold that someone has to collect.
 export type AdminNotification = {
   kind: 'booking' | 'pack';
-  status: 'confirmed' | 'pending';
+  /** confirmed: paid · pending: cash / Venmo to collect · review: a card payment to verify by hand */
+  status: 'confirmed' | 'pending' | 'review';
   customerName: string;
   customerEmail: string;
   summary: string;
@@ -474,7 +479,8 @@ export async function sendAdminNotification(n: AdminNotification): Promise<SendR
   const raw = process.env.BOOKING_NOTIFY_EMAIL?.trim();
   if (!raw) return { sent: false, skipped: true };
   const to = raw.split(',').map((s) => s.trim()).filter(Boolean);
-  const subject = `[House of Shakti] ${n.status === 'pending' ? 'Payment to collect' : 'New booking'} · ${n.customerName} · ${n.summary}`;
+  const kindWord = n.status === 'review' ? 'Card payment to verify' : n.status === 'pending' ? 'Payment to collect' : n.kind === 'pack' ? 'New pack' : 'New booking';
+  const subject = `[House of Shakti] ${kindWord} · ${n.customerName} · ${n.summary}`;
   const detailRows = n.details.map((line) => {
     const [label, ...rest] = line.split(':');
     return { label: label.trim(), value: escapeHtml(rest.join(':').trim()) };
@@ -487,11 +493,11 @@ export async function sendAdminNotification(n: AdminNotification): Promise<SendR
     locale: 'en',
     title: subject,
     preheader: n.summary,
-    heading: n.status === 'pending' ? 'A payment to collect' : 'A new booking',
+    heading: n.status === 'review' ? 'A card payment to verify' : n.status === 'pending' ? 'A payment to collect' : n.kind === 'pack' ? 'A new pack' : 'A new booking',
     body,
   });
   return deliver({
-    to: to.join(','),
+    to,
     subject,
     html,
     text: [`${n.customerName} <${n.customerEmail}>`, ...n.details, `${BUSINESS.url}${n.adminPath}`].join('\n'),

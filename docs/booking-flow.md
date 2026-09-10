@@ -15,7 +15,7 @@ visitante, la administradora o el servidor (`lib/costa-rica-time.ts`).
 | --- | --- | --- |
 | Tarjeta | Reserva `pending`, cupo tomado, redirección a la página de pago de Tilopay. Al volver, el callback **verifica el pago contra la API de Tilopay** y confirma. | "Confirmed" con adjunto de calendario |
 | Efectivo / Venmo | Reserva `pending`, cupo tomado. La administradora la marca como cobrada en `/admin/reservas`. | "Reserved" con instrucciones de pago (monto, cuenta de Venmo, referencia) y luego "Payment received" |
-| Código de pack | La clase sale $0; se descuenta un crédito del pack **antes** de crear la reserva. Los extras se cobran aparte (tarjeta/efectivo/Venmo). | "Confirmed" |
+| Código de pack | La clase sale $0; el crédito se descuenta **al crear la reserva** (y vuelve si la reserva muere: rechazada, abandonada, cancelada). Los extras se cobran aparte (tarjeta/efectivo/Venmo). | "Confirmed" (o "Reserved" si hay extras por cobrar) |
 | Código de referido | Descuento por porcentaje, fijo o extra gratis; se consume al confirmar el pago. | según el método |
 
 **Pack de clases.** Desde `/paquetes` (solo tarjeta) o desde el paso 4 de
@@ -25,9 +25,10 @@ clase reservada (si la hubo) y se envía el correo con el código y las clases
 que quedan. El cliente lo escribe en el campo "Referral / packs code" al
 reservar; `redeem_pack_code` descuenta un crédito por reserva.
 
-**Recibos.** Tarjeta: `/booking/confirmacion?ref=HOS-…` (clase) o
-`/paquetes/resultado?order=…` (pack, muestra el código). Efectivo, Venmo y
-gratis: la pantalla final del propio flujo.
+**Recibos.** Tarjeta: `/booking/confirmacion?order=<id>` (clase) o
+`/paquetes/resultado?order=<id>` (pack, muestra el código); el id es el uuid
+de la orden, que nadie puede adivinar. Efectivo, Venmo y gratis: la pantalla
+final del propio flujo.
 
 **Cancelación desde el admin.** Libera el cupo, cancela un pack pendiente
 comprado con esa clase, devuelve el crédito si la clase se había pagado con
@@ -35,7 +36,9 @@ un pack y avisa al cliente por correo.
 
 **Limpieza.** Un pago con tarjeta que nunca volvió de Tilopay retiene el cupo
 45 minutos; después el sistema le pregunta a Tilopay si se pagó (lo confirma
-si sí) y si no, lo libera. Esto corre cada vez que alguien abre `/yoga`.
+si sí) y si no, lo libera. Corre después de responder `/yoga`, como mucho
+cada 5 minutos y de a 10 órdenes. Si el cliente paga tarde, cuando su orden
+ya fue liberada, el retorno igual la verifica y la revive con su cupo.
 
 ## Verificación de pagos (Tilopay)
 
@@ -43,13 +46,22 @@ El retorno de Tilopay es un GET que hace el navegador del cliente, y
 cualquiera puede escribirlo. Por eso **nada se confirma sin preguntarle a
 Tilopay**: `POST /api/v1/consult` con el `orderNumber` (el id de la reserva o
 del pack) tiene que responder aprobado y por el monto cobrado
-(`lib/checkout/verify.ts`). Si Tilopay no responde, se intenta el `OrderHash`
-(fórmula no publicada; puede no coincidir) y, si tampoco, la orden queda
-**pendiente con la transacción anotada** y el estudio recibe aviso: se
-confirma a mano con "Confirm payment" en `/admin/reservas` (o en
-`/admin/paquetes`) después de mirar el panel de Tilopay. Un retorno
-"rechazado" solo libera órdenes que siguen pendientes — un reenvío no deshace
-un pago real.
+(`lib/checkout/verify.ts`). Según lo que responda:
+
+- aprobado por el monto → se confirma (aunque la orden se hubiera liberado
+  entre tanto: el cliente pagó);
+- rechazado → se libera, como un retorno rechazado;
+- Tilopay no conoce la orden (un retorno inventado, o uno que llegó antes de
+  que Tilopay lo indexe) → no cambia nada; el barrido vuelve a preguntar más
+  tarde y confirma o libera;
+- aprobado por otro monto, o Tilopay no responde y el `OrderHash` (fórmula no
+  publicada) tampoco cierra → la orden queda **retenida con la transacción
+  anotada** y el estudio recibe un aviso (una sola vez por orden): se
+  confirma a mano con "Confirm payment" en `/admin/reservas` (o en
+  `/admin/paquetes`) después de mirar el panel de Tilopay, o se cancela.
+
+Un retorno "rechazado" solo libera órdenes que siguen pendientes: un reenvío
+no deshace un pago real.
 
 `TILOPAY_TRUST_CALLBACK=true` apaga toda verificación. Solo para una
 emergencia.
