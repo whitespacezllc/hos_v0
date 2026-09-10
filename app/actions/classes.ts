@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service';
 import type { Database } from '@/types/supabase';
 import type { ClassInstancePayload } from '@/types';
 
@@ -36,7 +37,7 @@ const WEEKS_AHEAD = 13;
  * manual "Regenerate week" button and widens the planning window.
  */
 export async function ensureUpcomingWeeks(): Promise<void> {
-  const supabase = await createServiceClient();
+  const supabase = createServiceRoleClient();
   const now = new Date();
 
   // Distinct Mondays for weeks 0..WEEKS_AHEAD.

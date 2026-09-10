@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureWeekMaterialized } from '@/lib/queries/classes';
 import type { DbClass } from '@/types';
 import { dbClassToYogaClass } from '@/types';
+import { COSTA_RICA_OFFSET } from '@/lib/costa-rica-time';
+import { releaseStaleCardHolds } from '@/lib/checkout/core';
 
 // Always run fresh: the endpoint materializes the week's occurrences and must
 // reflect the live schedule (no static/route caching).
@@ -18,15 +20,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'missing_params' }, { status: 400 });
     }
 
-    const startDate = new Date(`${start}T00:00:00Z`);
-    const endDate = new Date(`${end}T23:59:59Z`);
+    // `start` and `end` are Costa Rica calendar days; a class at 20:00 on the
+    // Sunday is still that Sunday's class, not Monday 02:00 UTC's.
+    const startDate = new Date(`${start}T00:00:00${COSTA_RICA_OFFSET}`);
+    const endDate = new Date(`${end}T23:59:59.999${COSTA_RICA_OFFSET}`);
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return NextResponse.json({ error: 'invalid_dates' }, { status: 400 });
     }
 
-    // Auto-create the week's occurrences from the recurring schedule before reading.
-    await ensureWeekMaterialized(startDate);
+    // Auto-create the week's occurrences from the recurring schedule before
+    // reading, and release the spots of abandoned card checkouts.
+    await Promise.all([ensureWeekMaterialized(startDate), releaseStaleCardHolds()]);
 
     const supabase = await createClient();
     const { data, error } = await supabase

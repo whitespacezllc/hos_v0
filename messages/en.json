@@ -1248,7 +1248,8 @@
         "past": "Past",
         "fullyBooked": "Fully booked",
         "spotsLeft": "{count, plural, =1 {1 spot left} other {# spots left}}"
-      }
+      },
+      "timezone": "All times are Costa Rica time."
     },
     "categories": {
       "vinyasa": "Vinyasa",
@@ -1479,6 +1480,19 @@
       "emailLabel": "Email:"
     }
   },
+  "book": {
+    "meta": {
+      "title": "Book Your Stay",
+      "description": "Check live availability and rates and book your room at House of Shakti in Santa Teresa, Costa Rica, directly with the house."
+    },
+    "heading": "Book your stay",
+    "intro": "Live availability and rates for every dwelling, reserved directly with the house.",
+    "failed": "The booking engine could not load here.",
+    "hosted": {
+      "lead": "Prefer to book on Cloudbeds' own page?",
+      "link": "Open the hosted booking engine"
+    }
+  },
   "booking": {
     "header": {
       "close": "Close",
@@ -1502,7 +1516,8 @@
       "fullyBooked": "Fully booked",
       "spots": "{remaining} of {capacity} spots",
       "minutes": "{count} minutes",
-      "dateFormat": "EEE d MMM yyyy"
+      "dateFormat": "EEE d MMM yyyy",
+      "timezone": "Costa Rica time"
     },
     "step2": {
       "intro": "Optional additions to make your class more complete. Select any you'd like.",
@@ -1548,10 +1563,7 @@
     "step4": {
       "intro": "Pay securely by card now, or settle with Venmo or in cash at the studio. Choose a single class or save with a pack — a pack also covers this class and sends you a code for future ones.",
       "packs": {
-        "dropin": "Drop-in",
-        "pack5": "Pack of 5",
-        "pack10": "Pack of 10",
-        "pack20": "Pack of 20"
+        "dropin": "Drop-in"
       },
       "savings": "Save ${amount}",
       "priceUsd": "${amount} USD",
@@ -1576,13 +1588,15 @@
       "errors": {
         "noSpots": "Sorry, this class is now fully booked.",
         "tooLate": "Bookings close 1 hour before class.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "codeInvalid": "That code is no longer valid — remove it and try again."
       },
       "pay": {
         "card": "Confirm and pay",
         "venmo": "Pay with Venmo",
         "cash": "Reserve"
-      }
+      },
+      "packOf": "Pack of {count}"
     },
     "navigation": {
       "back": "Back",
@@ -1601,7 +1615,8 @@
       "total": "Total",
       "dateFormat": "EEE d MMM",
       "hide": "Hide",
-      "details": "View details"
+      "details": "View details",
+      "timezone": "Costa Rica time"
     },
     "confirmation": {
       "reserved": "Reserved",
@@ -1631,7 +1646,8 @@
       "backToClasses": "Back to classes",
       "dateFormat": "EEEE, MMMM d yyyy",
       "icsDescription": "Yoga class with {instructor} at House of Shakti. Ref: {ref}",
-      "icsLocation": "{location}, House of Shakti, Costa Rica"
+      "icsLocation": "{location}, House of Shakti, Costa Rica",
+      "timezone": "Costa Rica time"
     },
     "venmo": {
       "title": "Pay with Venmo",
@@ -1645,13 +1661,46 @@
       "cancel": "Cancel",
       "paid": "I've paid"
     },
-    "done": {
-      "title": "Booking confirmed!",
-      "body": "Your booking was processed successfully. You'll receive a confirmation email with all the details.",
-      "seeYou": "See you at the shala",
-      "brand": "House of Shakti · Costa Rica",
-      "home": "Go to home",
-      "more": "More classes"
+    "receipt": {
+      "eyebrow": {
+        "confirmed": "Confirmed",
+        "pending": "Reserved",
+        "declined": "Payment not completed",
+        "error": "Something went wrong",
+        "notFound": "Booking not found",
+        "review": "Payment being confirmed"
+      },
+      "headline": {
+        "confirmed": "Your practice awaits.",
+        "pending": "Your spot is held.",
+        "declined": "No charge was made.",
+        "error": "We couldn't confirm the payment.",
+        "notFound": "We couldn't find that booking.",
+        "review": "We're confirming your payment."
+      },
+      "body": {
+        "confirmed": "Your payment went through and your place is confirmed. We've emailed you the details.",
+        "pending": "Your place is held until we receive your payment. We've emailed you the details.",
+        "declined": "Your payment was declined or cancelled, and the spot was released. You can book again whenever you like.",
+        "error": "If you were charged, don't worry — write to us and we'll sort it out right away.",
+        "notFound": "Check the link in your email, or write to us and we'll help.",
+        "review": "Tilopay reported your payment as approved and we're verifying it. Your spot is held, and you'll receive an email as soon as it's confirmed."
+      },
+      "reference": "Booking reference",
+      "class": "Class",
+      "instructor": "Instructor",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "location": "Location",
+      "total": "Total",
+      "free": "Free",
+      "minutes": "{count} minutes",
+      "timezone": "Costa Rica time",
+      "bookAgain": "Book again",
+      "backToClasses": "Back to classes",
+      "whatsapp": "Write to us on WhatsApp",
+      "dateFormat": "EEEE, MMMM d yyyy"
     }
   },
   "packs": {
@@ -1698,17 +1747,104 @@
         "body": "We couldn't confirm your payment automatically. If you were charged, don't worry — contact us and we'll sort it out right away."
       },
       "bookClass": "Book a class",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "code": {
+        "label": "Your class code",
+        "body": "{count, plural, =1 {1 class} other {# classes}}. We've also emailed it to you — enter it in the “Referral / packs code” field when you book."
+      },
+      "review": {
+        "title": "We're confirming your payment",
+        "body": "Tilopay reported your payment as approved and we're verifying it. Your class code will arrive by email as soon as it's confirmed."
+      }
     }
   },
   "email": {
+    "common": {
+      "brand": "House of Shakti",
+      "tagline": "Yoga sanctuary · Santa Teresa, Costa Rica",
+      "timezone": "All times are Costa Rica time (Santa Teresa, UTC−6).",
+      "questions": "Questions? Reply to this email or write to us on WhatsApp.",
+      "whatsapp": "WhatsApp {phone}",
+      "signoff": "See you on the mat,",
+      "team": "The House of Shakti team",
+      "footer": "House of Shakti · Santa Teresa, Puntarenas, Costa Rica"
+    },
+    "booking": {
+      "subject": {
+        "confirmed": "Confirmed: {className}, {date} — House of Shakti",
+        "paid": "Payment received: {className}, {date} — House of Shakti",
+        "pending": "Reserved: {className}, {date} — House of Shakti",
+        "cancelled": "Cancelled: {className}, {date} — House of Shakti"
+      },
+      "preheader": {
+        "confirmed": "Your place is confirmed. Reference {reference}.",
+        "paid": "Payment received — your place is confirmed. Reference {reference}.",
+        "pending": "Your place is held until payment. Reference {reference}.",
+        "cancelled": "Booking {reference} has been cancelled."
+      },
+      "heading": {
+        "confirmed": "Your practice is booked",
+        "paid": "Payment received",
+        "pending": "Your spot is held",
+        "cancelled": "Your booking was cancelled"
+      },
+      "hello": "Hello {firstName},",
+      "intro": {
+        "confirmed": "Your place in <strong>{className}</strong> is confirmed. Everything you need is below.",
+        "paid": "We've received your payment. Your place in <strong>{className}</strong> is confirmed.",
+        "pending": "We're holding your place in <strong>{className}</strong>. It becomes a confirmed booking as soon as we receive your payment.",
+        "cancelled": "Your booking <strong>{reference}</strong> for <strong>{className}</strong> on {date} at {time} has been cancelled."
+      },
+      "pack": {
+        "confirmed": "This class is covered by your <strong>{packName}</strong>. Your personal code for the remaining classes arrives in a separate email.",
+        "pending": "You're buying a <strong>{packName}</strong> together with this class. Once we receive the payment, we'll email your personal code for the remaining classes.",
+        "code": "This class is covered by your class pack (code <strong>{code}</strong>)."
+      },
+      "creditReturned": "The class credit went back to your pack — use your code to book another class.",
+      "labels": {
+        "reference": "Booking reference",
+        "class": "Class",
+        "instructor": "Instructor",
+        "date": "Date",
+        "time": "Time",
+        "duration": "Duration",
+        "location": "Location",
+        "extras": "Extras",
+        "payment": "Payment",
+        "total": "Total",
+        "amountDue": "Amount due"
+      },
+      "minutes": "{count} minutes",
+      "included": "Included",
+      "free": "Free",
+      "discount": "Code {code}",
+      "paymentMethod": {
+        "card": "Paid by card",
+        "cash": "Cash at the studio",
+        "venmo": "Venmo",
+        "pack": "Class pack",
+        "free": "No charge"
+      },
+      "instructions": {
+        "venmo": "Send <strong>{amount}</strong> on Venmo to <strong>{handle}</strong> and add your booking reference <strong>{reference}</strong> in the note. We'll confirm your spot as soon as it arrives.",
+        "cash": "Pay <strong>{amount}</strong> in cash at the studio reception before your class. Your spot is held until then."
+      },
+      "arrive": "Please arrive a few minutes early to settle in.",
+      "cancellation": "Free cancellation up to 2 hours before class — just reply to this email or write to us on WhatsApp.",
+      "calendar": "A calendar invitation is attached, so the class can go straight into your calendar.",
+      "cancelledPayment": "If you have any question about a payment, reply to this email and we'll sort it out.",
+      "schedule": "See the schedule"
+    },
     "packCode": {
       "subject": "Your {packName} is ready — House of Shakti",
+      "preheader": "Your personal class code: {code}",
       "heading": "Your class pack is ready",
       "hello": "Hello {firstName},",
       "thanks": "Thank you for your <strong>{packName}</strong>. You have <strong>{count, plural, =1 {1 class} other {# classes}}</strong> to enjoy at the shala.",
       "useCode": "Use this code when you book a class — the class fee will be waived:",
-      "works": "The code works for {count} bookings. Enter it in the “Referral code” field at checkout. Optional add-ons (like Ice Bath & Sauna) are charged separately.",
+      "works": "The code works for {count} bookings. Enter it in the “Referral / packs code” field when you book. Optional extras are charged separately.",
+      "remaining": "{count, plural, =1 {1 class} other {# classes}} left on this code.",
+      "bookNow": "Book a class",
       "signoff": "See you on the mat,"
     }
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { costaRicaDateString, costaRicaInstant, costaRicaTimeString } from '@/lib/costa-rica-time';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -55,18 +56,12 @@ type Props = {
   loading?: boolean;
 };
 
-// Local yyyy-MM-dd / HH:mm helpers (the calendar renders times in local tz).
-function toLocalDate(iso: string): string {
-  const d = new Date(iso);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-function toLocalTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
+// The form's date and time are Santa Teresa's — the class happens there, and
+// the admin may be filling this in from anywhere. Reading an instant into the
+// form and composing one back out both go through lib/costa-rica-time, so a
+// 07:00 class is 07:00 in Costa Rica whatever the admin's laptop thinks.
+const toLocalDate = (iso: string) => costaRicaDateString(iso);
+const toLocalTime = (iso: string) => costaRicaTimeString(iso);
 
 const BASE_DEFAULTS: FormValues = {
   name: '',
@@ -129,15 +124,15 @@ export default function CalendarClassModal({
     } else {
       reset({
         ...BASE_DEFAULTS,
-        date: prefill?.date ?? toLocalDate(new Date().toISOString()),
+        date: prefill?.date ?? costaRicaDateString(new Date()),
         time: prefill?.time ?? BASE_DEFAULTS.time,
       });
     }
   }, [open, isEditing, instance, prefill, reset]);
 
   function onSubmit(values: FormValues) {
-    // Compose the absolute instant from local date + time.
-    const startsAt = new Date(`${values.date}T${values.time}:00`);
+    // Compose the absolute instant from the Costa Rica date + time.
+    const startsAt = costaRicaInstant(values.date, values.time);
     onSave({
       name: values.name,
       description: values.description?.trim() ? values.description : null,
@@ -220,7 +215,7 @@ export default function CalendarClassModal({
           />
           <Input
             type="time"
-            label="Start time"
+            label="Start time · Costa Rica"
             error={errors.time?.message}
             {...register('time')}
           />

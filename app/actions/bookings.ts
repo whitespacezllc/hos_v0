@@ -1,38 +1,56 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createServiceClient } from '@/lib/supabase/server';
-import { confirmBookingPaid, confirmPackAndBooking } from '@/app/actions/checkout';
+import { requireAdmin } from '@/lib/auth/require-admin';
+import { notifyBooking } from '@/lib/booking-notify';
+import {
+  confirmBookingPaid,
+  confirmPackPurchase,
+  isPackCode,
+  newBookingReference,
+  releaseSpot,
+  reserveSpot,
+  returnPackCredit,
+  service,
+} from '@/lib/checkout/core';
 
-// Marks a booking as collected (paid). This is the "Cobrada" action the admin
-// uses for cash/Venmo bookings — but it also works for a stuck card booking.
-//   - Pack booking → generate the pack code, email it, redeem one credit and
-//     confirm the linked booking (reuses the Tilopay-callback path).
-//   - Drop-in booking → confirm it and consume any referral code that was used.
+function refreshAdmin() {
+  revalidatePath('/admin/reservas');
+  revalidatePath('/admin/calendario');
+  revalidatePath('/admin/paquetes');
+}
+
+// Marks a booking as collected (paid). This is the "Mark as paid" action the
+// admin uses for cash/Venmo bookings — and "Confirm payment" for a card
+// booking whose Tilopay return never arrived or could not be verified.
+//   - Booking bought with a pack → the pack is paid: code generated and
+//     emailed, one credit spent on this class, class confirmed.
+//   - Drop-in → confirmed; the referral or pack code it used is consumed.
 export async function confirmBooking(id: string) {
-  const supabase = await createServiceClient();
+  await requireAdmin();
+  const supabase = service();
   const { data: booking, error } = await supabase
     .from('bookings')
-    .select('pack_purchase_id')
+    .select('pack_purchase_id, tilopay_transaction')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (error || !booking) throw new Error(error?.message ?? 'booking_not_found');
 
   if (booking.pack_purchase_id) {
-    await confirmPackAndBooking(booking.pack_purchase_id, null);
+    const res = await confirmPackPurchase(booking.pack_purchase_id, booking.tilopay_transaction ?? null);
+    if (!res.ok) throw new Error(res.error);
   } else {
-    await confirmBookingPaid(id, null);
+    await confirmBookingPaid(id, booking.tilopay_transaction ?? null);
   }
-
-  revalidatePath('/admin/reservas');
-  revalidatePath('/admin/calendario');
+  refreshAdmin();
 }
 
 // Admin manually registers a walk-in participant on a class from the calendar
 // drawer — for students who show up in person and never booked through the web.
 // Mirrors the public drop-in booking shape (same personal fields) but skips the
 // upsell/pack flow: it's a quick express add. Reserves `persons` spots atomically
-// and rolls them back if anything fails.
+// and rolls them back if anything fails. No email goes out: the person is
+// standing at the desk.
 export type AdminBookingInput = {
   classId: string;
   firstName: string;
@@ -51,53 +69,44 @@ export type AdminBookingInput = {
 export async function createAdminBooking(
   input: AdminBookingInput,
 ): Promise<{ ok: true; bookingReference: string } | { ok: false; error: string }> {
-  const supabase = await createServiceClient();
+  await requireAdmin();
+  const supabase = service();
 
   const persons = Math.max(1, Math.floor(input.persons || 1));
   const upsellIds = input.upsellIds ?? [];
 
-  // ── Validate class ──────────────────────────────────────────────────────────
   const { data: clase, error: classError } = await supabase
     .from('classes')
     .select('id, price_dropin_usd, is_active')
     .eq('id', input.classId)
-    .single();
+    .maybeSingle();
   if (classError || !clase || !clase.is_active) return { ok: false, error: 'class_not_found' };
 
-  // ── Upsells total (priced server-side; never trust a client amount) ─────────
+  // Upsells priced server-side; never trust a client amount.
   let upsellsTotal = 0;
   if (upsellIds.length > 0) {
-    const { data: rows } = await supabase
-      .from('upsells')
-      .select('price_usd')
-      .in('id', upsellIds);
+    const { data: rows } = await supabase.from('upsells').select('price_usd').in('id', upsellIds);
     upsellsTotal = (rows ?? []).reduce((acc, u) => acc + Number(u.price_usd), 0);
   }
 
-  // ── Reserve N spots atomically, rolling back on partial failure ─────────────
   let reserved = 0;
   for (let i = 0; i < persons; i++) {
-    const { data } = await supabase.rpc('decrement_spots', { p_class_id: input.classId });
-    if (!(data as { success: boolean } | null)?.success) break;
+    if (!(await reserveSpot(supabase, input.classId))) break;
     reserved++;
   }
   if (reserved < persons) {
-    for (let i = 0; i < reserved; i++) {
-      await supabase.rpc('increment_spots', { p_class_id: input.classId });
-    }
+    for (let i = 0; i < reserved; i++) await releaseSpot(supabase, input.classId);
     return { ok: false, error: 'no_spots_available' };
   }
 
-  const { data: refData } = await supabase.rpc('generate_booking_reference');
-  const bookingReference = (refData as string | null) ?? `HOS-${Date.now()}-XXXX`;
-
+  const bookingReference = await newBookingReference(supabase);
   const total = Number(clase.price_dropin_usd) * persons + upsellsTotal;
 
   const { error: insertError } = await supabase.from('bookings').insert({
     class_id: input.classId,
-    first_name: input.firstName,
-    last_name: input.lastName,
-    email: input.email,
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    email: input.email.trim().toLowerCase(),
     phone: input.phone?.trim() ? input.phone.trim() : null,
     persons,
     upsell_ids: upsellIds,
@@ -109,58 +118,68 @@ export async function createAdminBooking(
     cloudbeds_ref: input.cloudbedsRef?.trim() ? input.cloudbedsRef.trim() : null,
     total_usd: total,
   });
-
   if (insertError) {
-    for (let i = 0; i < reserved; i++) {
-      await supabase.rpc('increment_spots', { p_class_id: input.classId });
-    }
+    for (let i = 0; i < reserved; i++) await releaseSpot(supabase, input.classId);
+    console.error('[createAdminBooking]', insertError.message);
     return { ok: false, error: 'database_error' };
   }
 
-  revalidatePath('/admin/reservas');
-  revalidatePath('/admin/calendario');
+  refreshAdmin();
   return { ok: true, bookingReference };
 }
 
 export async function markNoShow(id: string) {
-  const supabase = await createServiceClient();
+  await requireAdmin();
+  const supabase = service();
   const { error } = await supabase
     .from('bookings')
     .update({ payment_status: 'no-show', updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/admin/reservas');
+  refreshAdmin();
 }
 
+// Cancels a booking from the admin: the spot goes back, a pending pack bought
+// with it is cancelled so no code is ever generated, a pack credit it had
+// spent is returned, and the customer is told.
 export async function cancelBookingAdmin(id: string) {
-  const supabase = await createServiceClient();
+  await requireAdmin();
+  const supabase = service();
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('class_id, payment_status, pack_purchase_id')
+    .select('class_id, payment_status, pack_purchase_id, referral_code')
     .eq('id', id)
-    .single();
-
+    .maybeSingle();
   if (!booking) throw new Error('booking_not_found');
   if (booking.payment_status === 'cancelled') return;
+
+  const wasConfirmed = booking.payment_status === 'confirmed';
 
   await supabase
     .from('bookings')
     .update({ payment_status: 'cancelled', updated_at: new Date().toISOString() })
     .eq('id', id);
+  await releaseSpot(supabase, booking.class_id);
 
-  await supabase.rpc('increment_spots', { p_class_id: booking.class_id });
-
-  // If this booking was paying for a still-pending pack purchase (cash/Venmo
-  // that was never collected), cancel the purchase too so no code is generated.
+  let creditReturned = false;
   if (booking.pack_purchase_id) {
-    await supabase
+    // Never paid: the pack dies with the booking. Paid: this class had spent
+    // its first credit — give it back.
+    const { data: purchase } = await supabase
       .from('pack_purchases')
-      .update({ status: 'cancelled' })
+      .select('status, code')
       .eq('id', booking.pack_purchase_id)
-      .eq('status', 'pending');
+      .maybeSingle();
+    if (purchase?.status === 'pending') {
+      await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', booking.pack_purchase_id);
+    } else if (purchase?.status === 'paid' && purchase.code && wasConfirmed) {
+      creditReturned = await returnPackCredit(supabase, purchase.code);
+    }
+  } else if (wasConfirmed && isPackCode(booking.referral_code)) {
+    creditReturned = await returnPackCredit(supabase, booking.referral_code);
   }
 
-  revalidatePath('/admin/reservas');
-  revalidatePath('/admin/calendario');
+  await notifyBooking(id, 'cancelled', { creditReturned });
+  refreshAdmin();
 }

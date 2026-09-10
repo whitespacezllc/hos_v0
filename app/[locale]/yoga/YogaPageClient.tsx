@@ -4,11 +4,12 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, Variants, useInView } from 'framer-motion';
-import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale, useMessages, useTranslations } from 'next-intl';
 import type { YogaClass } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
+import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import { Navigation } from '@/components/landing/navigation';
 import { Footer } from '@/components/landing/footer';
 import { ClassPacks } from '@/components/yoga/ClassPacks';
@@ -50,15 +51,16 @@ function getCategoryKey(name: string): CategoryKey {
 // ─── Types & helpers ─────────────────────────────────────────────────────────
 type SerializedClass = Omit<YogaClass, 'startsAt'> & { startsAt: string };
 
+// The schedule is Santa Teresa's: its days, its week and its clock are Costa
+// Rica's, whether the reader is in Madrid, Buenos Aires or Los Angeles. Every
+// date here is built through lib/costa-rica-time so date-fns reads it in that
+// zone, and the class instants are compared against those days.
 function getWeekDays(weekOffset: number): Date[] {
-  const today = new Date();
-  const reference = today.getDay() === 0 ? addDays(today, 1) : today;
-  const monday = addDays(startOfWeek(reference, { weekStartsOn: 1 }), weekOffset * 7);
-  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  return costaRicaWeekDays(weekOffset);
 }
 
 function formatTime(iso: string): string {
-  return format(new Date(iso), 'HH:mm');
+  return format(inCostaRica(iso), 'HH:mm');
 }
 
 // ─── Headline word-by-word reveal variants ───────────────────────────────────
@@ -254,7 +256,7 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const sectionInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
-  const today = new Date();
+  const today = nowInCostaRica();
 
   // "Mon 7" / "lun 7" — the pattern is the catalogue's, the words are date-fns'.
   const dayLabel = (day: Date) => {
@@ -295,7 +297,7 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
   }
 
   const displayClasses = useMemo(
-    () => weekClasses.filter((c) => c.isActive && weekDays.some((d) => isSameDay(new Date(c.startsAt), d))),
+    () => weekClasses.filter((c) => c.isActive && weekDays.some((d) => isSameDay(inCostaRica(c.startsAt), d))),
     [weekClasses, weekDays],
   );
 
@@ -303,7 +305,7 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
   const classesByDay = useMemo(() => {
     return weekDays.map((day) =>
       displayClasses
-        .filter((c) => isSameDay(new Date(c.startsAt), day))
+        .filter((c) => isSameDay(inCostaRica(c.startsAt), day))
         .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
     );
   }, [displayClasses, weekDays]);
@@ -371,6 +373,8 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
             </div>
           </div>
         </motion.div>
+
+        <p className="font-body text-xs text-ink/60 mt-6">{t('timezone')}</p>
 
         {/* DESKTOP — 7 column day grid */}
         <div className="hidden lg:grid grid-cols-7 gap-x-2 lg:gap-x-4 mt-12 lg:mt-16">

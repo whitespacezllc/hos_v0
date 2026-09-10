@@ -1,5 +1,6 @@
 import { getClassById } from '@/lib/queries/classes';
 import { getActiveUpsells } from '@/lib/queries/upsells';
+import { getSellablePacks } from '@/lib/queries/packs';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { localeFromParams } from '@/i18n/routing';
@@ -13,9 +14,10 @@ export default async function BookingPage({
 }) {
   const [locale, { classId }] = await Promise.all([localeFromParams(params), params]);
   setRequestLocale(locale);
-  const [clase, upsells] = await Promise.all([
+  const [clase, upsells, packs] = await Promise.all([
     getClassById(classId),
     getActiveUpsells(),
+    getSellablePacks(),
   ]);
 
   if (!clase) notFound();
@@ -37,6 +39,7 @@ export default async function BookingPage({
       color={clase.color ?? undefined}
       imageUrl={clase.image_url ?? undefined}
       upsells={upsells}
+      packs={packs}
       locale={locale}
     />
     </PageMessages>

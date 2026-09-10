@@ -1,50 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
-import { computeOrderHash } from '@/lib/tilopay';
-import { localeFromCallback } from '@/lib/tilopay-return';
+import { siteOrigin } from '@/lib/site-url';
 import { localizedPath } from '@/lib/seo';
+import { verifyApprovedPayment } from '@/lib/checkout/verify';
 import {
   confirmBookingPaid,
-  confirmPackAndBooking,
-  releaseBookingOrder,
-} from '@/app/actions/checkout';
+  confirmPackPurchase,
+  holdOrderForReview,
+  localeOf,
+  releaseOrder,
+  service,
+} from '@/lib/checkout/core';
 
 // Tilopay redirects the customer here after the hosted payment completes.
 // code=1 means approved. The `order` is either a pack_purchases id (pack bought
 // from /paquetes or from the booking flow) or a bookings id (drop-in).
 //
-// SECURITY: we recompute the OrderHash (Tilopay's official formula) to verify the
-// callback is authentic. Enforcement is gated behind TILOPAY_VERIFY_HASH so we can
-// first confirm computed==received on a live payment (logged) before rejecting.
-function verifyHash(
-  received: string | null,
-  amount: number | null,
-  email: string | null,
-  order: string,
-  tx: string | null,
-  code: string | null,
-  auth: string | null,
-): boolean {
-  if (!received || amount == null || !email || !tx) return false;
-  const computed = computeOrderHash({
-    orderId: tx,
-    externalOrderId: order,
-    amount: Number(amount).toFixed(2),
-    currency: 'USD',
-    responseCode: code ?? '',
-    auth: auth ?? '',
-    email,
-  });
-  const ok = !!computed && computed === received;
-  console.log('[tilopay/callback] hash check:', { ok, computed, received });
-  return ok;
-}
+// This is a GET the customer's browser performs, so it can be replayed or
+// forged by anyone who has seen it. Nothing here is believed on its own:
+//   · an approved result is verified against Tilopay's API before anything is
+//     confirmed (lib/checkout/verify.ts); one that cannot be verified is held
+//     for the studio, never released — the money may be real;
+//   · a declined result only ever releases an order that is still pending, so
+//     a replay cannot undo a payment that went through.
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  console.log('[tilopay/callback] params:', Object.fromEntries(searchParams.entries()));
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
   const code = searchParams.get('code');
   const auth = searchParams.get('auth');
   const tx = searchParams.get('tilopay-transaction') ?? searchParams.get('tpt');
@@ -53,65 +34,94 @@ export async function GET(req: NextRequest) {
     searchParams.get('order') ??
     searchParams.get('orderNumber') ??
     searchParams.get('ordernumber');
+  // What reconciliation needs, and nothing personal.
+  console.log('[tilopay/callback]', { code, order, tx, description: searchParams.get('description') });
 
-  // The language the customer paid in, carried on the return URL we gave
-  // Tilopay (see lib/tilopay-return.ts). The receipt lives at
-  // /paquetes/resultado in English and /es/paquetes/resultado in Spanish.
-  const locale = localeFromCallback(searchParams);
-
-  const enforce = process.env.TILOPAY_VERIFY_HASH === 'true';
-  const result = (status: string, kind: 'pack' | 'booking' = 'pack') =>
-    NextResponse.redirect(
-      `${siteUrl}${localizedPath('/paquetes/resultado', locale)}?status=${status}&kind=${kind}`,
-    );
-
-  if (!order) return result('error');
-
-  const supabase = await createServiceClient();
+  const site = siteOrigin();
   const approved = code === '1';
+  const errorPage = () => NextResponse.redirect(`${site}/paquetes/resultado?status=error`);
+  if (!order) return errorPage();
 
-  // Is this order a pack purchase?
+  const supabase = service();
+  const params = { order, code, auth, tx, receivedHash };
+
+  // ── A pack purchase? ────────────────────────────────────────────────────────
   const { data: pack } = await supabase
     .from('pack_purchases')
-    .select('id, amount_usd, email')
+    .select('id, amount_usd, email, status, locale')
     .eq('id', order)
-    .single();
+    .maybeSingle();
 
   if (pack) {
-    if (approved) {
-      const valid = verifyHash(receivedHash, pack.amount_usd, pack.email, order, tx, code, auth);
-      if (enforce && !valid) {
-        console.error('[tilopay/callback] hash mismatch (pack), rejecting', order);
-        return result('error');
-      }
-      await confirmPackAndBooking(order, tx, locale);
-      return result('ok');
+    const locale = localeOf((pack as { locale?: string }).locale);
+    const receipt = (status: string) =>
+      NextResponse.redirect(
+        `${site}${localizedPath('/paquetes/resultado', locale)}?status=${status}&kind=pack&order=${order}`,
+      );
+
+    if (!approved) {
+      await releaseOrder('pack', order);
+      return receipt('declined');
     }
-    await releaseBookingOrder('pack', order);
-    return result('declined');
+    // Already settled one way or the other: a replay changes nothing.
+    if (pack.status === 'paid') return receipt('ok');
+    if (pack.status !== 'pending') return receipt('declined');
+
+    // A pack bought from the booking flow was charged with that class's extras.
+    const { data: linked } = await supabase
+      .from('bookings')
+      .select('total_usd')
+      .eq('pack_purchase_id', order)
+      .maybeSingle();
+    const charged = Number(pack.amount_usd ?? 0) + Number(linked?.total_usd ?? 0);
+
+    const v = await verifyApprovedPayment(params, { amount: charged, email: pack.email });
+    if (v.outcome !== 'verified') {
+      console.error('[tilopay/callback] pack payment not verified', order, v);
+      await holdOrderForReview('pack', order, tx, v.reason);
+      return receipt('review');
+    }
+    const res = await confirmPackPurchase(order, v.transactionId);
+    if (!res.ok) {
+      console.error('[tilopay/callback] pack confirmation failed', order, res.error);
+      return receipt('error');
+    }
+    return receipt('ok');
   }
 
-  // Otherwise it should be a booking (drop-in).
+  // ── Otherwise a drop-in booking ─────────────────────────────────────────────
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, total_usd, email')
+    .select('id, total_usd, email, booking_reference, payment_status, locale')
     .eq('id', order)
-    .single();
+    .maybeSingle();
 
   if (booking) {
-    if (approved) {
-      const valid = verifyHash(receivedHash, booking.total_usd, booking.email, order, tx, code, auth);
-      if (enforce && !valid) {
-        console.error('[tilopay/callback] hash mismatch (booking), rejecting', order);
-        return result('error', 'booking');
-      }
-      await confirmBookingPaid(order, tx);
-      return result('ok', 'booking');
+    const locale = localeOf((booking as { locale?: string }).locale);
+    const receipt = (status: string) =>
+      NextResponse.redirect(
+        `${site}${localizedPath('/booking/confirmacion', locale)}?ref=${encodeURIComponent(booking.booking_reference)}&status=${status}`,
+      );
+
+    if (!approved) {
+      await releaseOrder('booking', order);
+      return receipt('declined');
     }
-    await releaseBookingOrder('booking', order);
-    return result('declined', 'booking');
+    // Already settled one way or the other: a replay changes nothing.
+    if (booking.payment_status === 'confirmed') return receipt('ok');
+    if (booking.payment_status !== 'pending') return receipt('declined');
+
+    const v = await verifyApprovedPayment(params, { amount: Number(booking.total_usd ?? 0), email: booking.email });
+    if (v.outcome !== 'verified') {
+      console.error('[tilopay/callback] booking payment not verified', order, v);
+      await holdOrderForReview('booking', order, tx, v.reason);
+      return receipt('review');
+    }
+    const res = await confirmBookingPaid(order, v.transactionId);
+    if (res === 'not_found') return receipt('error');
+    return receipt('ok');
   }
 
   console.error('[tilopay/callback] order not found:', order);
-  return result('error');
+  return errorPage();
 }

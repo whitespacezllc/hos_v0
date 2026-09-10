@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import { format, isThisWeek, isToday, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -34,9 +35,9 @@ interface Props {
 }
 
 export default function InstructorDashboard({ instructor, classes, bookings }: Props) {
-  const now = new Date();
+  const now = nowInCostaRica();
 
-  const clases: YogaClass[] = classes.map(c => ({ ...c, startsAt: new Date(c.startsAt) }));
+  const clases: YogaClass[] = classes.map(c => ({ ...c, startsAt: inCostaRica(c.startsAt) }));
 
   const metrics = useMemo(() => {
     const totalBookings = bookings.length;
@@ -253,7 +254,7 @@ export default function InstructorDashboard({ instructor, classes, bookings }: P
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400 hidden sm:table-cell">
-                        {format(new Date(b.created_at), "d MMM yyyy", { locale: es })}
+                        {format(inCostaRica(b.created_at), "d MMM yyyy", { locale: es })}
                       </td>
                     </tr>
                   );

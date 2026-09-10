@@ -190,6 +190,7 @@ export interface Database {
           amount_usd: number | null;
           created_at: string;
           paid_at: string | null;
+          locale: 'en' | 'es';
         };
         Insert: {
           id?: string;
@@ -206,6 +207,7 @@ export interface Database {
           amount_usd?: number | null;
           created_at?: string;
           paid_at?: string | null;
+          locale?: 'en' | 'es';
         };
         Update: {
           id?: string;
@@ -222,6 +224,7 @@ export interface Database {
           amount_usd?: number | null;
           created_at?: string;
           paid_at?: string | null;
+          locale?: 'en' | 'es';
         };
         Relationships: [];
       };
@@ -273,6 +276,7 @@ export interface Database {
           notes: string | null;
           pack_purchase_id: string | null;
           tilopay_transaction: string | null;
+          locale: 'en' | 'es';
           created_at: string;
           updated_at: string;
         };
@@ -296,6 +300,7 @@ export interface Database {
           notes?: string | null;
           pack_purchase_id?: string | null;
           tilopay_transaction?: string | null;
+          locale?: 'en' | 'es';
           created_at?: string;
           updated_at?: string;
         };
@@ -319,6 +324,7 @@ export interface Database {
           notes?: string | null;
           pack_purchase_id?: string | null;
           tilopay_transaction?: string | null;
+          locale?: 'en' | 'es';
           created_at?: string;
           updated_at?: string;
         };

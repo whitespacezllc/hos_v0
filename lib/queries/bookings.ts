@@ -12,7 +12,9 @@ function dbStatusToFrontend(
   return status as Booking['paymentStatus'];
 }
 
-function rowToBooking(row: BookingRow & { classes?: { name: string } | null }): Booking {
+type PackJoin = { id: string; amount_usd: number | null; status: string; code: string | null } | null;
+
+function rowToBooking(row: BookingRow & { classes?: { name: string } | null; pack_purchases?: PackJoin }): Booking {
   return {
     id: row.id,
     classId: row.class_id,
@@ -27,6 +29,16 @@ function rowToBooking(row: BookingRow & { classes?: { name: string } | null }): 
     paymentMethod: row.payment_method ?? 'card',
     bookingReference: row.booking_reference,
     referralCode: row.referral_code ?? undefined,
+    totalUsd: Number(row.total_usd ?? 0),
+    packPurchase: row.pack_purchases
+      ? {
+          id: row.pack_purchases.id,
+          amountUsd: Number(row.pack_purchases.amount_usd ?? 0),
+          status: row.pack_purchases.status,
+          code: row.pack_purchases.code,
+        }
+      : undefined,
+    tilopayTransaction: row.tilopay_transaction ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }
@@ -36,7 +48,7 @@ export async function getBookingByReference(ref: string): Promise<Booking | null
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, classes(name)')
+      .select('*, classes(name), pack_purchases(id, amount_usd, status, code)')
       .eq('booking_reference', ref)
       .single();
 
@@ -44,7 +56,7 @@ export async function getBookingByReference(ref: string): Promise<Booking | null
       console.error('[getBookingByReference]', error.message);
       return null;
     }
-    return rowToBooking(data as unknown as BookingRow & { classes: { name: string } | null });
+    return rowToBooking(data as unknown as BookingRow & { classes: { name: string } | null; pack_purchases: PackJoin });
   } catch (err) {
     console.error('[getBookingByReference] unexpected:', err);
     return null;
@@ -56,7 +68,7 @@ export async function getBookingsForClass(classId: string): Promise<Booking[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, classes(name)')
+      .select('*, classes(name), pack_purchases(id, amount_usd, status, code)')
       .eq('class_id', classId)
       .order('created_at', { ascending: false });
 
@@ -64,7 +76,7 @@ export async function getBookingsForClass(classId: string): Promise<Booking[]> {
       console.error('[getBookingsForClass]', error.message);
       return [];
     }
-    return (data as unknown as (BookingRow & { classes: { name: string } | null })[]).map(rowToBooking);
+    return (data as unknown as (BookingRow & { classes: { name: string } | null; pack_purchases: PackJoin })[]).map(rowToBooking);
   } catch (err) {
     console.error('[getBookingsForClass] unexpected:', err);
     return [];
@@ -76,14 +88,14 @@ export async function getAllBookings(): Promise<Booking[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, classes(name)')
+      .select('*, classes(name), pack_purchases(id, amount_usd, status, code)')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[getAllBookings]', error.message);
       return [];
     }
-    return (data as unknown as (BookingRow & { classes: { name: string } | null })[]).map(rowToBooking);
+    return (data as unknown as (BookingRow & { classes: { name: string } | null; pack_purchases: PackJoin })[]).map(rowToBooking);
   } catch (err) {
     console.error('[getAllBookings] unexpected:', err);
     return [];

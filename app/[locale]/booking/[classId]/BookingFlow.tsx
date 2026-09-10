@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { addMinutes, format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,10 +11,12 @@ import {
   Tag, Check, CheckCircle, XCircle, Loader2, CreditCard, Banknote, Smartphone,
 } from 'lucide-react';
 import type { Upsell, ReferralCode } from '@/types';
-import { startBookingCheckout } from '@/app/actions/checkout';
+import { startBookingCheckout, type CheckoutError } from '@/app/actions/checkout';
 import type { PaymentMethod } from '@/lib/payment-methods';
+import type { ClassPack } from '@/lib/queries/packs';
 import type { AppLocale } from '@/i18n/routing';
 import { dateFnsLocale } from '@/lib/dates';
+import { inCostaRica } from '@/lib/costa-rica-time';
 import { downloadICS } from '@/lib/ics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +65,9 @@ type Props = {
   color?: string;
   imageUrl?: string;
   upsells: Upsell[];
-  /** The language the flow renders in — sent with the checkout so the receipt comes back in it. */
+  /** The class packs on sale, priced by the database — the same rows the checkout charges. */
+  packs: ClassPack[];
+  /** The language the flow renders in — stored with the booking so its emails speak it. */
   locale: AppLocale;
 };
 
@@ -84,7 +88,9 @@ const personalSchema = (errors: FormErrors) =>
 
 type PersonalData = z.infer<ReturnType<typeof personalSchema>>;
 
-type PackType = 'dropin' | 'pack5' | 'pack10' | 'pack20';
+// The single class, or one of the packs on sale. `'dropin'` is the class on
+// its own; anything else is a class_packs id.
+type PackOption = { id: string; packId: string | null; classes: number; price: number; saving: number };
 
 // Name and hint of each come from the catalogue (booking.step4.methods).
 const PAYMENT_METHODS: { id: PaymentMethod; Icon: typeof CreditCard }[] = [
@@ -93,16 +99,7 @@ const PAYMENT_METHODS: { id: PaymentMethod; Icon: typeof CreditCard }[] = [
   { id: 'cash',  Icon: Banknote },
 ];
 
-// Names come from the catalogue (booking.step4.packs); the saving is the
-// figure alone, phrased there too.
-const PACKS: { id: PackType; classes: number; price: number; saving?: number }[] = [
-  { id: 'dropin', classes: 1,  price: 20 },
-  { id: 'pack5',  classes: 5,  price: 75,  saving: 25 },
-  { id: 'pack10', classes: 10, price: 130, saving: 70 },
-  { id: 'pack20', classes: 20, price: 240, saving: 160 },
-];
-
-type BookingError = 'no_spots' | 'too_late' | 'generic' | null;
+type BookingError = 'no_spots' | 'too_late' | 'code_invalid' | 'generic' | null;
 
 async function validateReferralCodeFromDB(
   code: string,
@@ -229,7 +226,7 @@ function mockBookingReference(): string {
 export default function BookingFlow({
   classId, className, instructor, startsAt,
   durationMinutes, capacity, spotsRemaining,
-  priceUsd, location, description, color, imageUrl, upsells, locale: bookingLocale,
+  priceUsd, location, description, color, imageUrl, upsells, packs, locale: bookingLocale,
 }: Props) {
   const t = useTranslations('booking');
   const tCategories = useTranslations('yoga.categories');
@@ -238,7 +235,7 @@ export default function BookingFlow({
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [selectedUpsellIds, setSelectedUpsellIds] = useState<Set<string>>(new Set());
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
-  const [packType, setPackType] = useState<PackType>('dropin');
+  const [packChoice, setPackChoice] = useState<string>('dropin');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [pendingMethod, setPendingMethod] = useState<'cash' | 'venmo' | null>(null);
   const [venmoModalOpen, setVenmoModalOpen] = useState(false);
@@ -249,9 +246,26 @@ export default function BookingFlow({
   const [isLoading, setIsLoading] = useState(false);
   const [bookingError, setBookingError] = useState<BookingError>(null);
 
-  const classDate = new Date(startsAt);
+  // Every date and hour in the flow is Santa Teresa's, whatever the reader's clock says.
+  const classDate = inCostaRica(startsAt);
   const isFree = priceUsd === 0;
   const activeUpsells = upsells.filter(u => u.isActive);
+
+  // The options on step 4: this class alone, then each pack the studio sells,
+  // with what it saves against booking that many classes one by one.
+  const packOptions = useMemo<PackOption[]>(
+    () => [
+      { id: 'dropin', packId: null, classes: 1, price: priceUsd, saving: 0 },
+      ...packs.map((p) => ({
+        id: p.id,
+        packId: p.id,
+        classes: p.classesCount,
+        price: p.priceUsd,
+        saving: Math.max(0, Math.round((p.classesCount * priceUsd - p.priceUsd) * 100) / 100),
+      })),
+    ],
+    [packs, priceUsd],
+  );
 
   const selectedUpsellsList = useMemo(
     () => activeUpsells.filter(u => selectedUpsellIds.has(u.id)),
@@ -265,10 +279,10 @@ export default function BookingFlow({
   // Amount actually charged depends on the selected option: a drop-in charges the
   // class (a code may discount it); a pack charges the pack price (codes don't
   // apply to pack purchases). Upsells are always added.
-  const packDef = PACKS.find((p) => p.id === packType)!;
-  const isPack = packType !== 'dropin';
+  const packDef = packOptions.find((p) => p.id === packChoice) ?? packOptions[0];
+  const isPack = packDef.packId !== null;
   const basePrice = isPack ? packDef.price : priceUsd;
-  const priceLabel = isPack ? t(`step4.packs.${packDef.id}`) : t('summary.classLabel');
+  const priceLabel = isPack ? t('step4.packOf', { count: packDef.classes }) : t('summary.classLabel');
   const payDiscount = isPack ? 0 : discountAmount;
   const total = Math.max(0, basePrice + subtotalUpsells - payDiscount);
   const isTotalFree = total === 0;
@@ -386,15 +400,13 @@ export default function BookingFlow({
           isHotelGuest: personalData.isHotelGuest,
           cloudbedsRef: personalData.cloudbedsRef,
         },
-        packType,
+        packId: packDef.packId,
         paymentMethod,
         locale: bookingLocale,
       });
 
       if (!res.ok) {
-        if (res.error === 'no_spots_available') setBookingError('no_spots');
-        else if (res.error === 'booking_too_late') setBookingError('too_late');
-        else setBookingError('generic');
+        setBookingError(errorKind(res.error));
         return;
       }
 
@@ -429,7 +441,7 @@ export default function BookingFlow({
       title: className,
       description: t('confirmation.icsDescription', { instructor, ref: bookingRef }),
       location: t('confirmation.icsLocation', { location }),
-      startsAt: classDate,
+      startsAt: new Date(startsAt),
       durationMinutes,
       organizerName: 'House of Shakti',
     }, `HOS-${className.toLowerCase().replace(/\s+/g, '-')}`);
@@ -438,6 +450,7 @@ export default function BookingFlow({
   function bookingErrorMsg(): string {
     if (bookingError === 'no_spots') return t('step4.errors.noSpots');
     if (bookingError === 'too_late') return t('step4.errors.tooLate');
+    if (bookingError === 'code_invalid') return t('step4.errors.codeInvalid');
     return t('step4.errors.generic');
   }
 
@@ -618,7 +631,8 @@ export default function BookingFlow({
                           />
                           <ScheduleCell
                             label={t('step1.time')}
-                            value={`${format(classDate, 'HH:mm')} — ${format(new Date(classDate.getTime() + durationMinutes * 60000), 'HH:mm')}`}
+                            value={`${format(classDate, 'HH:mm')} — ${format(addMinutes(classDate, durationMinutes), 'HH:mm')}`}
+                            note={t('step1.timezone')}
                           />
                           <ScheduleCell
                             label={t('step1.availability')}
@@ -840,15 +854,14 @@ export default function BookingFlow({
 
                         {/* Pack type selector — editorial flat cards, no radius */}
                         <div className="mt-12 border-y border-ink/10 divide-y divide-ink/10">
-                          {PACKS.map((pack) => {
-                            const active = packType === pack.id;
-                            // Drop-in shows this class's real price; packs are fixed.
-                            const displayPrice = pack.id === 'dropin' ? priceUsd : pack.price;
+                          {packOptions.map((pack) => {
+                            const active = packChoice === pack.id;
+                            const displayPrice = pack.price;
                             return (
                               <button
                                 key={pack.id}
                                 type="button"
-                                onClick={() => setPackType(pack.id)}
+                                onClick={() => setPackChoice(pack.id)}
                                 className={`
                                   group relative w-full flex items-center justify-between
                                   py-5 pl-8 pr-2 text-left
@@ -875,9 +888,9 @@ export default function BookingFlow({
                                   </div>
                                   <div>
                                     <p className="font-body text-sm font-medium text-ink">
-                                      {t(`step4.packs.${pack.id}`)}
+                                      {pack.packId ? t('step4.packOf', { count: pack.classes }) : t('step4.packs.dropin')}
                                     </p>
-                                    {pack.saving && (
+                                    {pack.saving > 0 && (
                                       <p className="font-body text-xs text-burgundy mt-1">
                                         {t('step4.savings', { amount: pack.saving })}
                                       </p>
@@ -986,12 +999,21 @@ export default function BookingFlow({
   );
 }
 
+// What the checkout said went wrong, as the message the reader gets.
+function errorKind(error: CheckoutError): BookingError {
+  if (error === 'no_spots_available') return 'no_spots';
+  if (error === 'booking_too_late') return 'too_late';
+  if (error === 'code_invalid') return 'code_invalid';
+  return 'generic';
+}
+
 // ── Schedule micro-grid cell used in Step 1 (label on top, value below) ─────
-function ScheduleCell({ label, value }: { label: string; value: string }) {
+function ScheduleCell({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div>
       <p className="font-body text-[10px] tracking-[0.25em] uppercase text-ink">{label}</p>
       <p className="font-body text-sm text-ink mt-1">{value}</p>
+      {note && <p className="font-body text-[11px] text-ink/60 mt-0.5">{note}</p>}
     </div>
   );
 }

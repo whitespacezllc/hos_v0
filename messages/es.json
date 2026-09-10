@@ -1248,7 +1248,8 @@
         "past": "Pasada",
         "fullyBooked": "Completa",
         "spotsLeft": "{count, plural, =1 {Queda 1 lugar} other {Quedan # lugares}}"
-      }
+      },
+      "timezone": "Todos los horarios son hora de Costa Rica."
     },
     "categories": {
       "vinyasa": "Vinyasa",
@@ -1479,6 +1480,19 @@
       "emailLabel": "Correo:"
     }
   },
+  "book": {
+    "meta": {
+      "title": "Reserva tu estadía",
+      "description": "Consulta disponibilidad y tarifas en tiempo real y reserva tu habitación en House of Shakti, Santa Teresa, Costa Rica, directamente con la casa."
+    },
+    "heading": "Reserva tu estadía",
+    "intro": "Disponibilidad y tarifas en tiempo real de cada alojamiento, reservadas directamente con la casa.",
+    "failed": "El motor de reservas no pudo cargarse aquí.",
+    "hosted": {
+      "lead": "¿Prefieres reservar en la página de Cloudbeds?",
+      "link": "Abrir el motor de reservas alojado"
+    }
+  },
   "booking": {
     "header": {
       "close": "Cerrar",
@@ -1502,7 +1516,8 @@
       "fullyBooked": "Completa",
       "spots": "{remaining} de {capacity} lugares",
       "minutes": "{count} minutos",
-      "dateFormat": "EEE d MMM yyyy"
+      "dateFormat": "EEE d MMM yyyy",
+      "timezone": "hora de Costa Rica"
     },
     "step2": {
       "intro": "Complementos opcionales para que tu clase sea más completa. Elige los que quieras.",
@@ -1548,10 +1563,7 @@
     "step4": {
       "intro": "Paga de forma segura con tarjeta ahora, o con Venmo o en efectivo en el estudio. Elige una clase suelta o ahorra con un pack: el pack también cubre esta clase y te envía un código para las próximas.",
       "packs": {
-        "dropin": "Clase suelta",
-        "pack5": "Pack de 5",
-        "pack10": "Pack de 10",
-        "pack20": "Pack de 20"
+        "dropin": "Clase suelta"
       },
       "savings": "Ahorra ${amount}",
       "priceUsd": "${amount} USD",
@@ -1576,13 +1588,15 @@
       "errors": {
         "noSpots": "Lo sentimos, esta clase ya está completa.",
         "tooLate": "Las reservas cierran 1 hora antes de la clase.",
-        "generic": "Algo salió mal. Inténtalo de nuevo."
+        "generic": "Algo salió mal. Inténtalo de nuevo.",
+        "codeInvalid": "Ese código ya no es válido: quítalo e inténtalo de nuevo."
       },
       "pay": {
         "card": "Confirmar y pagar",
         "venmo": "Pagar con Venmo",
         "cash": "Reservar"
-      }
+      },
+      "packOf": "Pack de {count}"
     },
     "navigation": {
       "back": "Atrás",
@@ -1601,7 +1615,8 @@
       "total": "Total",
       "dateFormat": "EEE d MMM",
       "hide": "Ocultar",
-      "details": "Ver detalles"
+      "details": "Ver detalles",
+      "timezone": "hora de Costa Rica"
     },
     "confirmation": {
       "reserved": "Reservado",
@@ -1631,7 +1646,8 @@
       "backToClasses": "Volver a las clases",
       "dateFormat": "EEEE d 'de' MMMM 'de' yyyy",
       "icsDescription": "Clase de yoga con {instructor} en House of Shakti. Ref.: {ref}",
-      "icsLocation": "{location}, House of Shakti, Costa Rica"
+      "icsLocation": "{location}, House of Shakti, Costa Rica",
+      "timezone": "hora de Costa Rica"
     },
     "venmo": {
       "title": "Pagar con Venmo",
@@ -1645,13 +1661,46 @@
       "cancel": "Cancelar",
       "paid": "Ya pagué"
     },
-    "done": {
-      "title": "¡Reserva confirmada!",
-      "body": "Tu reserva fue procesada exitosamente. Recibirás un email de confirmación con todos los detalles.",
-      "seeYou": "Nos vemos en el shala",
-      "brand": "House of Shakti · Costa Rica",
-      "home": "Ir al inicio",
-      "more": "Más clases"
+    "receipt": {
+      "eyebrow": {
+        "confirmed": "Confirmada",
+        "pending": "Reservada",
+        "declined": "Pago no completado",
+        "error": "Algo salió mal",
+        "notFound": "Reserva no encontrada",
+        "review": "Confirmando el pago"
+      },
+      "headline": {
+        "confirmed": "Tu práctica te espera.",
+        "pending": "Tu lugar está reservado.",
+        "declined": "No se realizó ningún cargo.",
+        "error": "No pudimos confirmar el pago.",
+        "notFound": "No encontramos esa reserva.",
+        "review": "Estamos confirmando tu pago."
+      },
+      "body": {
+        "confirmed": "Tu pago se procesó y tu lugar está confirmado. Te enviamos los detalles por correo.",
+        "pending": "Tu lugar queda reservado hasta que recibamos tu pago. Te enviamos los detalles por correo.",
+        "declined": "Tu pago fue rechazado o cancelado y el lugar quedó liberado. Puedes reservar de nuevo cuando quieras.",
+        "error": "Si se te hizo un cargo, no te preocupes: escríbenos y lo resolvemos de inmediato.",
+        "notFound": "Revisa el enlace de tu correo o escríbenos y te ayudamos.",
+        "review": "Tilopay reportó tu pago como aprobado y lo estamos verificando. Tu lugar está reservado y recibirás un correo en cuanto quede confirmado."
+      },
+      "reference": "Referencia de reserva",
+      "class": "Clase",
+      "instructor": "Instructor/a",
+      "date": "Fecha",
+      "time": "Hora",
+      "duration": "Duración",
+      "location": "Lugar",
+      "total": "Total",
+      "free": "Gratis",
+      "minutes": "{count} minutos",
+      "timezone": "hora de Costa Rica",
+      "bookAgain": "Reservar de nuevo",
+      "backToClasses": "Volver a las clases",
+      "whatsapp": "Escríbenos por WhatsApp",
+      "dateFormat": "EEEE d 'de' MMMM 'de' yyyy"
     }
   },
   "packs": {
@@ -1698,17 +1747,104 @@
         "body": "No pudimos confirmar tu pago automáticamente. Si se te hizo un cargo, no te preocupes: contáctanos y lo resolvemos de inmediato."
       },
       "bookClass": "Reservar una clase",
-      "tryAgain": "Intentar de nuevo"
+      "tryAgain": "Intentar de nuevo",
+      "code": {
+        "label": "Tu código de clases",
+        "body": "{count, plural, =1 {1 clase} other {# clases}}. También te lo enviamos por correo: ingrésalo en el campo «Código de referido / pack» al reservar."
+      },
+      "review": {
+        "title": "Estamos confirmando tu pago",
+        "body": "Tilopay reportó tu pago como aprobado y lo estamos verificando. Tu código de clases llegará por correo en cuanto quede confirmado."
+      }
     }
   },
   "email": {
+    "common": {
+      "brand": "House of Shakti",
+      "tagline": "Santuario de yoga · Santa Teresa, Costa Rica",
+      "timezone": "Todos los horarios son hora de Costa Rica (Santa Teresa, UTC−6).",
+      "questions": "¿Dudas? Responde a este correo o escríbenos por WhatsApp.",
+      "whatsapp": "WhatsApp {phone}",
+      "signoff": "Nos vemos en el mat,",
+      "team": "El equipo de House of Shakti",
+      "footer": "House of Shakti · Santa Teresa, Puntarenas, Costa Rica"
+    },
+    "booking": {
+      "subject": {
+        "confirmed": "Confirmada: {className}, {date} — House of Shakti",
+        "paid": "Pago recibido: {className}, {date} — House of Shakti",
+        "pending": "Reservada: {className}, {date} — House of Shakti",
+        "cancelled": "Cancelada: {className}, {date} — House of Shakti"
+      },
+      "preheader": {
+        "confirmed": "Tu lugar está confirmado. Referencia {reference}.",
+        "paid": "Pago recibido: tu lugar está confirmado. Referencia {reference}.",
+        "pending": "Tu lugar queda reservado hasta el pago. Referencia {reference}.",
+        "cancelled": "La reserva {reference} fue cancelada."
+      },
+      "heading": {
+        "confirmed": "Tu práctica está reservada",
+        "paid": "Pago recibido",
+        "pending": "Tu lugar está reservado",
+        "cancelled": "Tu reserva fue cancelada"
+      },
+      "hello": "Hola, {firstName}:",
+      "intro": {
+        "confirmed": "Tu lugar en <strong>{className}</strong> está confirmado. Aquí tienes todo lo que necesitas.",
+        "paid": "Recibimos tu pago. Tu lugar en <strong>{className}</strong> está confirmado.",
+        "pending": "Te guardamos un lugar en <strong>{className}</strong>. La reserva queda confirmada en cuanto recibamos tu pago.",
+        "cancelled": "Tu reserva <strong>{reference}</strong> para <strong>{className}</strong> el {date} a las {time} fue cancelada."
+      },
+      "pack": {
+        "confirmed": "Esta clase está cubierta por tu <strong>{packName}</strong>. Tu código personal para las clases restantes llega en un correo aparte.",
+        "pending": "Estás comprando un <strong>{packName}</strong> junto con esta clase. En cuanto recibamos el pago te enviaremos tu código personal para las clases restantes.",
+        "code": "Esta clase está cubierta por tu pack de clases (código <strong>{code}</strong>)."
+      },
+      "creditReturned": "La clase volvió a tu pack: usa tu código para reservar otra.",
+      "labels": {
+        "reference": "Referencia de reserva",
+        "class": "Clase",
+        "instructor": "Instructor/a",
+        "date": "Fecha",
+        "time": "Hora",
+        "duration": "Duración",
+        "location": "Lugar",
+        "extras": "Extras",
+        "payment": "Pago",
+        "total": "Total",
+        "amountDue": "Monto a pagar"
+      },
+      "minutes": "{count} minutos",
+      "included": "Incluido",
+      "free": "Gratis",
+      "discount": "Código {code}",
+      "paymentMethod": {
+        "card": "Pagado con tarjeta",
+        "cash": "Efectivo en el estudio",
+        "venmo": "Venmo",
+        "pack": "Pack de clases",
+        "free": "Sin cargo"
+      },
+      "instructions": {
+        "venmo": "Envía <strong>{amount}</strong> por Venmo a <strong>{handle}</strong> y agrega tu referencia de reserva <strong>{reference}</strong> en la nota. Confirmaremos tu lugar en cuanto llegue.",
+        "cash": "Paga <strong>{amount}</strong> en efectivo en la recepción del estudio antes de tu clase. Tu lugar queda reservado hasta entonces."
+      },
+      "arrive": "Te sugerimos llegar unos minutos antes para instalarte con calma.",
+      "cancellation": "Cancelación gratuita hasta 2 horas antes de la clase: responde a este correo o escríbenos por WhatsApp.",
+      "calendar": "Adjuntamos una invitación de calendario para que la clase quede directamente en tu agenda.",
+      "cancelledPayment": "Si tienes alguna duda sobre un pago, responde a este correo y lo resolvemos.",
+      "schedule": "Ver el horario"
+    },
     "packCode": {
       "subject": "Tu {packName} está listo — House of Shakti",
+      "preheader": "Tu código personal de clases: {code}",
       "heading": "Tu pack de clases está listo",
       "hello": "Hola, {firstName}:",
       "thanks": "Gracias por tu <strong>{packName}</strong>. Tienes <strong>{count, plural, =1 {1 clase} other {# clases}}</strong> para disfrutar en la shala.",
       "useCode": "Usa este código al reservar una clase; el costo de la clase quedará cubierto:",
-      "works": "El código sirve para {count} reservas. Ingrésalo en el campo «Código de referido» al reservar. Los complementos opcionales (como el baño de hielo y el sauna) se cobran aparte.",
+      "works": "El código sirve para {count} reservas. Ingrésalo en el campo «Código de referido / pack» al reservar. Los extras opcionales se cobran aparte.",
+      "remaining": "Te {count, plural, =1 {queda 1 clase} other {quedan # clases}} en este código.",
+      "bookNow": "Reservar una clase",
       "signoff": "Nos vemos en el mat,"
     }
   }

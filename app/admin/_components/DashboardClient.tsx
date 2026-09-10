@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { inCostaRica } from '@/lib/costa-rica-time';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -346,7 +347,7 @@ function ChartHeading({ title, subtitle }: { title: string; subtitle?: string })
 type UpcomingClass = DashboardData['upcoming'][number];
 
 function UpcomingClassRow({ clase }: { clase: UpcomingClass }) {
-  const startsAt = new Date(clase.startsAt);
+  const startsAt = inCostaRica(clase.startsAt);
   const booked = clase.capacity - clase.spotsRemaining;
   const remaining = clase.spotsRemaining;
   const remainingPct = clase.capacity > 0 ? remaining / clase.capacity : 0;

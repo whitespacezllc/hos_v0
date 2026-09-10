@@ -2,6 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
+import { costaRicaInstant } from '@/lib/costa-rica-time';
+
+// A validity window is typed as two dates; it runs from the first's midnight
+// to the last's end of day, in Santa Teresa.
+const fromDay = (d?: string) => (d ? costaRicaInstant(d, '00:00').toISOString() : null);
+const untilDay = (d?: string) => (d ? new Date(costaRicaInstant(d, '23:59').getTime() + 59_999).toISOString() : null);
 
 type CodeInput = {
   code: string;
@@ -31,8 +37,8 @@ export async function createReferralCode(data: CodeInput) {
     is_active: data.isActive,
     usage_limit: data.usageLimit ?? null,
     min_purchase_usd: data.minPurchaseUsd,
-    valid_from: data.validFrom || null,
-    valid_until: data.validUntil || null,
+    valid_from: fromDay(data.validFrom),
+    valid_until: untilDay(data.validUntil),
   });
   if (error) throw new Error(error.message);
   revalidatePath('/admin/refers');
@@ -51,8 +57,8 @@ export async function updateReferralCode(id: string, data: CodeInput) {
     is_active: data.isActive,
     usage_limit: data.usageLimit ?? null,
     min_purchase_usd: data.minPurchaseUsd,
-    valid_from: data.validFrom || null,
-    valid_until: data.validUntil || null,
+    valid_from: fromDay(data.validFrom),
+    valid_until: untilDay(data.validUntil),
   }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/refers');
