@@ -31,6 +31,7 @@ import { NativeSelect } from '@/components/admin/NativeSelect';
 import { RowIconButton } from '@/app/admin/clases/_components/ClasesClient';
 import { confirmBooking, cancelBookingAdmin } from '@/app/actions/bookings';
 import { paymentMethodLabel } from '@/lib/payment-methods';
+import { costaRicaDateString, inCostaRica } from '@/lib/costa-rica-time';
 
 type SerializedBooking = Omit<Booking, 'createdAt'> & { createdAt: string };
 
@@ -42,6 +43,13 @@ type ClassInfo = {
   priceUsd: number;
 };
 type UpsellInfo = { id: string; name: string; priceUsd: number };
+
+// The amount this booking is worth: what the customer paid or owes for it
+// (the database's total, which already knows about codes and extras) plus
+// the pack when the class was bought together with one.
+function bookingTotal(b: SerializedBooking): number {
+  return (b.totalUsd ?? 0) + (b.packPurchase?.amountUsd ?? 0);
+}
 
 // Map paymentStatus → Badge variant + display label (matches Calendar mapping).
 function paymentBadge(status: Booking['paymentStatus']): {
@@ -123,8 +131,8 @@ export default function ReservasClient({
       .filter((b) => {
         if (statusFilter !== 'all' && b.paymentStatus !== statusFilter) return false;
         if (classFilter !== 'all' && b.className !== classFilter) return false;
-        if (fromDate && b.createdAt.slice(0, 10) < fromDate) return false;
-        if (toDate && b.createdAt.slice(0, 10) > toDate) return false;
+        if (fromDate && costaRicaDateString(b.createdAt) < fromDate) return false;
+        if (toDate && costaRicaDateString(b.createdAt) > toDate) return false;
         if (search) {
           const q = search.toLowerCase();
           if (
@@ -206,11 +214,10 @@ export default function ReservasClient({
   const selectedUpsells = selectedBooking
     ? (selectedBooking.upsells ?? []).map((id) => upsellMap[id]).filter(Boolean)
     : [];
-  const selectedTotal =
-    selectedBooking && selectedClass
-      ? selectedClass.priceUsd * selectedBooking.persons +
-        selectedUpsells.reduce((acc, u) => acc + u.priceUsd, 0)
-      : 0;
+  // What the customer pays: the booking's own total (the class, or nothing
+  // when a code covers it, plus extras) and, for a class bought together with
+  // a pack, the pack itself.
+  const selectedTotal = selectedBooking ? bookingTotal(selectedBooking) : 0;
 
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
@@ -423,9 +430,7 @@ function BookingsTable({
             {bookings.map((b) => {
               const clase = classMap[b.classId];
               const upsells = (b.upsells ?? []).map((id) => upsellMap[id]).filter(Boolean);
-              const total = clase
-                ? clase.priceUsd * b.persons + upsells.reduce((s, u) => s + u.priceUsd, 0)
-                : 0;
+              const total = bookingTotal(b);
               const badge = paymentBadge(b.paymentStatus);
               // Pending bookings are the ones surfaced in the sidebar badge —
               // give them a distinct tone (amber accent + tint) so the admin can
@@ -463,13 +468,13 @@ function BookingsTable({
                     <p className="font-body text-sm text-ink truncate">{b.className}</p>
                     {clase && (
                       <p className="font-body text-xs text-ink/50 mt-0.5">
-                        {format(new Date(clase.startsAt), 'MMM d · HH:mm', { locale: enUS })}
+                        {format(inCostaRica(clase.startsAt), 'MMM d · HH:mm', { locale: enUS })}
                       </p>
                     )}
                   </td>
                   <td className="px-4 py-4 hidden md:table-cell">
                     <span className="font-body text-sm text-ink/80">
-                      {format(new Date(b.createdAt), 'MMM d, yyyy', { locale: enUS })}
+                      {format(inCostaRica(b.createdAt), 'MMM d, yyyy', { locale: enUS })}
                     </span>
                   </td>
                   <td className="px-4 py-4 hidden lg:table-cell">
@@ -684,12 +689,22 @@ function BookingDrawerContent({
             <DrawerRow icon={<Phone width={14} height={14} strokeWidth={1.5} />} label="Phone" value={booking.phone} />
           )}
           {booking.referralCode && (
-            <DrawerRow icon={<Tag width={14} height={14} strokeWidth={1.5} />} label="Promo code" value={booking.referralCode} />
+            <DrawerRow icon={<Tag width={14} height={14} strokeWidth={1.5} />} label={booking.referralCode.startsWith('PACK-') ? 'Pack code' : 'Promo code'} value={booking.referralCode} />
+          )}
+          {booking.packPurchase && (
+            <DrawerRow
+              icon={<Tag width={14} height={14} strokeWidth={1.5} />}
+              label="Bought with pack"
+              value={`$${booking.packPurchase.amountUsd} · ${booking.packPurchase.status}${booking.packPurchase.code ? ` · ${booking.packPurchase.code}` : ''}`}
+            />
+          )}
+          {booking.tilopayTransaction && (
+            <DrawerRow icon={<DollarSign width={14} height={14} strokeWidth={1.5} />} label="Tilopay transaction" value={booking.tilopayTransaction} />
           )}
           <DrawerRow
             icon={<CalendarDays width={14} height={14} strokeWidth={1.5} />}
             label="Booked on"
-            value={format(new Date(booking.createdAt), 'MMM d, yyyy · HH:mm', { locale: enUS })}
+            value={format(inCostaRica(booking.createdAt), 'MMM d, yyyy · HH:mm', { locale: enUS })}
           />
         </Section>
 
@@ -700,7 +715,7 @@ function BookingDrawerContent({
             <DrawerRow
               icon={<CalendarDays width={14} height={14} strokeWidth={1.5} />}
               label="Date"
-              value={format(new Date(bookingClass.startsAt), 'MMM d, yyyy · HH:mm', { locale: enUS })}
+              value={`${format(inCostaRica(bookingClass.startsAt), 'MMM d, yyyy · HH:mm', { locale: enUS })} · Costa Rica`}
             />
             <DrawerRow
               icon={<MapPin width={14} height={14} strokeWidth={1.5} />}

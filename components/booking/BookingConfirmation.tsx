@@ -3,10 +3,11 @@
 import { motion, Variants } from 'framer-motion';
 import { useRouter } from '@/i18n/navigation';
 import { Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { addMinutes, format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Upsell, ReferralCode } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
+import { inCostaRica } from '@/lib/costa-rica-time';
 import { VENMO_HANDLE } from '@/lib/payment-methods';
 
 // Word-by-word reveal — same easing as the home Introduction headline
@@ -55,9 +56,10 @@ export function BookingConfirmation({
   const router = useRouter();
 
   const HEADLINE = t('headline');
-  const endTime = new Date(classDate.getTime() + durationMinutes * 60000);
-  const dateStr = format(classDate, t('dateFormat'), { locale });
-  const timeStr = `${format(classDate, 'HH:mm')} — ${format(endTime, 'HH:mm')}`;
+  // Santa Teresa's clock, whatever the reader's.
+  const start = inCostaRica(classDate);
+  const dateStr = format(start, t('dateFormat'), { locale });
+  const timeStr = `${format(start, 'HH:mm')} — ${format(addMinutes(start, durationMinutes), 'HH:mm')} · ${t('timezone')}`;
   const isTotalFree = total === 0;
   const isPending = pendingMethod !== null;
 

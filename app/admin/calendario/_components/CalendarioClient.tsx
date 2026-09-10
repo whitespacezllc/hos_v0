@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
+import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import { enUS } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -79,12 +80,12 @@ type SerializedClass = Omit<YogaClass, 'startsAt'> & { startsAt: string };
 type SerializedBooking = Omit<Booking, 'createdAt'> & { createdAt: string };
 
 function classTopPx(startsAt: string): number {
-  const d = new Date(startsAt);
+  const d = inCostaRica(startsAt);
   const minutes = d.getHours() * 60 + d.getMinutes() - GRID_START_HOUR * 60;
   return Math.max(0, (minutes / 60) * HOUR_PX);
 }
 
-// Local yyyy-MM-dd for a day (calendar works in local time).
+// yyyy-MM-dd for a day (the calendar's days are Costa Rica's).
 function localDateStr(day: Date): string {
   const y = day.getFullYear();
   const m = String(day.getMonth() + 1).padStart(2, '0');
@@ -161,16 +162,12 @@ export default function CalendarioClient({
   // today is within the displayed week, otherwise 0 (Monday).
   const [mobileDayIdx, setMobileDayIdx] = useState(0);
 
-  const weekDays = useMemo(() => {
-    const today = new Date();
-    const reference = today.getDay() === 0 ? addDays(today, 1) : today;
-    const monday = addDays(startOfWeek(reference, { weekStartsOn: 1 }), weekOffset * 7);
-    return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-  }, [weekOffset]);
+  // Monday to Sunday in Santa Teresa, whatever the admin's own clock says.
+  const weekDays = useMemo(() => costaRicaWeekDays(weekOffset), [weekOffset]);
 
   // Whenever the week changes, jump mobile selector to today if it's in view.
   useEffect(() => {
-    const todayIdx = weekDays.findIndex((d) => isSameDay(d, new Date()));
+    const todayIdx = weekDays.findIndex((d) => isSameDay(d, nowInCostaRica()));
     setMobileDayIdx(todayIdx >= 0 ? todayIdx : 0);
   }, [weekDays]);
 
@@ -189,7 +186,7 @@ export default function CalendarioClient({
     initialClasses
       .filter((c) => c.isActive)
       .forEach((c) => {
-        const dayIdx = weekDays.findIndex((d) => isSameDay(new Date(c.startsAt), d));
+        const dayIdx = weekDays.findIndex((d) => isSameDay(inCostaRica(c.startsAt), d));
         if (dayIdx !== -1) map.get(dayIdx)!.push(c);
       });
     return map;
@@ -578,7 +575,7 @@ function DesktopWeekGrid({
 }
 
 function DayHeader({ day }: { day: Date }) {
-  const today = isSameDay(day, new Date());
+  const today = isSameDay(day, nowInCostaRica());
   return (
     <div className="text-center pb-4 mb-2 border-b border-ink/10">
       <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
@@ -635,7 +632,7 @@ function CalendarClassCard({
         {clase.name}
       </p>
       <p className="font-body text-xs text-ink/60 mt-1">
-        {format(new Date(clase.startsAt), 'HH:mm')}
+        {format(inCostaRica(clase.startsAt), 'HH:mm')}
       </p>
       {height >= 64 && (
         <p className="font-body text-xs text-ink/50 mt-2">
@@ -662,7 +659,7 @@ function MobileDaySelector({
     <div className="mb-6 -mx-6 px-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex gap-2 min-w-max pb-1">
         {days.map((day, i) => {
-          const today = isSameDay(day, new Date());
+          const today = isSameDay(day, nowInCostaRica());
           const active = i === selected;
           return (
             <button
@@ -750,7 +747,7 @@ function MobileDayList({
             style={{ borderLeftColor: cat.stripe, backgroundColor: `${cat.stripe}14` }}
           >
             <div className="font-body text-sm text-ink font-medium w-12">
-              {format(new Date(clase.startsAt), 'HH:mm')}
+              {format(inCostaRica(clase.startsAt), 'HH:mm')}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-body text-sm font-medium text-ink truncate">
@@ -854,7 +851,7 @@ function DrawerContent({
           <MetaRow
             icon={<CalendarIcon width={16} height={16} strokeWidth={1.5} />}
             label="Date & time"
-            value={format(new Date(clase.startsAt), 'EEEE, MMMM d · HH:mm', { locale: enUS })}
+            value={`${format(inCostaRica(clase.startsAt), 'EEEE, MMMM d · HH:mm', { locale: enUS })} · Costa Rica`}
           />
           <MetaRow
             icon={<Clock width={16} height={16} strokeWidth={1.5} />}

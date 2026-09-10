@@ -2,8 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service';
 import type { Database } from '@/types/supabase';
 import type { ClassInstancePayload } from '@/types';
+import { requireAdmin } from '@/lib/auth/require-admin';
+import { costaRicaDateString, costaRicaWeekStart } from '@/lib/costa-rica-time';
 
 type ClassInsert = Database['public']['Tables']['classes']['Insert'];
 type ClassUpdate = Partial<Database['public']['Tables']['classes']['Update']>;
@@ -11,17 +14,10 @@ type TemplateInsert = Database['public']['Tables']['class_templates']['Insert'];
 type TemplateUpdate = Database['public']['Tables']['class_templates']['Update'];
 
 
-// Monday (yyyy-MM-dd) of the week containing `date`.
+// Monday (yyyy-MM-dd) of the Costa Rica week containing `date`. The server
+// runs in UTC; the schedule lives in Santa Teresa.
 function mondayOf(date: Date): string {
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(date);
-  monday.setDate(date.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, '0');
-  const d = String(monday.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return costaRicaDateString(costaRicaWeekStart(date));
 }
 
 // How many weeks ahead the calendar materializes the recurring schedule.
@@ -36,7 +32,8 @@ const WEEKS_AHEAD = 13;
  * manual "Regenerate week" button and widens the planning window.
  */
 export async function ensureUpcomingWeeks(): Promise<void> {
-  const supabase = await createServiceClient();
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
   const now = new Date();
 
   // Distinct Mondays for weeks 0..WEEKS_AHEAD.
@@ -63,6 +60,7 @@ export async function ensureUpcomingWeeks(): Promise<void> {
 
 // ─── Class templates (recurring weekly schedule) ────────────────────────────
 export async function createTemplate(data: TemplateInsert) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('class_templates').insert(data);
   if (error) throw new Error(error.message);
@@ -71,6 +69,7 @@ export async function createTemplate(data: TemplateInsert) {
 }
 
 export async function updateTemplate(id: string, data: TemplateUpdate) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('class_templates').update(data).eq('id', id);
   if (error) throw new Error(error.message);
@@ -91,6 +90,7 @@ export async function updateTemplate(id: string, data: TemplateUpdate) {
 }
 
 export async function toggleTemplateActive(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { data: current, error: fetchError } = await supabase
     .from('class_templates')
@@ -114,6 +114,7 @@ export async function toggleTemplateActive(id: string) {
  * instance blocks the hard delete (FK), fall back to deactivating the template.
  */
 export async function deleteTemplate(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
 
   await supabase
@@ -137,6 +138,7 @@ export async function deleteTemplate(id: string) {
 }
 
 export async function toggleClassActive(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { data: current, error: fetchError } = await supabase
     .from('classes')
@@ -156,6 +158,7 @@ export async function toggleClassActive(id: string) {
 }
 
 export async function updateClassDetails(id: string, data: ClassUpdate) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase
     .from('classes')
@@ -168,6 +171,7 @@ export async function updateClassDetails(id: string, data: ClassUpdate) {
 }
 
 export async function deleteClass(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase
     .from('classes')
@@ -180,6 +184,7 @@ export async function deleteClass(id: string) {
 }
 
 export async function createManualClass(data: ClassInsert) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('classes').insert(data);
   if (error) throw new Error(error.message);
@@ -202,6 +207,7 @@ function slugify(name: string): string {
 }
 
 export async function createClassInstance(payload: ClassInstancePayload) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('classes').insert({
     name: payload.name,
@@ -226,6 +232,7 @@ export async function createClassInstance(payload: ClassInstancePayload) {
 }
 
 export async function updateClassInstance(id: string, payload: ClassInstancePayload) {
+  await requireAdmin();
   const supabase = await createServiceClient();
 
   // Preserve existing bookings when capacity changes: keep `occupied` fixed and

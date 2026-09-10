@@ -1,4 +1,4 @@
-import { format, addMinutes } from 'date-fns';
+import { addMinutes } from 'date-fns';
 import { BUSINESS, EMAIL_DOMAIN } from '@/lib/business';
 
 type ICSParams = {
@@ -11,9 +11,21 @@ type ICSParams = {
   organizerName?: string;
 };
 
+// UTC, with the trailing Z: `20260911T130000Z`. A floating local time (no Z)
+// would mean "07:00 wherever the reader's calendar is", which is only right
+// for a reader in Costa Rica. An instant is right for everyone — the calendar
+// shows it in its own zone, and in Santa Teresa that is 07:00.
 function formatICSDate(date: Date): string {
-  // Formato: 20260504T063000 (local time, sin Z para que el calendario use la hora local)
-  return format(date, "yyyyMMdd'T'HHmmss");
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+// Commas, semicolons and backslashes are structural in iCalendar text values.
+function escapeICSText(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
 }
 
 export function generateICS(params: ICSParams): string {
@@ -34,13 +46,14 @@ export function generateICS(params: ICSParams): string {
     `DTSTAMP:${now}`,
     `DTSTART:${formatICSDate(startsAt)}`,
     `DTEND:${formatICSDate(endsAt)}`,
-    `SUMMARY:${title}`,
-    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
-    `LOCATION:${location}`,
+    `SUMMARY:${escapeICSText(title)}`,
+    `DESCRIPTION:${escapeICSText(description)}`,
+    `LOCATION:${escapeICSText(location)}`,
+    `URL:${BUSINESS.url}/yoga`,
     // The general mailbox is the one that handles bookings; `info@` was
     // invented and lived on a domain the business does not own.
     organizerName
-      ? `ORGANIZER;CN=${organizerName}:mailto:${BUSINESS.email.general}`
+      ? `ORGANIZER;CN=${escapeICSText(organizerName)}:mailto:${BUSINESS.email.general}`
       : '',
     'STATUS:CONFIRMED',
     'SEQUENCE:0',

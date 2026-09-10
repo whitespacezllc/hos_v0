@@ -10,6 +10,7 @@ import {
   isWithinInterval,
 } from 'date-fns';
 import { createServiceClient } from '@/lib/supabase/server';
+import { inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 
 // ─── Row shapes (only the columns we read) ──────────────────────────────────
 type ClassRow = {
@@ -96,7 +97,8 @@ function bookingRevenue(b: BookingRow, cls: ClassRow | undefined): number {
 
 export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createServiceClient();
-  const now = new Date();
+  // Today, this week and this month are Santa Teresa's.
+  const now = nowInCostaRica();
 
   const [classesRes, bookingsRes, templatesRes] = await Promise.all([
     supabase
@@ -119,7 +121,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const classById = new Map(classes.map((c) => [c.id, c]));
   const classDate = (b: BookingRow) => {
     const c = classById.get(b.class_id);
-    return c ? new Date(c.starts_at) : null;
+    return c ? inCostaRica(c.starts_at) : null;
   };
 
   // ─── Stat cards ───────────────────────────────────────────────────────────
@@ -145,17 +147,17 @@ export async function getDashboardData(): Promise<DashboardData> {
   }).length;
 
   const revenueThisMonth = bookings.reduce((acc, b) => {
-    return acc + (b.created_at && new Date(b.created_at) >= monthStart
+    return acc + (b.created_at && inCostaRica(b.created_at) >= monthStart
       ? bookingRevenue(b, classById.get(b.class_id))
       : 0);
   }, 0);
 
   const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const upcomingActive = classes.filter(
-    (c) => c.is_active && new Date(c.starts_at) >= now,
+    (c) => c.is_active && inCostaRica(c.starts_at) >= now,
   );
   const classesNext7Days = upcomingActive.filter(
-    (c) => new Date(c.starts_at) <= in7,
+    (c) => inCostaRica(c.starts_at) <= in7,
   ).length;
 
   const avgOccupancy =
@@ -178,7 +180,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const dailyBookings = Array.from({ length: 30 }, (_, i) => {
     const day = subDays(now, 29 - i);
     const reservas = bookings.filter((b) =>
-      isSameDay(new Date(b.created_at), day),
+      isSameDay(inCostaRica(b.created_at), day),
     ).length;
     return { date: format(day, 'd MMM'), reservas };
   });
@@ -188,7 +190,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const wStart = startOfWeek(ref, MONDAY);
     const wEnd = endOfWeek(ref, MONDAY);
     const ingresos = bookings.reduce((acc, b) => {
-      const created = new Date(b.created_at);
+      const created = inCostaRica(b.created_at);
       return acc +
         (isWithinInterval(created, { start: wStart, end: wEnd })
           ? bookingRevenue(b, classById.get(b.class_id))
@@ -272,7 +274,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     }
     const rev = bookingRevenue(b, c);
     if (rev > 0) {
-      const created = new Date(b.created_at);
+      const created = inCostaRica(b.created_at);
       const m = ensure(c.instructor_id, c.instructors?.name ?? 'Unknown');
       if (created >= monthStart) m.revenueThisMonth += rev;
       if (isWithinInterval(created, { start: thisWeekStart, end: thisWeekEnd }))

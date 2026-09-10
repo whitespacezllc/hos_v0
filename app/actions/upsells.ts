@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export async function createUpsell(data: {
@@ -9,6 +10,7 @@ export async function createUpsell(data: {
   priceUsd: number;
   isActive: boolean;
 }) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('upsells').insert({
     name: data.name,
@@ -24,6 +26,7 @@ export async function updateUpsell(
   id: string,
   data: { name: string; description: string; priceUsd: number; isActive: boolean },
 ) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { error } = await supabase.from('upsells').update({
     name: data.name,
@@ -36,6 +39,7 @@ export async function updateUpsell(
 }
 
 export async function toggleUpsellActive(id: string) {
+  await requireAdmin();
   const supabase = await createServiceClient();
   const { data: current, error: fetchError } = await supabase
     .from('upsells').select('is_active').eq('id', id).single();
@@ -47,6 +51,7 @@ export async function toggleUpsellActive(id: string) {
 }
 
 export async function deleteUpsell(id: string) {
+  await requireAdmin();
   // Soft delete: marcamos como inactivo para no romper bookings que lo referencian
   const supabase = await createServiceClient();
   const { error } = await supabase

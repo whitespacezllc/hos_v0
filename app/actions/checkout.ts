@@ -1,12 +1,23 @@
 'use server';
 
-import { createServiceClient } from '@/lib/supabase/server';
 import { createPayment } from '@/lib/tilopay';
-import { confirmPackPayment } from '@/app/actions/packs';
 import { tilopayReturnUrl } from '@/lib/tilopay-return';
+import { notifyBooking } from '@/lib/booking-notify';
+import {
+  cancelPendingBooking,
+  consumeReferralUse,
+  isMissingLocaleColumn,
+  isPackCode,
+  localeOf,
+  newBookingReference,
+  redeemPackCode,
+  releaseSpot,
+  reserveSpot,
+  returnPackCredit,
+  service,
+  type Service,
+} from '@/lib/checkout/core';
 import type { AppLocale } from '@/i18n/routing';
-
-export type CheckoutPackType = 'dropin' | 'pack5' | 'pack10' | 'pack20';
 
 // How the customer chose to pay. 'card' goes through Tilopay; 'cash'/'venmo' are
 // paid in person and confirmed manually by the admin from /admin/reservas.
@@ -26,240 +37,293 @@ export type CheckoutInput = {
   classId: string;
   upsellIds: string[];
   personalData: PersonalData;
-  packType: CheckoutPackType;
+  /** A class pack to buy together with this class (its id in class_packs), or null for a drop-in. */
+  packId: string | null;
   paymentMethod: CheckoutPaymentMethod;
-  /**
-   * The language the booking was made in. Only used to build Tilopay's return
-   * URL, so the receipt page and the pack-code email come back in the same
-   * language; it is not stored.
-   */
+  /** The language the booking is made in — stored with it, so every email about it speaks it. */
   locale?: AppLocale;
 };
 
-type CheckoutResult =
+export type CheckoutResult =
   // Fully covered by a pack/referral code — confirmed immediately, no payment.
   | { ok: true; status: 'free'; bookingReference: string }
   // Cash/Venmo — booking created as pending; admin collects payment in person.
   | { ok: true; status: 'offline'; bookingReference: string; paymentMethod: 'cash' | 'venmo' }
   // Card — hand off to Tilopay's hosted payment page.
   | { ok: true; status: 'redirect'; url: string }
-  | { ok: false; error: string };
+  | { ok: false; error: CheckoutError };
 
-const PACK_COUNT: Record<Exclude<CheckoutPackType, 'dropin'>, number> = {
-  pack5: 5,
-  pack10: 10,
-  pack20: 20,
-};
+export type CheckoutError =
+  | 'class_not_found'
+  | 'booking_too_late'
+  | 'no_spots_available'
+  | 'pack_not_found'
+  | 'code_invalid'
+  | 'already_pending'
+  | 'payment_init_failed'
+  | 'database_error';
+
+function clean(s: string | undefined): string | null {
+  const v = s?.trim();
+  return v ? v : null;
+}
+
+// ─── What a typed code is worth ──────────────────────────────────────────────
+type CodeOutcome =
+  | { kind: 'none' }
+  | { kind: 'invalid' }
+  | { kind: 'pack'; code: string }
+  | { kind: 'referral'; code: string; discount: number };
+
+async function evaluateCode(
+  supabase: Service,
+  raw: string | null,
+  classPrice: number,
+  upsells: { id: string; price: number }[],
+): Promise<CodeOutcome> {
+  if (!raw) return { kind: 'none' };
+  const code = raw.toUpperCase();
+  const upsellsTotal = upsells.reduce((a, u) => a + u.price, 0);
+  const base = classPrice + upsellsTotal;
+
+  if (isPackCode(code)) {
+    const { data: pack } = await supabase
+      .from('pack_purchases')
+      .select('status, classes_total, classes_used')
+      .eq('code', code)
+      .maybeSingle();
+    if (pack && pack.status === 'paid' && pack.classes_used < pack.classes_total) return { kind: 'pack', code };
+    return { kind: 'invalid' };
+  }
+
+  const { data: ref } = await supabase
+    .from('referral_codes')
+    .select('*')
+    .eq('code', code)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (!ref) return { kind: 'invalid' };
+  const now = Date.now();
+  const okDates =
+    (!ref.valid_from || now >= new Date(ref.valid_from).getTime()) &&
+    (!ref.valid_until || now <= new Date(ref.valid_until).getTime());
+  const okLimit = ref.usage_limit == null || ref.usage_count < ref.usage_limit;
+  const okMin = base >= Number(ref.min_purchase_usd ?? 0);
+  if (!okDates || !okLimit || !okMin) return { kind: 'invalid' };
+
+  let discount = 0;
+  if (ref.benefit_type === 'percentage' && ref.discount_percent != null) {
+    discount = base * (Number(ref.discount_percent) / 100);
+  } else if (ref.benefit_type === 'fixed' && ref.discount_fixed != null) {
+    discount = Math.min(Number(ref.discount_fixed), base);
+  } else if (ref.benefit_type === 'free_upsell' && ref.free_upsell_id) {
+    const gift = upsells.find((u) => u.id === ref.free_upsell_id);
+    discount = gift ? gift.price : 0;
+  }
+  return { kind: 'referral', code, discount: Math.round(discount * 100) / 100 };
+}
 
 // Starts checkout from the class booking flow.
-//  - dropin: pay this class (+upsells) via Tilopay. A pack/referral code may make
-//    the class free; if the total is 0 the booking is confirmed immediately.
-//  - packN: buy an N-class pack via Tilopay; on payment one credit books THIS
-//    class for free (upsells charged) and the pack code is emailed.
+//  - drop-in: pay this class (+upsells) via Tilopay, or hold it for cash/Venmo.
+//    A pack code makes the class free; a referral code discounts it. If the
+//    total is 0 the booking is confirmed on the spot.
+//  - pack: buy a pack via Tilopay (or hold it for cash/Venmo); once paid, its
+//    first credit books THIS class (upsells charged) and the code is emailed.
 export async function startBookingCheckout(input: CheckoutInput): Promise<CheckoutResult> {
-  const supabase = await createServiceClient();
-  const { classId, upsellIds, personalData, packType, paymentMethod, locale = 'en' } = input;
+  const supabase = service();
+  const { classId, upsellIds, personalData, packId, paymentMethod } = input;
+  const locale = localeOf(input.locale);
   const isOffline = paymentMethod === 'cash' || paymentMethod === 'venmo';
 
   // ── Validate class ──────────────────────────────────────────────────────────
   const { data: clase, error: classError } = await supabase
     .from('classes')
-    .select('*')
+    .select('id, is_active, starts_at, price_dropin_usd')
     .eq('id', classId)
-    .single();
+    .maybeSingle();
   if (classError || !clase || !clase.is_active) return { ok: false, error: 'class_not_found' };
 
-  const startsAt = new Date(clase.starts_at).getTime();
-  const hoursUntil = (startsAt - Date.now()) / 3_600_000;
+  const hoursUntil = (new Date(clase.starts_at).getTime() - Date.now()) / 3_600_000;
   if (hoursUntil < 1) return { ok: false, error: 'booking_too_late' };
 
-  // ── Upsells total ───────────────────────────────────────────────────────────
-  let upsellsTotal = 0;
+  // ── Upsells, priced by the database ─────────────────────────────────────────
+  let upsells: { id: string; price: number }[] = [];
   if (upsellIds.length > 0) {
-    const { data: rows } = await supabase.from('upsells').select('price_usd').in('id', upsellIds);
-    upsellsTotal = (rows ?? []).reduce((a, u) => a + Number(u.price_usd), 0);
+    const { data: rows } = await supabase
+      .from('upsells')
+      .select('id, price_usd')
+      .in('id', upsellIds)
+      .eq('is_active', true);
+    upsells = (rows ?? []).map((u) => ({ id: u.id, price: Number(u.price_usd) }));
   }
-
-  const redirect = tilopayReturnUrl(locale);
+  const upsellsTotal = upsells.reduce((a, u) => a + u.price, 0);
+  const validUpsellIds = upsells.map((u) => u.id);
   const classPrice = Number(clase.price_dropin_usd);
+  const redirect = tilopayReturnUrl();
 
-  // ── Reserve a spot (atomic) ─────────────────────────────────────────────────
-  async function reserveSpot(): Promise<boolean> {
-    const { data } = await supabase.rpc('decrement_spots', { p_class_id: classId });
-    return !!(data as { success: boolean } | null)?.success;
-  }
-  async function newRef(): Promise<string> {
-    const { data } = await supabase.rpc('generate_booking_reference');
-    return (data as string | null) ?? `HOS-${Date.now()}-XXXX`;
-  }
+  const person = {
+    first_name: personalData.firstName.trim(),
+    last_name: personalData.lastName.trim(),
+    email: personalData.email.trim().toLowerCase(),
+    phone: clean(personalData.phone),
+  };
+  const guest = {
+    is_hotel_guest: !!personalData.isHotelGuest,
+    cloudbeds_ref: clean(personalData.cloudbedsRef),
+  };
+
+  // One open hold per person per class. A second one is almost always a
+  // double click or a retry — and cash / Venmo holds cost nothing to make.
+  const { data: open } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('class_id', classId)
+    .eq('email', person.email)
+    .eq('payment_status', 'pending')
+    .limit(1);
+  if (open && open.length > 0) return { ok: false, error: 'already_pending' };
 
   // ══ PACK: buy a pack that also books this class ══════════════════════════════
-  if (packType !== 'dropin') {
-    const count = PACK_COUNT[packType];
+  if (packId) {
     const { data: pack } = await supabase
       .from('class_packs')
-      .select('id, name, classes_count, price_usd')
-      .eq('classes_count', count)
-      .eq('is_active', true)
-      .single();
-    if (!pack) return { ok: false, error: 'pack_not_found' };
+      .select('id, name, classes_count, price_usd, is_active')
+      .eq('id', packId)
+      .maybeSingle();
+    if (!pack || !pack.is_active || pack.classes_count < 2) return { ok: false, error: 'pack_not_found' };
 
-    // Create the pending pack purchase.
-    const { data: purchase, error: pErr } = await supabase
-      .from('pack_purchases')
-      .insert({
-        pack_id: pack.id,
-        first_name: personalData.firstName,
-        last_name: personalData.lastName,
-        email: personalData.email,
-        phone: personalData.phone ?? null,
-        classes_total: pack.classes_count,
-        amount_usd: pack.price_usd,
-        status: 'pending',
-        payment_method: paymentMethod,
-      })
-      .select('id')
-      .single();
-    if (pErr || !purchase) return { ok: false, error: 'database_error' };
+    if (!(await reserveSpot(supabase, classId))) return { ok: false, error: 'no_spots_available' };
 
-    if (!(await reserveSpot())) return { ok: false, error: 'no_spots_available' };
-
-    const packBookingRef = await newRef();
-    const { data: booking, error: bErr } = await supabase
-      .from('bookings')
-      .insert({
-        class_id: classId,
-        first_name: personalData.firstName,
-        last_name: personalData.lastName,
-        email: personalData.email,
-        phone: personalData.phone ?? null,
-        upsell_ids: upsellIds,
-        payment_status: 'pending',
-        payment_method: paymentMethod,
-        pack_type: packType,
-        pack_purchase_id: purchase.id,
-        booking_reference: packBookingRef,
-        is_hotel_guest: personalData.isHotelGuest,
-        cloudbeds_ref: personalData.cloudbedsRef ?? null,
-        total_usd: upsellsTotal,
-      })
-      .select('id')
-      .single();
-    if (bErr || !booking) {
-      await supabase.rpc('increment_spots', { p_class_id: classId });
+    const purchaseRow = {
+      pack_id: pack.id,
+      ...person,
+      classes_total: pack.classes_count,
+      amount_usd: Number(pack.price_usd),
+      status: 'pending',
+      payment_method: paymentMethod,
+    };
+    let purchaseRes = await supabase.from('pack_purchases').insert({ ...purchaseRow, locale }).select('id').single();
+    if (isMissingLocaleColumn(purchaseRes.error)) {
+      purchaseRes = await supabase.from('pack_purchases').insert(purchaseRow).select('id').single();
+    }
+    if (purchaseRes.error || !purchaseRes.data) {
+      await releaseSpot(supabase, classId);
+      console.error('[checkout] pack purchase insert failed', purchaseRes.error?.message);
       return { ok: false, error: 'database_error' };
     }
+    const purchaseId = purchaseRes.data.id;
 
-    // Cash/Venmo — leave the pack purchase + booking pending. The admin confirms
-    // it from /admin/reservas, which generates the pack code and emails it.
+    const bookingReference = await newBookingReference(supabase);
+    const bookingRow = {
+      class_id: classId,
+      ...person,
+      upsell_ids: validUpsellIds,
+      payment_status: 'pending' as const,
+      payment_method: paymentMethod,
+      pack_type: `pack${pack.classes_count}`,
+      pack_purchase_id: purchaseId,
+      booking_reference: bookingReference,
+      ...guest,
+      total_usd: upsellsTotal,
+    };
+    let bookingRes = await supabase.from('bookings').insert({ ...bookingRow, locale }).select('id').single();
+    if (isMissingLocaleColumn(bookingRes.error)) {
+      bookingRes = await supabase.from('bookings').insert(bookingRow).select('id').single();
+    }
+    if (bookingRes.error || !bookingRes.data) {
+      await releaseSpot(supabase, classId);
+      await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', purchaseId);
+      console.error('[checkout] pack booking insert failed', bookingRes.error?.message);
+      return { ok: false, error: 'database_error' };
+    }
+    const bookingId = bookingRes.data.id;
+
+    // Cash/Venmo — the pack and the booking wait, pending, for the studio to
+    // collect. Confirming either from the admin generates the code and emails it.
     if (isOffline) {
-      return {
-        ok: true,
-        status: 'offline',
-        bookingReference: packBookingRef,
-        paymentMethod,
-      };
+      await notifyBooking(bookingId, 'pending');
+      return { ok: true, status: 'offline', bookingReference, paymentMethod };
     }
 
     try {
       const url = await createPayment({
         amount: (Number(pack.price_usd) + upsellsTotal).toFixed(2),
         currency: 'USD',
-        orderNumber: purchase.id, // callback maps pack purchases by id
+        orderNumber: purchaseId, // the callback maps pack purchases by id
         redirect,
-        billToFirstName: personalData.firstName,
-        billToLastName: personalData.lastName,
-        billToEmail: personalData.email,
-        billToTelephone: personalData.phone ?? '',
+        billToFirstName: person.first_name,
+        billToLastName: person.last_name,
+        billToEmail: person.email,
+        billToTelephone: person.phone ?? '',
         billToCountry: 'CR',
         capture: '1',
       });
       return { ok: true, status: 'redirect', url };
-    } catch {
-      await supabase.rpc('increment_spots', { p_class_id: classId });
+    } catch (err) {
+      console.error('[checkout] tilopay (pack)', err);
+      await abandon(supabase, bookingId, purchaseId);
       return { ok: false, error: 'payment_init_failed' };
     }
   }
 
-  // ══ DROP-IN: pay this class (+upsells); a code may make the class free ═══════
-  let packFree = false;
-  let referralDiscount = 0;
-  const code = personalData.referralCode?.trim().toUpperCase();
-  if (code) {
-    const { data: ref } = await supabase
-      .from('referral_codes')
-      .select('*')
-      .eq('code', code)
-      .eq('is_active', true)
-      .single();
-    if (ref) {
-      const now = Date.now();
-      const okDates =
-        (!ref.valid_from || now >= new Date(ref.valid_from).getTime()) &&
-        (!ref.valid_until || now <= new Date(ref.valid_until).getTime());
-      const okLimit = ref.usage_limit == null || ref.usage_count < ref.usage_limit;
-      if (okDates && okLimit) {
-        const base = classPrice + upsellsTotal;
-        if (ref.benefit_type === 'percentage' && ref.discount_percent != null) {
-          referralDiscount = base * (Number(ref.discount_percent) / 100);
-        } else if (ref.benefit_type === 'fixed' && ref.discount_fixed != null) {
-          referralDiscount = Math.min(Number(ref.discount_fixed), base);
-        }
-      }
-    } else {
-      const { data: packRow } = await supabase
-        .from('pack_purchases')
-        .select('status, classes_total, classes_used')
-        .eq('code', code)
-        .single();
-      if (packRow && packRow.status === 'paid' && packRow.classes_used < packRow.classes_total) {
-        packFree = true;
-      }
+  // ══ DROP-IN: pay this class (+upsells); a code may discount or waive it ══════
+  const outcome = await evaluateCode(supabase, clean(personalData.referralCode), classPrice, upsells);
+  if (outcome.kind === 'invalid') return { ok: false, error: 'code_invalid' };
+
+  const classCharged = outcome.kind === 'pack' ? 0 : classPrice;
+  const discount = outcome.kind === 'referral' ? outcome.discount : 0;
+  const total = Math.max(0, Math.round((classCharged + upsellsTotal - discount) * 100) / 100);
+  const code = outcome.kind === 'none' ? null : outcome.code;
+
+  if (!(await reserveSpot(supabase, classId))) return { ok: false, error: 'no_spots_available' };
+
+  // A pack code is spent now, before the booking exists, whatever the total:
+  // a pack that ran out a second ago cannot book, and a booking that dies
+  // (declined, abandoned, cancelled) gives the credit back.
+  if (outcome.kind === 'pack') {
+    const redeemed = await redeemPackCode(supabase, outcome.code);
+    if (!redeemed.success) {
+      await releaseSpot(supabase, classId);
+      return { ok: false, error: 'code_invalid' };
     }
   }
 
-  const total = Math.max(
-    0,
-    Math.round(((packFree ? 0 : classPrice) + upsellsTotal - referralDiscount) * 100) / 100,
-  );
-
-  if (!(await reserveSpot())) return { ok: false, error: 'no_spots_available' };
-
-  const bookingReference = await newRef();
-  const { data: booking, error: bErr } = await supabase
-    .from('bookings')
-    .insert({
-      class_id: classId,
-      first_name: personalData.firstName,
-      last_name: personalData.lastName,
-      email: personalData.email,
-      phone: personalData.phone ?? null,
-      upsell_ids: upsellIds,
-      payment_status: total <= 0 ? 'confirmed' : 'pending',
-      payment_method: paymentMethod,
-      pack_type: 'dropin',
-      booking_reference: bookingReference,
-      referral_code: code ?? null,
-      is_hotel_guest: personalData.isHotelGuest,
-      cloudbeds_ref: personalData.cloudbedsRef ?? null,
-      total_usd: total,
-    })
-    .select('id')
-    .single();
-  if (bErr || !booking) {
-    await supabase.rpc('increment_spots', { p_class_id: classId });
+  const bookingReference = await newBookingReference(supabase);
+  const bookingRow = {
+    class_id: classId,
+    ...person,
+    upsell_ids: validUpsellIds,
+    payment_status: (total <= 0 ? 'confirmed' : 'pending') as 'confirmed' | 'pending',
+    payment_method: paymentMethod,
+    pack_type: 'dropin',
+    booking_reference: bookingReference,
+    referral_code: code,
+    ...guest,
+    total_usd: total,
+  };
+  let bookingRes = await supabase.from('bookings').insert({ ...bookingRow, locale }).select('id').single();
+  if (isMissingLocaleColumn(bookingRes.error)) {
+    bookingRes = await supabase.from('bookings').insert(bookingRow).select('id').single();
+  }
+  if (bookingRes.error || !bookingRes.data) {
+    await releaseSpot(supabase, classId);
+    if (outcome.kind === 'pack') await returnPackCredit(supabase, outcome.code);
+    console.error('[checkout] booking insert failed', bookingRes.error?.message);
     return { ok: false, error: 'database_error' };
   }
+  const bookingId = bookingRes.data.id;
 
-  // Free already (pack code / full discount) → consume code now, done.
   if (total <= 0) {
-    if (packFree && code) await supabase.rpc('redeem_pack_code', { p_code: code });
+    // A referral code that covered everything counts as used too.
+    if (outcome.kind === 'referral') await consumeReferralUse(supabase, outcome.code);
+    await notifyBooking(bookingId, 'confirmed');
     return { ok: true, status: 'free', bookingReference };
   }
 
-  // Cash/Venmo — booking stays pending; admin collects payment in person and
-  // confirms it from /admin/reservas (which also consumes any referral code).
+  // Cash/Venmo — the spot is held; the studio collects and confirms from
+  // /admin/reservas, which also spends the code.
   if (isOffline) {
+    await notifyBooking(bookingId, 'pending');
     return { ok: true, status: 'offline', bookingReference, paymentMethod };
   }
 
@@ -267,117 +331,27 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
     const url = await createPayment({
       amount: total.toFixed(2),
       currency: 'USD',
-      orderNumber: booking.id, // callback maps bookings by id
+      orderNumber: bookingId, // the callback maps bookings by id
       redirect,
-      billToFirstName: personalData.firstName,
-      billToLastName: personalData.lastName,
-      billToEmail: personalData.email,
-      billToTelephone: personalData.phone ?? '',
+      billToFirstName: person.first_name,
+      billToLastName: person.last_name,
+      billToEmail: person.email,
+      billToTelephone: person.phone ?? '',
       billToCountry: 'CR',
       capture: '1',
     });
     return { ok: true, status: 'redirect', url };
-  } catch {
-    await supabase.rpc('increment_spots', { p_class_id: classId });
+  } catch (err) {
+    console.error('[checkout] tilopay (drop-in)', err);
+    await abandon(supabase, bookingId, null);
     return { ok: false, error: 'payment_init_failed' };
   }
 }
 
-// Called by the Tilopay callback when a booking-order payment is approved.
-export async function confirmBookingPaid(bookingId: string, tx: string | null): Promise<void> {
-  const supabase = await createServiceClient();
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('id, payment_status, referral_code')
-    .eq('id', bookingId)
-    .single();
-  if (!booking || booking.payment_status === 'confirmed') return;
-
-  await supabase
-    .from('bookings')
-    .update({
-      payment_status: 'confirmed',
-      tilopay_transaction: tx,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', bookingId);
-
-  // Consume a referral code used for a paid drop-in (pack codes zero the class,
-  // which is handled in the free path, not here).
-  if (booking.referral_code) {
-    const { data: ref } = await supabase
-      .from('referral_codes')
-      .select('id, usage_count')
-      .eq('code', booking.referral_code)
-      .single();
-    if (ref) {
-      await supabase
-        .from('referral_codes')
-        .update({ usage_count: ref.usage_count + 1 })
-        .eq('id', ref.id);
-    }
-  }
-}
-
-// Called by the callback when a pack-order payment is approved: generate the
-// pack code + email, consume one credit, and confirm the linked booking.
-// The locale is the one the pack was bought in — the code email goes out in it.
-export async function confirmPackAndBooking(
-  packPurchaseId: string,
-  tx: string | null,
-  locale: AppLocale = 'en',
-): Promise<void> {
-  const supabase = await createServiceClient();
-
-  const res = await confirmPackPayment(packPurchaseId, locale);
-  if (!res.ok || !res.code) return;
-
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('id, payment_status')
-    .eq('pack_purchase_id', packPurchaseId)
-    .single();
-  if (!booking || booking.payment_status === 'confirmed') return;
-
-  await supabase.rpc('redeem_pack_code', { p_code: res.code });
-  await supabase
-    .from('bookings')
-    .update({
-      payment_status: 'confirmed',
-      tilopay_transaction: tx,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', booking.id);
-}
-
-// Called by the callback when a payment is declined/cancelled.
-export async function releaseBookingOrder(
-  kind: 'booking' | 'pack',
-  id: string,
-): Promise<void> {
-  const supabase = await createServiceClient();
-
-  if (kind === 'pack') {
-    await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', id);
-    const { data: booking } = await supabase
-      .from('bookings')
-      .select('id, class_id, payment_status')
-      .eq('pack_purchase_id', id)
-      .single();
-    if (booking && booking.payment_status !== 'cancelled') {
-      await supabase.from('bookings').update({ payment_status: 'cancelled' }).eq('id', booking.id);
-      await supabase.rpc('increment_spots', { p_class_id: booking.class_id });
-    }
-    return;
-  }
-
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('id, class_id, payment_status')
-    .eq('id', id)
-    .single();
-  if (booking && booking.payment_status !== 'cancelled') {
-    await supabase.from('bookings').update({ payment_status: 'cancelled' }).eq('id', booking.id);
-    await supabase.rpc('increment_spots', { p_class_id: booking.class_id });
-  }
+// Tilopay could not open a payment session: the rows just created are not an
+// order anyone will pay, so they are cancelled, the spot goes back and a pack
+// credit the code had spent is returned.
+async function abandon(supabase: Service, bookingId: string, purchaseId: string | null): Promise<void> {
+  await cancelPendingBooking(supabase, bookingId);
+  if (purchaseId) await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', purchaseId);
 }

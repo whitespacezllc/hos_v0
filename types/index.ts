@@ -39,6 +39,11 @@ export type Booking = {
   paymentMethod: 'card' | 'cash' | 'venmo';
   bookingReference: string;
   referralCode?: string;
+  /** What the booking itself costs — the class (or 0 under a pack code) plus extras. */
+  totalUsd: number;
+  /** The pack bought together with this class, when there is one. */
+  packPurchase?: { id: string; amountUsd: number; status: string; code: string | null };
+  tilopayTransaction?: string;
   createdAt: Date;
 };
 

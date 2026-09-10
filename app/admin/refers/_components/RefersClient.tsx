@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { costaRicaDateString, inCostaRica } from '@/lib/costa-rica-time';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -293,12 +294,12 @@ function CodeRow({
   onDelete: () => void;
 }) {
   const Icon = benefitIcon(code.benefitType);
-  const isExpired = !!code.validUntil && new Date() > new Date(code.validUntil);
+  const isExpired = !!code.validUntil && new Date() > inCostaRica(code.validUntil);
   const validityLabel =
     code.validUntil && !code.validFrom
-      ? `Until ${format(new Date(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
+      ? `Until ${format(inCostaRica(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
       : code.validUntil && code.validFrom
-      ? `${format(new Date(code.validFrom), 'MMM d', { locale: enUS })} — ${format(new Date(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
+      ? `${format(inCostaRica(code.validFrom), 'MMM d', { locale: enUS })} — ${format(inCostaRica(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
       : 'No expiration';
 
   return (
@@ -453,10 +454,10 @@ function CodeModal({
         usageLimit: editing.usageLimit ?? '',
         minPurchaseUsd: editing.minPurchaseUsd,
         validFrom: editing.validFrom
-          ? format(new Date(editing.validFrom), 'yyyy-MM-dd')
+          ? costaRicaDateString(editing.validFrom)
           : '',
         validUntil: editing.validUntil
-          ? format(new Date(editing.validUntil), 'yyyy-MM-dd')
+          ? costaRicaDateString(editing.validUntil)
           : '',
       });
     } else {

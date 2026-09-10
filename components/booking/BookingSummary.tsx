@@ -1,9 +1,10 @@
 'use client';
 
-import { format } from 'date-fns';
+import { addMinutes, format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Upsell, ReferralCode } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
+import { inCostaRica } from '@/lib/costa-rica-time';
 
 type Props = {
   className: string;
@@ -33,9 +34,10 @@ export function BookingSummary({
 }: Props) {
   const t = useTranslations('booking.summary');
   const locale = dateFnsLocale(useLocale());
-  const endTime = new Date(classDate.getTime() + durationMinutes * 60000);
-  const dateStr = format(classDate, t('dateFormat'), { locale });
-  const timeStr = `${format(classDate, 'HH:mm')} — ${format(endTime, 'HH:mm')}`;
+  // Santa Teresa's clock, whatever the reader's.
+  const start = inCostaRica(classDate);
+  const dateStr = format(start, t('dateFormat'), { locale });
+  const timeStr = `${format(start, 'HH:mm')} — ${format(addMinutes(start, durationMinutes), 'HH:mm')}`;
 
   return (
     <div className={bare ? '' : 'bg-cream p-6 lg:p-8'}>
@@ -45,7 +47,7 @@ export function BookingSummary({
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-5 mt-6">
         <MetaPair label={t('date')} value={dateStr} />
-        <MetaPair label={t('time')} value={timeStr} />
+        <MetaPair label={t('time')} value={timeStr} note={t('timezone')} />
         <MetaPair label={t('instructor')} value={instructor} />
         <MetaPair
           label={t('duration')}
@@ -90,11 +92,12 @@ export function BookingSummary({
   );
 }
 
-function MetaPair({ label, value }: { label: string; value: string }) {
+function MetaPair({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div>
       <p className="font-body text-[10px] tracking-[0.25em] uppercase text-ink">{label}</p>
       <p className="font-body text-sm text-ink mt-1">{value}</p>
+      {note && <p className="font-body text-[11px] text-ink/60 mt-0.5">{note}</p>}
     </div>
   );
 }

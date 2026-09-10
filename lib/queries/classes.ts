@@ -1,6 +1,8 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service';
 import type { DbClass, YogaClass } from '@/types';
 import { dbClassToYogaClass } from '@/types';
+import { costaRicaDateString, costaRicaWeekStart, toInstantIso } from '@/lib/costa-rica-time';
 
 const CLASS_WITH_INSTRUCTOR = `
   *,
@@ -14,13 +16,12 @@ const CLASS_WITH_INSTRUCTOR = `
 // row creation from paging far into the future.
 const MAX_WEEKS_AHEAD = 16;
 
-// Returns the Monday (UTC) of the week containing `d`, as a `YYYY-MM-DD` string.
+// The Monday of the Costa Rica week containing `d`, as a `YYYY-MM-DD` string.
+// `generate_week_classes` builds each class at `<date> <HH:MM>-06`, so the week
+// it fills must be a Costa Rica week — not the server's, which on Vercel is UTC
+// and already on Monday while Santa Teresa is still having Sunday dinner.
 function mondayOf(d: Date): string {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dow = date.getUTCDay(); // 0=Sun … 6=Sat
-  const offset = dow === 0 ? -6 : 1 - dow; // shift back to Monday
-  date.setUTCDate(date.getUTCDate() + offset);
-  return date.toISOString().slice(0, 10);
+  return costaRicaDateString(costaRicaWeekStart(d));
 }
 
 // Materializes the recurring class_templates into concrete `classes` rows for the
@@ -31,13 +32,15 @@ export async function ensureWeekMaterialized(weekStart: Date): Promise<void> {
   const monday = mondayOf(weekStart);
 
   // Skip past weeks (nothing bookable) and weeks beyond the cap.
-  const currentMonday = new Date(`${mondayOf(new Date())}T00:00:00Z`).getTime();
-  const targetMonday = new Date(`${monday}T00:00:00Z`).getTime();
+  const currentMonday = new Date(`${mondayOf(new Date())}T00:00:00-06:00`).getTime();
+  const targetMonday = new Date(`${monday}T00:00:00-06:00`).getTime();
   const weeksAhead = Math.round((targetMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
   if (weeksAhead < 0 || weeksAhead > MAX_WEEKS_AHEAD) return;
 
   try {
-    const service = await createServiceClient();
+    // Session-less on purpose: under an admin's cookie the cookie-bound client
+    // would run the RPC as that user, and the function is the service's to call.
+    const service = createServiceRoleClient();
     await service.rpc('generate_week_classes', { p_week_start: monday });
   } catch (err) {
     // Non-fatal: fall through and let callers read whatever already exists.
@@ -96,8 +99,8 @@ export async function getClassesForWeek(
       .from('classes')
       .select(CLASS_WITH_INSTRUCTOR)
       .eq('is_active', true)
-      .gte('starts_at', weekStart.toISOString())
-      .lte('starts_at', weekEnd.toISOString())
+      .gte('starts_at', toInstantIso(weekStart))
+      .lte('starts_at', toInstantIso(weekEnd))
       .order('starts_at', { ascending: true });
 
     if (error) {
