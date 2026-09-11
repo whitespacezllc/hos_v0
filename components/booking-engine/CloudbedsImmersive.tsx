@@ -33,10 +33,12 @@ import {
 // they were written for the hosted page, and here the site's navigation and
 // footer already frame the engine.
 //
-// The hosted engine at hotels.cloudbeds.com, carrying the same search, stays
-// at the foot as a quiet second door. A network that blocks
-// static1.cloudbeds.com, a domain Cloudbeds has not yet whitelisted, or a
-// script that fails to load would otherwise leave a guest with no way to book.
+// The hosted engine at hotels.cloudbeds.com appears only when the script
+// itself never arrives — a network that blocks static1.cloudbeds.com, an
+// extension — and would otherwise leave a guest with no way to book. With the
+// engine on the page there is no second door: the owners asked for one way
+// in, and a standing "or book on Cloudbeds' page" under the engine read as a
+// doubt about the one above it.
 export function CloudbedsImmersive() {
   const locale = useLocale();
   const t = useTranslations('book');
@@ -50,7 +52,7 @@ export function CloudbedsImmersive() {
           footer does not sit up here and then drop as the flow appears. */}
       <div className="min-h-[60vh]">
         {failed ? (
-          <HostedDoorWithSearch tone="alert" lead={t('failed')} />
+          <HostedDoorWithSearch />
         ) : (
           <cb-immersive-experience
             mode="standard"
@@ -66,28 +68,18 @@ export function CloudbedsImmersive() {
           </p>
         </noscript>
       </div>
-
-      {!failed && <HostedDoorWithSearch tone="quiet" lead={t('hosted.lead')} />}
     </div>
   );
 }
 
-// ─── The second door ─────────────────────────────────────────────────────────
-// One line with a link to the hosted engine. `quiet` is the standing note at
-// the foot of the page; `alert` replaces the engine when its script never
-// arrived, and is announced as such.
-function HostedDoor({ tone, lead, search }: { tone: 'quiet' | 'alert'; lead: string; search?: BookingSearch }) {
+// ─── The door of last resort ─────────────────────────────────────────────────
+// Replaces the engine when its script never arrived, and is announced as
+// such: one line, and a link to the hosted engine.
+function HostedDoor({ search }: { search?: BookingSearch }) {
   const t = useTranslations('book');
   return (
-    <p
-      role={tone === 'alert' ? 'alert' : undefined}
-      className={
-        tone === 'alert'
-          ? 'font-body text-sm text-ink text-center pt-16'
-          : 'font-body text-xs text-ink/60 text-center mt-12'
-      }
-    >
-      {lead}{' '}
+    <p role="alert" className="font-body text-sm text-ink text-center pt-16">
+      {t('failed')}{' '}
       <a
         href={cloudbedsHostedUrl(search)}
         target="_blank"
@@ -105,17 +97,16 @@ function HostedDoor({ tone, lead, search }: { tone: 'quiet' | 'alert'; lead: str
 // current from the first render after a client-side navigation, which a read
 // of window.location during render would not be. On a static page it asks
 // for a Suspense boundary; the fallback is the same line with the bare hosted
-// URL, which is what the server renders and what stands for the instant
-// before the client fills the dates in.
-function HostedDoorWithSearch(props: { tone: 'quiet' | 'alert'; lead: string }) {
+// URL, standing in for the instant before the client fills the dates in.
+function HostedDoorWithSearch() {
   return (
-    <Suspense fallback={<HostedDoor {...props} />}>
-      <HostedDoorFromUrl {...props} />
+    <Suspense fallback={<HostedDoor />}>
+      <HostedDoorFromUrl />
     </Suspense>
   );
 }
 
-function HostedDoorFromUrl(props: { tone: 'quiet' | 'alert'; lead: string }) {
+function HostedDoorFromUrl() {
   const params = useSearchParams();
-  return <HostedDoor {...props} search={bookingSearchFromParams(params)} />;
+  return <HostedDoor search={bookingSearchFromParams(params)} />;
 }

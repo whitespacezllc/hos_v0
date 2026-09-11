@@ -1489,7 +1489,6 @@
     "intro": "Live availability and rates for every dwelling, reserved directly with the house.",
     "failed": "The booking engine could not load here.",
     "hosted": {
-      "lead": "Prefer to book on Cloudbeds' own page?",
       "link": "Open the hosted booking engine"
     }
   },
