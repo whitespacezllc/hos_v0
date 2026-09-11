@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import type { ClassTemplate, Instructor } from '@/types';
 import { Modal } from './Modal';
 import { Input } from './Input';
@@ -15,30 +16,45 @@ import { Button } from './Button';
 import { ImageUpload } from './ImageUpload';
 
 // Day-of-week options (0=Sun … 6=Sat, matching class_templates.day_of_week).
+// The value is what the database stores; the label comes from the catalogue
+// (admin.schedule.form.days) in the reader's language.
 export const DAY_OPTIONS = [
-  { value: '1', label: 'Monday' },
-  { value: '2', label: 'Tuesday' },
-  { value: '3', label: 'Wednesday' },
-  { value: '4', label: 'Thursday' },
-  { value: '5', label: 'Friday' },
-  { value: '6', label: 'Saturday' },
-  { value: '0', label: 'Sunday' },
-];
+  { value: '1', key: 'mon' },
+  { value: '2', key: 'tue' },
+  { value: '3', key: 'wed' },
+  { value: '4', key: 'thu' },
+  { value: '5', key: 'fri' },
+  { value: '6', key: 'sat' },
+  { value: '0', key: 'sun' },
+] as const;
 
-const templateSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  instructorId: z.string(), // '' means unassigned
-  dayOfWeek: z.coerce.number().min(0).max(6),
-  timeStart: z.string().min(1, 'Time is required'),
-  durationMinutes: z.coerce.number().min(15, 'Minimum 15 minutes').max(480, 'Maximum 8 hours'),
-  capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
-  priceUsd: z.coerce.number().min(0, "Price can't be negative"),
-  location: z.string().min(1, 'Location is required'),
-  isActive: z.boolean(),
-});
+// The validation messages are the reader's — built inside the component,
+// where the catalogue is at hand (admin.common.validation).
+type SchemaMessages = {
+  nameRequired: string;
+  timeRequired: string;
+  minMinutes: string;
+  maxHours: string;
+  capacityMin: string;
+  priceMin: string;
+  locationRequired: string;
+};
 
-type TemplateFormValues = z.infer<typeof templateSchema>;
+const templateSchema = (msgs: SchemaMessages) =>
+  z.object({
+    name: z.string().min(1, msgs.nameRequired),
+    description: z.string().optional(),
+    instructorId: z.string(), // '' means unassigned
+    dayOfWeek: z.coerce.number().min(0).max(6),
+    timeStart: z.string().min(1, msgs.timeRequired),
+    durationMinutes: z.coerce.number().min(15, msgs.minMinutes).max(480, msgs.maxHours),
+    capacity: z.coerce.number().min(1, msgs.capacityMin),
+    priceUsd: z.coerce.number().min(0, msgs.priceMin),
+    location: z.string().min(1, msgs.locationRequired),
+    isActive: z.boolean(),
+  });
+
+type TemplateFormValues = z.infer<ReturnType<typeof templateSchema>>;
 
 export type TemplatePayload = {
   name: string;
@@ -86,6 +102,22 @@ export default function ClassModal({
   loading,
 }: Props) {
   const isEditing = !!template;
+  const t = useTranslations('admin.schedule');
+  const tc = useTranslations('admin.common');
+
+  const schema = useMemo(
+    () =>
+      templateSchema({
+        nameRequired: tc('validation.nameRequired'),
+        timeRequired: tc('validation.timeRequired'),
+        minMinutes: tc('validation.minMinutes', { count: 15 }),
+        maxHours: tc('validation.maxHours', { count: 8 }),
+        capacityMin: tc('validation.capacityMin'),
+        priceMin: tc('validation.priceMin'),
+        locationRequired: tc('validation.locationRequired'),
+      }),
+    [tc],
+  );
 
   const {
     register,
@@ -95,7 +127,7 @@ export default function ClassModal({
     watch,
     formState: { errors },
   } = useForm<TemplateFormValues>({
-    resolver: zodResolver(templateSchema),
+    resolver: zodResolver(schema),
     defaultValues: DEFAULTS,
   });
 
@@ -148,59 +180,63 @@ export default function ClassModal({
   }
 
   const instructorOptions = [
-    { value: '', label: 'Unassigned' },
+    { value: '', label: t('unassigned') },
     ...instructors.map((i) => ({ value: i.id, label: i.name })),
   ];
+
+  const dayOptions = DAY_OPTIONS.map((d) => ({ value: d.value, label: t(`form.days.${d.key}`) }));
 
   return (
     <Modal
       isOpen={open}
       onClose={() => onOpenChange(false)}
-      title={isEditing ? 'Edit recurring class' : 'New recurring class'}
-      subtitle={
-        isEditing
-          ? undefined
-          : 'A class that repeats every week on the chosen day and time.'
-      }
+      title={isEditing ? t('form.editTitle') : t('form.newTitle')}
+      subtitle={isEditing ? undefined : t('form.newSubtitle')}
       footer={
         <>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
+            {tc('actions.cancel')}
           </Button>
           <Button variant="primary" type="submit" onClick={handleSubmit(onSubmit)} loading={loading}>
-            {isEditing ? 'Save changes' : 'Create class'}
+            {isEditing ? t('form.saveChanges') : t('form.createClass')}
           </Button>
         </>
       }
     >
       <form id="class-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Input
-          label="Class name"
-          placeholder="Ex: Sunrise Vinyasa"
+          label={t('form.className')}
+          placeholder={t('form.classNamePlaceholder')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <Textarea
-          label="Description"
-          placeholder="Short description of the class..."
+          label={tc('labels.description')}
+          placeholder={t('form.descriptionPlaceholder')}
           rows={3}
           error={errors.description?.message}
           {...register('description')}
         />
 
-        <ImageUpload value={imageUrl} onChange={setImageUrl} />
+        <ImageUpload
+          value={imageUrl}
+          onChange={setImageUrl}
+          label={tc('labels.image')}
+          helper={t('form.imageHelper')}
+          previewAlt={tc('labels.class')}
+        />
 
         <div className="grid grid-cols-2 gap-6">
           <NativeSelect
-            label="Instructor"
+            label={tc('labels.instructor')}
             options={instructorOptions}
             error={errors.instructorId?.message}
             {...register('instructorId')}
           />
           <Input
-            label="Location"
-            placeholder="Open-Air Shala"
+            label={tc('labels.location')}
+            placeholder={t('form.locationPlaceholder')}
             error={errors.location?.message}
             {...register('location')}
           />
@@ -208,14 +244,14 @@ export default function ClassModal({
 
         <div className="grid grid-cols-2 gap-6">
           <NativeSelect
-            label="Day of week"
-            options={DAY_OPTIONS}
+            label={t('form.dayOfWeek')}
+            options={dayOptions}
             error={errors.dayOfWeek?.message}
             {...register('dayOfWeek')}
           />
           <Input
             type="time"
-            label="Start time"
+            label={t('form.startTime')}
             error={errors.timeStart?.message}
             {...register('timeStart')}
           />
@@ -224,7 +260,7 @@ export default function ClassModal({
         <div className="grid grid-cols-3 gap-6">
           <Input
             type="number"
-            label="Duration (min)"
+            label={t('form.durationMin')}
             min={15}
             max={480}
             error={errors.durationMinutes?.message}
@@ -232,14 +268,14 @@ export default function ClassModal({
           />
           <Input
             type="number"
-            label="Capacity"
+            label={tc('labels.capacity')}
             min={1}
             error={errors.capacity?.message}
             {...register('capacity')}
           />
           <Input
             type="number"
-            label="Price (USD)"
+            label={t('form.priceUsd')}
             min={0}
             step={5}
             error={errors.priceUsd?.message}
@@ -247,15 +283,15 @@ export default function ClassModal({
           />
         </div>
 
-        <Field label="Status" helper="Inactive classes don't appear on the public site or generate new sessions.">
+        <Field label={tc('labels.status')} helper={t('form.statusHelper')}>
           <div className="flex items-center justify-between mt-2">
             <span className="font-body text-sm text-ink">
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? tc('status.active') : tc('status.inactive')}
             </span>
             <Toggle
               checked={isActive}
               onChange={(v) => setValue('isActive', v, { shouldDirty: true })}
-              ariaLabel="Toggle active status"
+              ariaLabel={t('form.toggleActive')}
             />
           </div>
         </Field>

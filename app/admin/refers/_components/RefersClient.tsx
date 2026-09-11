@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { costaRicaDateString, inCostaRica } from '@/lib/costa-rica-time';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/dates';
+import type { AppLocale } from '@/i18n/routing';
 import {
   Plus,
   Pencil,
@@ -61,27 +63,34 @@ type SerializedReferralCode = {
   createdAt: string;
 };
 
-const codeSchema = z.object({
-  code: z.string().min(2, 'Code must be at least 2 characters').max(30).toUpperCase(),
-  partnerName: z.string().min(1, 'Partner name is required'),
-  description: z.string().min(1, 'Description is required'),
-  benefitType: z.enum(['percentage', 'fixed', 'free_upsell']),
-  discountPercent: z.coerce.number().min(1).max(100).optional(),
-  discountFixed: z.coerce.number().min(0.5).optional(),
-  freeUpsellId: z.string().optional(),
-  usageLimit: z.coerce.number().min(1).optional().or(z.literal('')),
-  minPurchaseUsd: z.coerce.number().min(0),
-  validFrom: z.string().optional(),
-  validUntil: z.string().optional(),
-});
-type CodeForm = z.infer<typeof codeSchema>;
+// The validation copy comes from the catalogue, so the schema is built per
+// language (same pattern as BookingFlow's personalSchema).
+type CodeSchemaMessages = {
+  codeMin: string;
+  codeMax: string;
+  partnerNameRequired: string;
+  descriptionRequired: string;
+  percentRange: string;
+  fixedMin: string;
+  usageLimitMin: string;
+  minPurchaseMin: string;
+};
 
-function benefitLabel(code: SerializedReferralCode, upsells: Upsell[]): string {
-  if (code.benefitType === 'percentage') return `${code.discountPercent}% off`;
-  if (code.benefitType === 'fixed') return `$${code.discountFixed} off`;
-  const upsell = upsells.find((u) => u.id === code.freeUpsellId);
-  return upsell ? `Free: ${upsell.name}` : 'Free upsell';
-}
+const codeSchema = (m: CodeSchemaMessages) =>
+  z.object({
+    code: z.string().min(2, m.codeMin).max(30, m.codeMax).toUpperCase(),
+    partnerName: z.string().min(1, m.partnerNameRequired),
+    description: z.string().min(1, m.descriptionRequired),
+    benefitType: z.enum(['percentage', 'fixed', 'free_upsell']),
+    discountPercent: z.coerce.number().min(1, m.percentRange).max(100, m.percentRange).optional(),
+    discountFixed: z.coerce.number().min(0.5, m.fixedMin).optional(),
+    freeUpsellId: z.string().optional(),
+    usageLimit: z.coerce.number().min(1, m.usageLimitMin).optional().or(z.literal('')),
+    minPurchaseUsd: z.coerce.number().min(0, m.minPurchaseMin),
+    validFrom: z.string().optional(),
+    validUntil: z.string().optional(),
+  });
+type CodeForm = z.infer<ReturnType<typeof codeSchema>>;
 
 function benefitIcon(type: SerializedReferralCode['benefitType']): LucideIcon {
   if (type === 'percentage') return Percent;
@@ -97,6 +106,7 @@ export default function RefersClient({
   initialCodes: SerializedReferralCode[];
   upsells: Upsell[];
 }) {
+  const t = useTranslations('admin.promo');
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
@@ -168,39 +178,39 @@ export default function RefersClient({
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-6xl mx-auto">
       <PageHeader
-        heading="Promo codes"
-        description="Manage discount codes for bookings."
+        heading={t('heading')}
+        description={t('description')}
         actions={
           <Button
             variant="primary"
             icon={<Plus width={16} height={16} strokeWidth={1.5} />}
             onClick={openCreate}
           >
-            New code
+            {t('newCode')}
           </Button>
         }
       />
 
       {/* Stats — 3 cards (the legacy 'Socios' / Partners stat was dropped) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <StatCard icon={Ticket} color={COLORS.sage} value={totalCodes} label="Total codes" />
-        <StatCard icon={CheckCircle} color={COLORS.sage} value={activeCodes} label="Active codes" />
-        <StatCard icon={TrendingUp} color={COLORS.terracotta} value={totalUses} label="Total uses" />
+        <StatCard icon={Ticket} color={COLORS.sage} value={totalCodes} label={t('stats.total')} />
+        <StatCard icon={CheckCircle} color={COLORS.sage} value={activeCodes} label={t('stats.active')} />
+        <StatCard icon={TrendingUp} color={COLORS.terracotta} value={totalUses} label={t('stats.uses')} />
       </div>
 
       {/* Codes list */}
       {initialCodes.length === 0 ? (
         <EmptyState
           icon={<Ticket strokeWidth={1} />}
-          heading="No promo codes yet"
-          description="Create your first code to offer discounts during checkout."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
           action={
             <Button
               variant="primary"
               icon={<Plus width={16} height={16} strokeWidth={1.5} />}
               onClick={openCreate}
             >
-              New code
+              {t('newCode')}
             </Button>
           }
         />
@@ -233,13 +243,13 @@ export default function RefersClient({
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete promo code?"
+        title={t('delete.title')}
         description={
           deleting
-            ? `Students will no longer be able to use "${deleting.code}". This action cannot be undone.`
-            : 'Students will no longer be able to use this code. This action cannot be undone.'
+            ? t('delete.descriptionWithCode', { code: deleting.code })
+            : t('delete.description')
         }
-        confirmLabel="Delete code"
+        confirmLabel={t('delete.confirm')}
         loading={isDeleting}
       />
     </div>
@@ -293,14 +303,31 @@ function CodeRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useTranslations('admin.promo');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const Icon = benefitIcon(code.benefitType);
   const isExpired = !!code.validUntil && new Date() > inCostaRica(code.validUntil);
+
+  // Month names come from date-fns, so the patterns live in the catalogue
+  // (Spanish puts the day before the month).
+  const fmtShort = (iso: string) => format(inCostaRica(iso), t('dates.short'), { locale: dfLocale });
+  const fmtMonthDay = (iso: string) => format(inCostaRica(iso), t('dates.monthDay'), { locale: dfLocale });
   const validityLabel =
     code.validUntil && !code.validFrom
-      ? `Until ${format(inCostaRica(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
+      ? t('row.until', { date: fmtShort(code.validUntil) })
       : code.validUntil && code.validFrom
-      ? `${format(inCostaRica(code.validFrom), 'MMM d', { locale: enUS })} — ${format(inCostaRica(code.validUntil), 'MMM d, yyyy', { locale: enUS })}`
-      : 'No expiration';
+      ? t('row.range', { from: fmtMonthDay(code.validFrom), until: fmtShort(code.validUntil) })
+      : t('row.noExpiration');
+
+  let benefitLabel: string;
+  if (code.benefitType === 'percentage') {
+    benefitLabel = t('benefit.percentOff', { percent: code.discountPercent ?? 0 });
+  } else if (code.benefitType === 'fixed') {
+    benefitLabel = t('benefit.fixedOff', { amount: code.discountFixed ?? 0 });
+  } else {
+    const upsell = upsells.find((u) => u.id === code.freeUpsellId);
+    benefitLabel = upsell ? t('benefit.freeNamed', { name: upsell.name }) : t('benefit.free');
+  }
 
   return (
     <Card>
@@ -316,8 +343,8 @@ function CodeRow({
             <span className="font-mono text-sm font-medium text-ink bg-neutral-50 px-2 py-1">
               {code.code}
             </span>
-            {!code.isActive && <Badge variant="inactive">Inactive</Badge>}
-            {isExpired && <Badge variant="destructive">Expired</Badge>}
+            {!code.isActive && <Badge variant="inactive">{t('row.inactive')}</Badge>}
+            {isExpired && <Badge variant="destructive">{t('row.expired')}</Badge>}
           </div>
           <p className="font-body text-xs text-ink/50 mt-1 truncate">
             {code.description}
@@ -327,17 +354,17 @@ function CodeRow({
         {/* Benefit */}
         <div className="lg:w-40">
           <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-            Benefit
+            {t('row.benefit')}
           </p>
           <p className="font-body text-sm font-medium text-ink mt-1">
-            {benefitLabel(code, upsells)}
+            {benefitLabel}
           </p>
         </div>
 
         {/* Uses */}
         <div className="lg:w-24">
           <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-            Uses
+            {t('row.uses')}
           </p>
           <p className="font-body text-sm font-medium text-ink mt-1">
             {code.usageCount}
@@ -362,7 +389,7 @@ function CodeRow({
             type="button"
             onClick={onToggle}
             disabled={isPending}
-            aria-label={code.isActive ? 'Deactivate code' : 'Activate code'}
+            aria-label={code.isActive ? t('row.deactivate') : t('row.activate')}
             className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {code.isActive ? (
@@ -374,7 +401,7 @@ function CodeRow({
           <button
             type="button"
             onClick={onEdit}
-            aria-label="Edit code"
+            aria-label={t('row.edit')}
             className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer"
           >
             <Pencil width={16} height={16} strokeWidth={1.5} />
@@ -382,7 +409,7 @@ function CodeRow({
           <button
             type="button"
             onClick={onDelete}
-            aria-label="Delete code"
+            aria-label={t('row.delete')}
             className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-burgundy transition-colors duration-200 cursor-pointer"
           >
             <Trash2 width={16} height={16} strokeWidth={1.5} />
@@ -411,8 +438,25 @@ function CodeModal({
   onClose: () => void;
   onSave: (data: CodeForm) => void;
 }) {
+  const t = useTranslations('admin.promo');
+  const tc = useTranslations('admin.common');
   const activeUpsells = upsells.filter((u) => u.isActive);
   const isEditing = !!editing;
+
+  const schema = useMemo(
+    () =>
+      codeSchema({
+        codeMin: t('validation.codeMin'),
+        codeMax: t('validation.codeMax'),
+        partnerNameRequired: t('validation.partnerNameRequired'),
+        descriptionRequired: tc('validation.descriptionRequired'),
+        percentRange: t('validation.percentRange'),
+        fixedMin: t('validation.fixedMin'),
+        usageLimitMin: tc('validation.atLeastOne'),
+        minPurchaseMin: t('validation.minPurchaseMin'),
+      }),
+    [t, tc],
+  );
 
   const {
     register,
@@ -422,7 +466,7 @@ function CodeModal({
     reset,
     formState: { errors },
   } = useForm<CodeForm>({
-    resolver: zodResolver(codeSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       code: '',
       partnerName: '',
@@ -481,19 +525,19 @@ function CodeModal({
     <Modal
       isOpen={open}
       onClose={onClose}
-      title={isEditing ? 'Edit code' : 'New promo code'}
+      title={isEditing ? t('modal.titleEdit') : t('modal.titleNew')}
       maxWidth="max-w-xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={isPending}>
-            Cancel
+            {tc('actions.cancel')}
           </Button>
           <Button
             variant="primary"
             onClick={handleSubmit(onSave)}
             loading={isPending}
           >
-            {isEditing ? 'Save changes' : 'Create code'}
+            {isEditing ? t('modal.saveChanges') : t('modal.create')}
           </Button>
         </>
       }
@@ -501,8 +545,8 @@ function CodeModal({
       <form onSubmit={handleSubmit(onSave)} className="space-y-6">
         {/* Identifier */}
         <Input
-          label="Code"
-          placeholder="SURF-CAMP"
+          label={tc('labels.code')}
+          placeholder={t('fields.codePlaceholder')}
           error={errors.code?.message}
           className="font-mono uppercase"
           {...register('code', {
@@ -510,26 +554,26 @@ function CodeModal({
           })}
         />
         <Input
-          label="Partner / business name"
-          placeholder="Nosara Surf Camp"
+          label={t('fields.partnerName')}
+          placeholder={t('fields.partnerNamePlaceholder')}
           error={errors.partnerName?.message}
           {...register('partnerName')}
         />
         <Input
-          label="Internal description"
-          placeholder="20% off for surf camp clients"
+          label={t('fields.internalDescription')}
+          placeholder={t('fields.internalDescriptionPlaceholder')}
           error={errors.description?.message}
           {...register('description')}
         />
 
         {/* Benefit type — segmented buttons */}
-        <Field label="Benefit type">
+        <Field label={t('fields.benefitType')}>
           <div className="grid grid-cols-3 gap-2 mt-2">
             {(
               [
-                { value: 'percentage', icon: Percent, label: '% off' },
-                { value: 'fixed', icon: DollarSign, label: 'Fixed ($)' },
-                { value: 'free_upsell', icon: Gift, label: 'Free upsell' },
+                { value: 'percentage', icon: Percent, label: t('fields.typePercent') },
+                { value: 'fixed', icon: DollarSign, label: t('fields.typeFixed') },
+                { value: 'free_upsell', icon: Gift, label: t('fields.typeFreeUpsell') },
               ] as const
             ).map((opt) => {
               const Icon = opt.icon;
@@ -563,7 +607,7 @@ function CodeModal({
         {benefitType === 'percentage' && (
           <Input
             type="number"
-            label="Discount percentage (%)"
+            label={t('fields.discountPercent')}
             min={1}
             max={100}
             placeholder="10"
@@ -574,7 +618,7 @@ function CodeModal({
         {benefitType === 'fixed' && (
           <Input
             type="number"
-            label="Discount amount (USD)"
+            label={t('fields.discountFixed')}
             min={0.5}
             step={0.5}
             placeholder="5"
@@ -584,10 +628,10 @@ function CodeModal({
         )}
         {benefitType === 'free_upsell' && (
           <NativeSelect
-            label="Free upsell to give"
+            label={t('fields.freeUpsell')}
             options={activeUpsells.map((u) => ({
               value: u.id,
-              label: `${u.name} ($${u.priceUsd})`,
+              label: t('fields.upsellOption', { name: u.name, price: u.priceUsd }),
             }))}
             error={errors.freeUpsellId?.message}
             {...register('freeUpsellId')}
@@ -598,7 +642,7 @@ function CodeModal({
         <div className="grid grid-cols-2 gap-6">
           <Input
             type="number"
-            label="Minimum purchase (USD)"
+            label={t('fields.minPurchase')}
             min={0}
             step={1}
             placeholder="0"
@@ -607,18 +651,18 @@ function CodeModal({
           />
           <Input
             type="number"
-            label="Usage limit (optional)"
+            label={t('fields.usageLimit')}
             min={1}
             step={1}
-            placeholder="Unlimited"
+            placeholder={t('fields.unlimited')}
             {...register('usageLimit')}
           />
         </div>
 
         {/* Validity */}
         <div className="grid grid-cols-2 gap-6">
-          <Input type="date" label="Valid from" {...register('validFrom')} />
-          <Input type="date" label="Valid until" {...register('validUntil')} />
+          <Input type="date" label={t('fields.validFrom')} {...register('validFrom')} />
+          <Input type="date" label={t('fields.validUntil')} {...register('validUntil')} />
         </div>
       </form>
     </Modal>

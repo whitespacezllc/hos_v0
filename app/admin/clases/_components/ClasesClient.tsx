@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   Pencil,
@@ -29,12 +30,14 @@ import {
 } from '@/app/actions/classes';
 
 // ─── Category palette — mirrors /yoga and /admin/calendario ────────────────
-const CATEGORY_STYLES: Record<string, { stripe: string; label: string }> = {
-  'flow-vinyasa':     { stripe: '#8B6F47', label: 'Vinyasa' },
-  'yin-restorative':  { stripe: '#6B7355', label: 'Yin & Restorative' },
-  'hatha-gentle':     { stripe: '#A6896D', label: 'Hatha' },
-  'ashtanga-intense': { stripe: '#5A3E2B', label: 'Ashtanga' },
-  'meditation':       { stripe: '#7A6B5D', label: 'Meditation' },
+// The label of each category lives in the catalogue (admin.schedule.categories).
+type CategoryKey = 'flowVinyasa' | 'yinRestorative' | 'hathaGentle' | 'ashtangaIntense' | 'meditation';
+const CATEGORY_STYLES: Record<string, { stripe: string; label: CategoryKey }> = {
+  'flow-vinyasa':     { stripe: '#8B6F47', label: 'flowVinyasa' },
+  'yin-restorative':  { stripe: '#6B7355', label: 'yinRestorative' },
+  'hatha-gentle':     { stripe: '#A6896D', label: 'hathaGentle' },
+  'ashtanga-intense': { stripe: '#5A3E2B', label: 'ashtangaIntense' },
+  'meditation':       { stripe: '#7A6B5D', label: 'meditation' },
 };
 
 function getCategoryKey(name: string): string {
@@ -46,14 +49,8 @@ function getCategoryKey(name: string): string {
   return 'flow-vinyasa';
 }
 
-// day_of_week (0=Sun … 6=Sat) → "Every <Day>"
-const DAY_NAMES = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
-
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-];
+// day_of_week (0=Sun … 6=Sat) → catalogue key of the weekday (admin.schedule.days)
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ClasesClient({
@@ -64,6 +61,8 @@ export default function ClasesClient({
   instructors: Instructor[];
 }) {
   const router = useRouter();
+  const t = useTranslations('admin.schedule');
+  const tc = useTranslations('admin.common');
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ClassTemplate | undefined>();
@@ -78,38 +77,47 @@ export default function ClasesClient({
 
   const templates = initialTemplates;
 
-  function instructorName(t: ClassTemplate): string {
+  function instructorName(tpl: ClassTemplate): string {
     return (
-      t.instructors?.name ??
-      instructors.find((i) => i.id === t.instructor_id)?.name ??
+      tpl.instructors?.name ??
+      instructors.find((i) => i.id === tpl.instructor_id)?.name ??
       ''
     );
   }
 
+  const statusOptions = useMemo(
+    () => [
+      { value: 'all', label: t('filters.allStatuses') },
+      { value: 'active', label: tc('status.active') },
+      { value: 'inactive', label: tc('status.inactive') },
+    ],
+    [t, tc],
+  );
+
   const categoryOptions = useMemo(() => {
-    const present = new Set(templates.map((t) => getCategoryKey(t.name)));
+    const present = new Set(templates.map((tpl) => getCategoryKey(tpl.name)));
     return [
-      { value: 'all', label: 'All categories' },
+      { value: 'all', label: t('filters.allCategories') },
       ...Object.entries(CATEGORY_STYLES)
         .filter(([k]) => present.has(k))
-        .map(([key, val]) => ({ value: key, label: val.label })),
+        .map(([key, val]) => ({ value: key, label: t(`categories.${val.label}`) })),
     ];
-  }, [templates]);
+  }, [templates, t]);
 
   const filtered = useMemo(() => {
-    return templates.filter((t) => {
+    return templates.filter((tpl) => {
       if (search) {
         const q = search.toLowerCase();
         if (
-          !t.name.toLowerCase().includes(q) &&
-          !t.slug.toLowerCase().includes(q) &&
-          !instructorName(t).toLowerCase().includes(q)
+          !tpl.name.toLowerCase().includes(q) &&
+          !tpl.slug.toLowerCase().includes(q) &&
+          !instructorName(tpl).toLowerCase().includes(q)
         )
           return false;
       }
-      if (statusFilter === 'active' && !t.is_active) return false;
-      if (statusFilter === 'inactive' && t.is_active) return false;
-      if (categoryFilter !== 'all' && getCategoryKey(t.name) !== categoryFilter) return false;
+      if (statusFilter === 'active' && !tpl.is_active) return false;
+      if (statusFilter === 'inactive' && tpl.is_active) return false;
+      if (categoryFilter !== 'all' && getCategoryKey(tpl.name) !== categoryFilter) return false;
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,8 +165,8 @@ export default function ClasesClient({
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
       <PageHeader
-        heading="Classes"
-        description={`Weekly recurring schedule · ${templates.length} ${templates.length === 1 ? 'class' : 'classes'}`}
+        heading={t('heading')}
+        description={t('subtitle', { count: templates.length })}
         actions={
           <>
             <Button
@@ -166,7 +174,7 @@ export default function ClasesClient({
               icon={<Users width={16} height={16} strokeWidth={1.5} />}
               onClick={() => setInstructorModalOpen(true)}
             >
-              Manage instructors
+              {t('manageInstructors')}
             </Button>
             <Button
               variant="primary"
@@ -176,7 +184,7 @@ export default function ClasesClient({
                 setModalOpen(true);
               }}
             >
-              New class
+              {t('newClass')}
             </Button>
           </>
         }
@@ -185,8 +193,8 @@ export default function ClasesClient({
       {templates.length === 0 ? (
         <EmptyState
           icon={<BookOpen strokeWidth={1} />}
-          heading="No classes yet"
-          description="Create your first recurring class to build the weekly schedule."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
           action={
             <Button
               variant="primary"
@@ -196,7 +204,7 @@ export default function ClasesClient({
                 setModalOpen(true);
               }}
             >
-              New class
+              {t('newClass')}
             </Button>
           }
         />
@@ -216,7 +224,7 @@ export default function ClasesClient({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, slug, or instructor..."
+                placeholder={t('filters.searchPlaceholder')}
                 className="w-full pl-7 pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200 placeholder:text-ink/30 placeholder:italic"
               />
             </div>
@@ -224,15 +232,15 @@ export default function ClasesClient({
               filter
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              options={STATUS_OPTIONS}
-              aria-label="Filter by status"
+              options={statusOptions}
+              aria-label={t('filters.byStatus')}
             />
             <NativeSelect
               filter
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               options={categoryOptions}
-              aria-label="Filter by category"
+              aria-label={t('filters.byCategory')}
             />
           </div>
 
@@ -240,12 +248,12 @@ export default function ClasesClient({
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Search strokeWidth={1} />}
-              heading="No classes match your filters"
-              description="Try clearing the filters or creating a new class."
+              heading={t('noMatch.heading')}
+              description={t('noMatch.description')}
               action={
                 filtersActive ? (
                   <Button variant="tertiary" onClick={clearFilters}>
-                    Clear filters
+                    {tc('actions.clearFilters')}
                   </Button>
                 ) : undefined
               }
@@ -256,8 +264,8 @@ export default function ClasesClient({
               instructorName={instructorName}
               isPending={isPending}
               onToggleActive={handleToggleActive}
-              onEdit={(t) => {
-                setEditingTemplate(t);
+              onEdit={(tpl) => {
+                setEditingTemplate(tpl);
                 setModalOpen(true);
               }}
               onDelete={setDeletingTemplate}
@@ -286,9 +294,10 @@ export default function ClasesClient({
         isOpen={!!deletingTemplate}
         onClose={() => setDeletingTemplate(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete class?"
-        description="This removes the recurring class and its upcoming sessions. Past sessions and their bookings are kept. This action cannot be undone."
-        confirmLabel="Delete class"
+        title={t('delete.title')}
+        description={t('delete.description')}
+        confirmLabel={t('delete.confirm')}
+        cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
       />
     </div>
@@ -313,14 +322,16 @@ function TemplatesTable({
   onEdit: (t: ClassTemplate) => void;
   onDelete: (t: ClassTemplate) => void;
 }) {
+  const t = useTranslations('admin.schedule');
+  const tc = useTranslations('admin.common');
   const headers = [
-    { label: 'Class', className: '' },
-    { label: 'Slug', className: 'hidden xl:table-cell' },
-    { label: 'Instructor', className: 'hidden md:table-cell' },
-    { label: 'Schedule', className: '' },
-    { label: 'Capacity', className: '' },
-    { label: 'Price', className: 'hidden lg:table-cell' },
-    { label: 'Status', className: '' },
+    { label: tc('labels.class'), className: '' },
+    { label: t('table.slug'), className: 'hidden xl:table-cell' },
+    { label: tc('labels.instructor'), className: 'hidden md:table-cell' },
+    { label: t('table.schedule'), className: '' },
+    { label: tc('labels.capacity'), className: '' },
+    { label: tc('labels.price'), className: 'hidden lg:table-cell' },
+    { label: tc('labels.status'), className: '' },
     { label: '', className: '' },
   ];
 
@@ -341,14 +352,14 @@ function TemplatesTable({
             </tr>
           </thead>
           <tbody>
-            {templates.map((t) => {
-              const cat = CATEGORY_STYLES[getCategoryKey(t.name)];
-              const name = instructorName(t);
-              const time = (t.time_start ?? '').slice(0, 5);
+            {templates.map((tpl) => {
+              const cat = CATEGORY_STYLES[getCategoryKey(tpl.name)];
+              const name = instructorName(tpl);
+              const time = (tpl.time_start ?? '').slice(0, 5);
 
               return (
                 <tr
-                  key={t.id}
+                  key={tpl.id}
                   className="border-b border-ink/[0.08] last:border-0 hover:bg-neutral-50 transition-colors duration-200"
                 >
                   <td className="px-4 py-4">
@@ -360,73 +371,73 @@ function TemplatesTable({
                       />
                       <div className="min-w-0">
                         <p className="font-body text-sm font-medium text-ink truncate">
-                          {t.name}
+                          {tpl.name}
                         </p>
                         <p className="font-body text-xs text-ink/50 mt-0.5 truncate">
-                          {t.location}
+                          {tpl.location}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 hidden xl:table-cell">
                     <span className="font-mono text-xs text-ink/70 bg-neutral-50 px-2 py-0.5">
-                      {t.slug}
+                      {tpl.slug}
                     </span>
                   </td>
                   <td className="px-4 py-4 hidden md:table-cell">
                     {name ? (
                       <span className="font-body text-sm text-ink/80">{name}</span>
                     ) : (
-                      <span className="font-body text-sm text-ink/30">Unassigned</span>
+                      <span className="font-body text-sm text-ink/30">{t('unassigned')}</span>
                     )}
                   </td>
                   <td className="px-4 py-4">
                     <p className="font-body text-sm text-ink">
-                      Every {DAY_NAMES[t.day_of_week]} · {time}
+                      {t('table.every', { day: t(`days.${DAY_KEYS[tpl.day_of_week]}`), time })}
                     </p>
                     <p className="font-body text-xs text-ink/50 mt-0.5">
-                      {t.duration_minutes} min
+                      {tc('units.min', { count: tpl.duration_minutes })}
                     </p>
                   </td>
                   <td className="px-4 py-4">
                     <span className="font-body text-sm font-medium text-ink">
-                      {t.capacity}
-                      <span className="text-ink/60"> seats</span>
+                      {tpl.capacity}
+                      <span className="text-ink/60"> {t('table.seats')}</span>
                     </span>
                   </td>
                   <td className="px-4 py-4 hidden lg:table-cell">
                     <span className="font-body text-sm font-medium text-ink">
-                      {t.price_dropin_usd == null
+                      {tpl.price_dropin_usd == null
                         ? '—'
-                        : t.price_dropin_usd === 0
-                        ? 'Free'
-                        : `$${t.price_dropin_usd}`}
+                        : tpl.price_dropin_usd === 0
+                        ? tc('status.free')
+                        : tc('units.priceUsd', { amount: tpl.price_dropin_usd })}
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <Badge variant={t.is_active ? 'active' : 'neutral'}>
-                      {t.is_active ? 'Active' : 'Inactive'}
+                    <Badge variant={tpl.is_active ? 'active' : 'neutral'}>
+                      {tpl.is_active ? tc('status.active') : tc('status.inactive')}
                     </Badge>
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-1">
                       <RowIconButton
-                        ariaLabel={t.is_active ? 'Deactivate class' : 'Activate class'}
-                        onClick={() => onToggleActive(t.id)}
+                        ariaLabel={tpl.is_active ? t('actions.deactivate') : t('actions.activate')}
+                        onClick={() => onToggleActive(tpl.id)}
                         disabled={isPending}
                       >
-                        {t.is_active ? (
+                        {tpl.is_active ? (
                           <Eye width={16} height={16} strokeWidth={1.5} />
                         ) : (
                           <EyeOff width={16} height={16} strokeWidth={1.5} />
                         )}
                       </RowIconButton>
-                      <RowIconButton ariaLabel="Edit class" onClick={() => onEdit(t)}>
+                      <RowIconButton ariaLabel={t('actions.edit')} onClick={() => onEdit(tpl)}>
                         <Pencil width={16} height={16} strokeWidth={1.5} />
                       </RowIconButton>
                       <RowIconButton
-                        ariaLabel="Delete class"
-                        onClick={() => onDelete(t)}
+                        ariaLabel={t('actions.delete')}
+                        onClick={() => onDelete(tpl)}
                         hoverDestructive
                       >
                         <Trash2 width={16} height={16} strokeWidth={1.5} />

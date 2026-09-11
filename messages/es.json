@@ -1848,5 +1848,833 @@
       "bookNow": "Reservar una clase",
       "signoff": "Nos vemos en el mat,"
     }
+  },
+  "admin": {
+    "common": {
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "deleting": "Eliminando…",
+        "edit": "Editar",
+        "create": "Crear",
+        "creating": "Creando…",
+        "close": "Cerrar",
+        "confirm": "Confirmar",
+        "back": "Volver",
+        "search": "Buscar",
+        "clearFilters": "Limpiar filtros",
+        "loading": "Cargando…",
+        "retry": "Intentar de nuevo",
+        "add": "Agregar",
+        "remove": "Quitar",
+        "done": "Listo",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "refresh": "Actualizar",
+        "open": "Abrir",
+        "viewAll": "Ver todo",
+        "yes": "Sí",
+        "no": "No",
+        "apply": "Aplicar",
+        "upload": "Subir",
+        "view": "Ver"
+      },
+      "status": {
+        "paid": "Pagada",
+        "pending": "Pendiente",
+        "cancelled": "Cancelada",
+        "noShow": "No asistió",
+        "free": "Gratis",
+        "confirmed": "Confirmada",
+        "active": "Activa",
+        "inactive": "Inactiva",
+        "published": "Publicado",
+        "draft": "Borrador",
+        "awaitingPayment": "Pago pendiente",
+        "upcoming": "Próximo",
+        "past": "Pasado",
+        "review": "Por verificar"
+      },
+      "paymentMethod": {
+        "card": "Tarjeta",
+        "cash": "Efectivo",
+        "venmo": "Venmo"
+      },
+      "labels": {
+        "name": "Nombre",
+        "firstName": "Nombre",
+        "lastName": "Apellido",
+        "email": "Correo",
+        "phone": "Teléfono",
+        "date": "Fecha",
+        "time": "Hora",
+        "dateTime": "Fecha y hora",
+        "duration": "Duración",
+        "capacity": "Cupo",
+        "price": "Precio",
+        "location": "Lugar",
+        "instructor": "Instructor/a",
+        "description": "Descripción",
+        "image": "Imagen",
+        "notes": "Notas",
+        "total": "Total",
+        "amount": "Monto",
+        "status": "Estado",
+        "actions": "Acciones",
+        "code": "Código",
+        "people": "Personas",
+        "class": "Clase",
+        "classes": "Clases",
+        "minutes": "Minutos",
+        "reference": "Referencia",
+        "customer": "Cliente",
+        "student": "Alumno/a",
+        "payment": "Pago",
+        "extras": "Extras",
+        "pack": "Pack",
+        "usage": "Uso",
+        "spots": "Cupos",
+        "week": "Semana",
+        "today": "Hoy",
+        "all": "Todos",
+        "none": "—",
+        "optional": "Opcional",
+        "required": "Obligatorio",
+        "costaRicaTime": "hora de Costa Rica",
+        "perClass": "por clase"
+      },
+      "units": {
+        "minutes": "{count, plural, =1 {1 minuto} other {# minutos}}",
+        "min": "{count} min",
+        "classes": "{count, plural, =1 {1 clase} other {# clases}}",
+        "bookings": "{count, plural, =1 {1 reserva} other {# reservas}}",
+        "spots": "{count, plural, =1 {1 cupo} other {# cupos}}",
+        "people": "{count, plural, =1 {1 persona} other {# personas}}",
+        "usd": "${amount} USD",
+        "priceUsd": "${amount}"
+      },
+      "feedback": {
+        "saved": "Guardado.",
+        "deleted": "Eliminado.",
+        "somethingWentWrong": "Algo salió mal. Inténtalo de nuevo.",
+        "couldNotSave": "No se pudo guardar. Inténtalo de nuevo.",
+        "couldNotDelete": "No se pudo eliminar. Inténtalo de nuevo.",
+        "couldNotLoad": "No se pudo cargar esta página. Actualiza para intentar de nuevo.",
+        "signedInRequired": "Necesitas iniciar sesión como admin."
+      },
+      "validation": {
+        "required": "Este campo es obligatorio",
+        "nameRequired": "El nombre es obligatorio",
+        "descriptionRequired": "La descripción es obligatoria",
+        "emailInvalid": "Ingresa un correo válido",
+        "dateRequired": "La fecha es obligatoria",
+        "timeRequired": "La hora es obligatoria",
+        "locationRequired": "El lugar es obligatorio",
+        "minMinutes": "Mínimo {count} minutos",
+        "maxHours": "Máximo {count} horas",
+        "capacityMin": "El cupo debe ser al menos 1",
+        "priceMin": "El precio no puede ser negativo",
+        "atLeastOne": "Al menos 1",
+        "tooMany": "Demasiados"
+      }
+    },
+    "nav": {
+      "dashboard": "Inicio",
+      "calendar": "Calendario",
+      "schedule": "Horario",
+      "bookings": "Reservas",
+      "packs": "Packs",
+      "upsells": "Extras",
+      "promo": "Códigos promo",
+      "retreats": "Retiros"
+    },
+    "sidebar": {
+      "eyebrow": "Panel de administración",
+      "brand": "House of Shakti",
+      "navigation": "Navegación del panel",
+      "sidebar": "Barra lateral del panel",
+      "pending": "{count} pendientes",
+      "roleLine": "Admin · House of Shakti",
+      "admin": "Admin",
+      "signOut": "Cerrar sesión",
+      "language": "Idioma",
+      "openMenu": "Abrir menú",
+      "closeMenu": "Cerrar menú",
+      "languageName": {
+        "en": "English",
+        "es": "Español"
+      }
+    },
+    "bookings": {
+      "heading": "Reservas",
+      "empty": {
+        "heading": "Aún no hay reservas",
+        "description": "Las reservas hechas desde el sitio público aparecerán aquí."
+      },
+      "noMatch": {
+        "heading": "Ninguna reserva coincide con tus filtros",
+        "description": "Prueba limpiando los filtros."
+      },
+      "filters": {
+        "searchPlaceholder": "Buscar por nombre, correo o código...",
+        "byClass": "Filtrar por clase",
+        "byStatus": "Filtrar por estado",
+        "allClasses": "Todas las clases",
+        "allStatuses": "Todos los estados",
+        "from": "Desde",
+        "to": "Hasta",
+        "fromDate": "Fecha desde",
+        "toDate": "Fecha hasta",
+        "clear": "Limpiar"
+      },
+      "table": {
+        "viewBooking": "Ver reserva"
+      },
+      "actions": {
+        "cancelBooking": "Cancelar reserva"
+      },
+      "pagination": {
+        "showing": "Mostrando <n>{first}–{last}</n> de <n>{total}</n>",
+        "label": "Paginación",
+        "previous": "Página anterior",
+        "next": "Página siguiente"
+      },
+      "drawer": {
+        "title": "Detalle de la reserva",
+        "close": "Cerrar panel",
+        "confirmPayment": "Confirmar pago",
+        "markAsPaid": "Marcar como pagada",
+        "packCode": "Código de pack",
+        "promoCode": "Código promo",
+        "boughtWithPack": "Comprada con pack",
+        "tilopayTransaction": "Transacción de Tilopay",
+        "bookedOn": "Reservada el",
+        "classDate": "{date} · Costa Rica"
+      },
+      "packStatus": {
+        "pending": "pendiente",
+        "paid": "pagado",
+        "cancelled": "cancelado"
+      },
+      "cancelDialog": {
+        "title": "¿Cancelar la reserva?",
+        "description": "La reserva se marcará como cancelada. Se le avisará al alumno/a.",
+        "keep": "Conservar reserva"
+      },
+      "dates": {
+        "classShort": "d MMM · HH:mm",
+        "dateShort": "d MMM yyyy",
+        "dateTime": "d MMM yyyy · HH:mm"
+      }
+    },
+    "calendar": {
+      "category": {
+        "flow-vinyasa": "Vinyasa",
+        "yin-restorative": "Yin y restaurativo",
+        "hatha-gentle": "Hatha",
+        "ashtanga-intense": "Ashtanga",
+        "meditation": "Meditación"
+      },
+      "header": {
+        "previousWeek": "Semana anterior",
+        "nextWeek": "Semana siguiente",
+        "manageClasses": "Gestionar clases",
+        "newClass": "Nueva clase"
+      },
+      "weekRange": {
+        "sameMonthStart": "d",
+        "sameMonthEnd": "d 'de' MMM 'de' yyyy",
+        "otherMonthStart": "d 'de' MMM",
+        "otherMonthEnd": "d 'de' MMM 'de' yyyy"
+      },
+      "dayFormats": {
+        "weekday": "EEE",
+        "dayOfMonth": "d"
+      },
+      "empty": {
+        "heading": "No hay clases esta semana",
+        "description": "Las clases aparecen automáticamente a partir del horario semanal recurrente. Agrega una clase única para esta semana o gestiona el horario recurrente."
+      },
+      "grid": {
+        "clickToAdd": "Haz clic para agregar una clase"
+      },
+      "mobile": {
+        "addClass": "Agregar clase",
+        "noClassesThisDay": "No hay clases programadas para este día."
+      },
+      "drawer": {
+        "ariaLabel": "Detalles de la clase",
+        "close": "Cerrar panel",
+        "occupancy": "Ocupación",
+        "bookingsCount": "{occupied}/{capacity} reservas",
+        "remaining": "{count, plural, =0 {Cupo completo} =1 {Queda 1 cupo} other {# cupos disponibles}}",
+        "dateTimePattern": "EEEE d 'de' MMMM · HH:mm",
+        "dateTimeValue": "{date} · Costa Rica",
+        "openAirShala": "Shala al aire libre",
+        "bookingsHeading": "Reservas ({count})",
+        "addParticipant": "Agregar participante",
+        "classFull": "La clase está llena: libera un cupo para agregar a alguien sin reserva previa.",
+        "noBookings": "Aún no hay reservas"
+      },
+      "deleteDialog": {
+        "title": "¿Eliminar clase?",
+        "description": "Esto eliminará permanentemente esta clase y todas sus reservas. Esta acción no se puede deshacer.",
+        "confirm": "Eliminar clase"
+      },
+      "addErrors": {
+        "noSpots": "No quedan cupos suficientes en esta clase.",
+        "classNotFound": "Esta clase ya no está disponible.",
+        "generic": "No se pudo agregar al participante. Inténtalo de nuevo."
+      },
+      "classModal": {
+        "editTitle": "Editar clase",
+        "createTitle": "Nueva clase",
+        "editSubtitle": "Los cambios aplican solo a esta sesión.",
+        "createSubtitle": "Una sesión única en una fecha y hora específicas.",
+        "saveChanges": "Guardar cambios",
+        "createClass": "Crear clase",
+        "className": "Nombre de la clase",
+        "classNamePlaceholder": "Ej.: Sunrise Vinyasa",
+        "descriptionPlaceholder": "Descripción breve de la clase...",
+        "unassigned": "Sin asignar",
+        "locationPlaceholder": "Open-Air Shala",
+        "startTime": "Hora de inicio · Costa Rica",
+        "durationMin": "Duración (min)",
+        "priceUsd": "Precio (USD)",
+        "statusHelper": "Las clases inactivas no aparecen en el sitio público.",
+        "toggleActive": "Cambiar estado activo"
+      },
+      "participantModal": {
+        "title": "Agregar participante",
+        "subtitle": "Registra manualmente a un/a alumno/a en {className}. {count, plural, =1 {Queda 1 cupo} other {Quedan # cupos}}.",
+        "submit": "Agregar participante",
+        "firstNamePlaceholder": "Ada",
+        "lastNamePlaceholder": "Lovelace",
+        "emailPlaceholder": "alumno@correo.com",
+        "phoneOptional": "Teléfono (opcional)",
+        "phonePlaceholder": "+506 …",
+        "paymentMethod": "Método de pago",
+        "alreadyPaid": "Ya pagó",
+        "paidHelper": "Registrada como pagada.",
+        "pendingHelper": "Queda pendiente: aparece en el contador de la barra lateral.",
+        "togglePaid": "Cambiar estado de pago",
+        "hotelGuest": "Huésped del hotel",
+        "hotelGuestHelper": "Personas hospedadas en el hotel.",
+        "toggleHotelGuest": "Cambiar huésped del hotel",
+        "cloudbedsRef": "Referencia de Cloudbeds (opcional)",
+        "cloudbedsPlaceholder": "N.º de reserva",
+        "extrasHelper": "Extras opcionales, cobrados además de la clase.",
+        "upsellPrice": "+${amount}",
+        "validation": {
+          "firstNameRequired": "El nombre es obligatorio",
+          "lastNameRequired": "El apellido es obligatorio"
+        }
+      }
+    },
+    "dashboard": {
+      "title": "Inicio",
+      "goToClasses": "Ir a Horario",
+      "dates": {
+        "today": "EEEE d 'de' MMMM 'de' yyyy"
+      },
+      "stats": {
+        "ariaLabel": "Métricas clave",
+        "bookingsToday": "Reservas hoy",
+        "thisWeek": "Esta semana",
+        "vsLastWeek": "vs. semana pasada",
+        "revenueThisMonth": "Ingresos este mes",
+        "classesNext7Days": "Clases (7 días)",
+        "avgOccupancy": "Ocupación prom.",
+        "uniqueStudents": "Alumnos únicos"
+      },
+      "charts": {
+        "ariaLabel": "Reservas y distribución por clase",
+        "bookingsPerDay": "Reservas por día",
+        "last30Days": "Últimos 30 días",
+        "bookingsSeries": "Reservas",
+        "mostPopular": "Clases más populares",
+        "noBookings": "Aún no hay reservas.",
+        "other": "Otras",
+        "revenueAriaLabel": "Tendencia de ingresos",
+        "revenuePerWeek": "Ingresos por semana",
+        "last8Weeks": "Últimas 8 semanas",
+        "revenue": "Ingresos"
+      },
+      "instructors": {
+        "ariaLabel": "Rendimiento de instructores",
+        "heading": "Rendimiento de instructores",
+        "subtitle": "Carga semanal del horario recurrente · participantes e ingresos de reservas reales",
+        "emptyHeading": "Aún no hay datos de instructores",
+        "emptyDescription": "Asigna instructores a tus clases recurrentes para ver sus métricas aquí.",
+        "revenueThisMonth": "Ingresos este mes",
+        "byInstructor": "Por instructor/a",
+        "unknown": "Sin nombre",
+        "columns": {
+          "classesPerWeek": "Clases / sem.",
+          "hoursPerWeek": "Horas / sem.",
+          "avgAttendees": "Asist. prom.",
+          "revenuePerWeek": "$ / semana",
+          "revenuePerMonth": "$ / mes"
+        }
+      },
+      "upcoming": {
+        "heading": "Próximas clases",
+        "viewCalendar": "Ver calendario →",
+        "emptyHeading": "No hay próximas clases",
+        "emptyDescription": "Crea una clase recurrente para llenar el horario.",
+        "status": {
+          "full": "Llena",
+          "low": "Pocos cupos",
+          "open": "Abierta"
+        }
+      }
+    },
+    "packs": {
+      "heading": "Packs de clases",
+      "summary": "{total} compras · {pending} pendientes de pago",
+      "copyCode": "Copiar código",
+      "empty": {
+        "heading": "Todavía no hay compras de packs",
+        "description": "Cuando un cliente compra un pack de clases en /paquetes, aparece aquí para que confirmes el pago y emitas el código."
+      },
+      "actions": {
+        "confirmPayment": "Confirmar pago",
+        "resendEmail": "Reenviar correo"
+      },
+      "toast": {
+        "confirmedEmailed": "Pago confirmado: código {code} enviado por correo.",
+        "confirmedNoEmail": "Pago confirmado: código {code}. El correo no se envió (configura RESEND_API_KEY y reenvíalo).",
+        "confirmFailed": "No se pudo confirmar el pago.",
+        "bookingConfirmed": "Reserva de clase confirmada: se canjeó un crédito del pack.",
+        "resent": "Correo con el código reenviado.",
+        "resendFailed": "El correo no se envió (revisa RESEND_API_KEY).",
+        "copied": "Copiado: {code}"
+      },
+      "reminder": {
+        "title": "Pago confirmado: ahora revisa Reservas",
+        "subtitle": "Concilia a este cliente para que el uso del pack se mantenga al día.",
+        "confirmBookingNow": "Confirmar reserva ahora",
+        "goToBookings": "Ir a Reservas",
+        "body": "Ve a <strong>Reservas</strong>, cruza a este cliente con sus reservas de clases y confirma cada una para que el uso del pack (p. ej. 1/5, 2/5) se mantenga al día. Efectivo y Venmo necesitan esta revisión manual; los pagos con tarjeta (Tilopay) se concilian automáticamente.",
+        "linkedIntro": "Este pack se compró junto con una reserva de clase que sigue pendiente:",
+        "linkedHint": "Confírmala aquí para canjear el primer crédito, o revísala en Reservas.",
+        "openCustomer": "Abrir este cliente en Reservas"
+      }
+    },
+    "promo": {
+      "heading": "Códigos promo",
+      "description": "Administra los códigos de descuento para las reservas.",
+      "newCode": "Nuevo código",
+      "stats": {
+        "total": "Códigos en total",
+        "active": "Códigos activos",
+        "uses": "Usos en total"
+      },
+      "empty": {
+        "heading": "Todavía no hay códigos promo",
+        "description": "Crea tu primer código para ofrecer descuentos durante el pago."
+      },
+      "delete": {
+        "title": "¿Eliminar el código promo?",
+        "descriptionWithCode": "Los alumnos ya no podrán usar \"{code}\". Esta acción no se puede deshacer.",
+        "description": "Los alumnos ya no podrán usar este código. Esta acción no se puede deshacer.",
+        "confirm": "Eliminar código"
+      },
+      "benefit": {
+        "percentOff": "{percent}% de descuento",
+        "fixedOff": "${amount} de descuento",
+        "freeNamed": "Gratis: {name}",
+        "free": "Extra gratis"
+      },
+      "row": {
+        "inactive": "Inactivo",
+        "expired": "Vencido",
+        "benefit": "Beneficio",
+        "uses": "Usos",
+        "until": "Hasta el {date}",
+        "range": "{from} — {until}",
+        "noExpiration": "Sin vencimiento",
+        "activate": "Activar código",
+        "deactivate": "Desactivar código",
+        "edit": "Editar código",
+        "delete": "Eliminar código"
+      },
+      "dates": {
+        "short": "d MMM yyyy",
+        "monthDay": "d MMM"
+      },
+      "modal": {
+        "titleEdit": "Editar código",
+        "titleNew": "Nuevo código promo",
+        "saveChanges": "Guardar cambios",
+        "create": "Crear código"
+      },
+      "fields": {
+        "codePlaceholder": "SURF-CAMP",
+        "partnerName": "Nombre del socio / negocio",
+        "partnerNamePlaceholder": "Nosara Surf Camp",
+        "internalDescription": "Descripción interna",
+        "internalDescriptionPlaceholder": "20% de descuento para clientes del surf camp",
+        "benefitType": "Tipo de beneficio",
+        "typePercent": "% de descuento",
+        "typeFixed": "Fijo ($)",
+        "typeFreeUpsell": "Extra gratis",
+        "discountPercent": "Porcentaje de descuento (%)",
+        "discountFixed": "Monto del descuento (USD)",
+        "freeUpsell": "Extra gratis a incluir",
+        "upsellOption": "{name} (${price})",
+        "minPurchase": "Compra mínima (USD)",
+        "usageLimit": "Límite de usos (opcional)",
+        "unlimited": "Ilimitado",
+        "validFrom": "Válido desde",
+        "validUntil": "Válido hasta"
+      },
+      "validation": {
+        "codeMin": "El código debe tener al menos 2 caracteres",
+        "codeMax": "El código no puede tener más de 30 caracteres",
+        "partnerNameRequired": "El nombre del socio es obligatorio",
+        "percentRange": "Ingresa un porcentaje entre 1 y 100",
+        "fixedMin": "El descuento mínimo es $0.50",
+        "minPurchaseMin": "La compra mínima no puede ser negativa"
+      }
+    },
+    "retreats": {
+      "page": {
+        "heading": "Retiros",
+        "description": "Lo que ven los visitantes en Próximos retiros. Un retiro entra en orden de fecha apenas se guarda y pasa solo a Retiros pasados cuando termina su último día."
+      },
+      "actions": {
+        "newRetreat": "Nuevo retiro",
+        "addRetreat": "Agregar retiro",
+        "saveChanges": "Guardar cambios",
+        "deleteRetreat": "Eliminar retiro"
+      },
+      "loadFailed": "No se pudieron cargar los retiros en este momento. Actualiza la página; si sigue pasando, avísale al desarrollador — no se perdió nada.",
+      "empty": {
+        "heading": "Todavía no hay retiros",
+        "description": "Agrega el primero y aparecerá en el sitio de inmediato."
+      },
+      "upcoming": {
+        "title": "Próximos",
+        "aria": "Próximos retiros",
+        "hint": "En orden de fecha. El primero de aquí es el primero del sitio.",
+        "empty": "Todavía no hay nada en el calendario — mientras tanto, el sitio muestra una nota breve."
+      },
+      "past": {
+        "title": "Pasados",
+        "aria": "Retiros pasados",
+        "hint": "Los retiros terminados se juntan aquí solos y se muestran en “Retiros pasados” en el sitio, del más reciente al más antiguo.",
+        "empty": "Todavía no terminó ningún retiro."
+      },
+      "row": {
+        "happeningNow": "En curso",
+        "shown": "Visible",
+        "hidden": "Oculto",
+        "hideFromSite": "Ocultar el retiro del sitio",
+        "showOnSite": "Mostrar el retiro en el sitio",
+        "edit": "Editar {title}",
+        "delete": "Eliminar {title}"
+      },
+      "form": {
+        "editTitle": "Editar retiro",
+        "newTitle": "Nuevo retiro",
+        "newSubtitle": "Todo lo que un visitante ve en su tarjeta.",
+        "photo": {
+          "label": "Foto",
+          "helper": "Ideal a {width} × {height} px (casi cuadrada, 16:15) — se recorta a ese marco. JPG, PNG o WebP, hasta 5 MB. Sin foto, la tarjeta muestra una foto de la casa.",
+          "hint": "{width} × {height} px",
+          "previewAlt": "Retiro"
+        },
+        "label": {
+          "label": "Etiqueta",
+          "placeholder": "Wellness Retreat",
+          "helper": "El tipo de retiro que es — va en versalitas sobre la foto."
+        },
+        "title": {
+          "label": "Nombre del retiro",
+          "placeholder": "Sol for Soul"
+        },
+        "instructors": {
+          "label": "Instructor/a(s)",
+          "placeholder": "Elly Miles",
+          "helper": "Un nombre o varios, tal como debe leerse en la tarjeta."
+        },
+        "startsOn": {
+          "label": "Primer día"
+        },
+        "endsOn": {
+          "label": "Último día"
+        },
+        "description": {
+          "label": "Descripción breve",
+          "placeholder": "Unas líneas sobre qué es el retiro y para quién es…",
+          "helper": "{count} / {max} caracteres — breve mantiene las tarjetas parejas."
+        },
+        "url": {
+          "label": "Enlace",
+          "placeholder": "https://… o wa.me/506…",
+          "helper": "Adónde lleva “Más info”: un sitio web, un enlace de WhatsApp o una página de este sitio (por ejemplo, /yoga-teacher-training)."
+        },
+        "published": {
+          "label": "En el sitio",
+          "helper": "Apagado, el retiro se guarda pero no se muestra — útil mientras se confirman los detalles.",
+          "shown": "Visible",
+          "hidden": "Oculto",
+          "toggleAria": "Alternar visibilidad en el sitio"
+        },
+        "spanish": {
+          "close": "− Versión en español",
+          "open": "+ Versión en español (opcional)",
+          "note": "Se muestra a quienes leen el sitio en español. Lo que quede vacío reutiliza el inglés."
+        },
+        "labelEs": {
+          "label": "Etiqueta (español)",
+          "placeholder": "Retiro de bienestar"
+        },
+        "descriptionEs": {
+          "label": "Descripción breve (español)",
+          "helper": "{count} / {max} caracteres"
+        }
+      },
+      "delete": {
+        "title": "¿Eliminar este retiro?",
+        "description": "“{title}” sale del sitio para siempre. Si prefieres bajarlo por un tiempo, apágalo con el interruptor."
+      },
+      "validation": {
+        "titleRequired": "Ponle un nombre al retiro.",
+        "titleTooLong": "El nombre debe tener menos de {max} caracteres.",
+        "labelRequired": "Agrega una etiqueta — el tipo de retiro que es.",
+        "labelTooLong": "La etiqueta debe tener menos de {max} caracteres.",
+        "instructorsRequired": "Agrega quién lo dirige.",
+        "instructorsTooLong": "Debe tener menos de {max} caracteres.",
+        "startsOnRequired": "Elige el primer día.",
+        "endsOnRequired": "Elige el último día.",
+        "descriptionRequired": "Agrega una descripción breve.",
+        "descriptionTooLong": "Debe tener menos de {max} caracteres.",
+        "urlRequired": "Agrega el enlace que debe abrir \"Más info\".",
+        "urlInvalid": "Usa un enlace completo (https://…), un enlace de WhatsApp o una página de este sitio (/…).",
+        "endsBeforeStarts": "El último día no puede ser antes del primero."
+      },
+      "errors": {
+        "checkForm": "Revisa el formulario."
+      }
+    },
+    "schedule": {
+      "heading": "Clases",
+      "subtitle": "Horario semanal recurrente · {count, plural, =1 {1 clase} other {# clases}}",
+      "manageInstructors": "Gestionar instructores",
+      "newClass": "Nueva clase",
+      "unassigned": "Sin asignar",
+      "empty": {
+        "heading": "Todavía no hay clases",
+        "description": "Crea tu primera clase recurrente para armar el horario semanal."
+      },
+      "noMatch": {
+        "heading": "Ninguna clase coincide con los filtros",
+        "description": "Prueba a limpiar los filtros o crear una clase nueva."
+      },
+      "filters": {
+        "searchPlaceholder": "Buscar por nombre, slug o instructor/a...",
+        "byStatus": "Filtrar por estado",
+        "byCategory": "Filtrar por categoría",
+        "allStatuses": "Todos los estados",
+        "allCategories": "Todas las categorías"
+      },
+      "categories": {
+        "flowVinyasa": "Vinyasa",
+        "yinRestorative": "Yin y Restaurativo",
+        "hathaGentle": "Hatha",
+        "ashtangaIntense": "Ashtanga",
+        "meditation": "Meditación"
+      },
+      "days": {
+        "sun": "domingo",
+        "mon": "lunes",
+        "tue": "martes",
+        "wed": "miércoles",
+        "thu": "jueves",
+        "fri": "viernes",
+        "sat": "sábado"
+      },
+      "table": {
+        "slug": "Slug",
+        "schedule": "Horario",
+        "every": "Cada {day} · {time}",
+        "seats": "cupos"
+      },
+      "actions": {
+        "activate": "Activar clase",
+        "deactivate": "Desactivar clase",
+        "edit": "Editar clase",
+        "delete": "Eliminar clase"
+      },
+      "delete": {
+        "title": "¿Eliminar la clase?",
+        "description": "Esto elimina la clase recurrente y sus próximas sesiones. Las sesiones pasadas y sus reservas se conservan. Esta acción no se puede deshacer.",
+        "confirm": "Eliminar clase"
+      },
+      "form": {
+        "editTitle": "Editar clase recurrente",
+        "newTitle": "Nueva clase recurrente",
+        "newSubtitle": "Una clase que se repite cada semana el día y a la hora elegidos.",
+        "saveChanges": "Guardar cambios",
+        "createClass": "Crear clase",
+        "className": "Nombre de la clase",
+        "classNamePlaceholder": "Ej.: Sunrise Vinyasa",
+        "descriptionPlaceholder": "Descripción breve de la clase...",
+        "imageHelper": "Se muestra en la página pública de reservas. Opcional: si no hay, se usa una foto por defecto.",
+        "locationPlaceholder": "Open-Air Shala",
+        "dayOfWeek": "Día de la semana",
+        "startTime": "Hora de inicio",
+        "durationMin": "Duración (min)",
+        "priceUsd": "Precio (USD)",
+        "statusHelper": "Las clases inactivas no aparecen en el sitio público ni generan nuevas sesiones.",
+        "toggleActive": "Cambiar estado activo",
+        "days": {
+          "mon": "Lunes",
+          "tue": "Martes",
+          "wed": "Miércoles",
+          "thu": "Jueves",
+          "fri": "Viernes",
+          "sat": "Sábado",
+          "sun": "Domingo"
+        }
+      },
+      "instructors": {
+        "title": "Instructores",
+        "subtitle": "Gestiona los instructores de yoga disponibles para tus clases.",
+        "empty": "Todavía no hay instructores.",
+        "edit": "Editar instructor/a",
+        "new": "Nuevo/a instructor/a",
+        "add": "Agregar instructor/a",
+        "delete": "Eliminar instructor/a",
+        "namePlaceholder": "Ej.: Nancy Goodfellow",
+        "emailOptional": "Correo (opcional)",
+        "emailPlaceholder": "nancy@houseofshaktiyoga.com",
+        "nameRequired": "El nombre es obligatorio.",
+        "inUse": "Este/a instructor/a tiene clases asignadas. Reasigna o elimina esas clases primero.",
+        "deleteTitle": "¿Eliminar instructor/a?",
+        "deleteDescription": "Se eliminará permanentemente a {name}. Esta acción no se puede deshacer.",
+        "thisInstructor": "este/a instructor/a"
+      }
+    },
+    "shared": {
+      "imageUpload": {
+        "helper": "Se muestra en la página pública de reservas. Opcional: si no hay, se usa una foto por defecto.",
+        "hint": "JPG, PNG, WebP · máx. 5 MB",
+        "previewAlt": "Clase",
+        "replace": "Reemplazar",
+        "removeImage": "Quitar imagen",
+        "uploading": "Subiendo…",
+        "uploadAnImage": "Subir una imagen",
+        "errors": {
+          "badType": "Usa una imagen JPG, PNG, WebP o AVIF.",
+          "tooLarge": "La imagen debe pesar 5 MB o menos.",
+          "failed": "No se pudo subir. Inténtalo de nuevo."
+        }
+      }
+    },
+    "upsells": {
+      "heading": "Extras",
+      "description": "Productos y servicios adicionales disponibles al reservar.",
+      "new": "Nuevo extra",
+      "add": "Agregar extra",
+      "edit": "Editar extra",
+      "delete": "Eliminar extra",
+      "visible": "Visible",
+      "hidden": "Oculto",
+      "empty": {
+        "heading": "No hay extras configurados",
+        "description": "Crea tu primer extra para ofrecerlo durante la reserva."
+      },
+      "toggle": {
+        "hide": "Ocultar extra",
+        "show": "Mostrar extra"
+      },
+      "modal": {
+        "subtitle": "Un único complemento que se ofrece al reservar.",
+        "saveChanges": "Guardar cambios",
+        "create": "Crear extra"
+      },
+      "form": {
+        "namePlaceholder": "Mat de yoga premium",
+        "descriptionPlaceholder": "Descripción corta que se muestra al reservar...",
+        "priceUsd": "Precio (USD)",
+        "visibility": "Visibilidad",
+        "visibilityHelper": "Los extras ocultos no aparecen en el flujo de reserva.",
+        "visibleAtBooking": "Visible al reservar",
+        "toggleVisibility": "Cambiar visibilidad"
+      },
+      "deleteConfirm": {
+        "title": "¿Eliminar extra?",
+        "description": "Este extra dejará de ofrecerse en las próximas reservas."
+      }
+    }
+  },
+  "auth": {
+    "shell": {
+      "footer": "House of Shakti · Panel de administración",
+      "language": "Idioma"
+    },
+    "password": {
+      "show": "Mostrar contraseña",
+      "hide": "Ocultar contraseña"
+    },
+    "login": {
+      "title": "Panel de administración",
+      "subtitle": "Inicia sesión para gestionar la casa",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "password": "Contraseña",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "signIn": "Iniciar sesión",
+      "signingIn": "Iniciando sesión…",
+      "noAccess": "Esta cuenta no tiene acceso al panel de administración."
+    },
+    "forgot": {
+      "title": "¿Olvidaste tu contraseña?",
+      "subtitle": "Te enviaremos un enlace para elegir una nueva",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "submit": "Enviarme un enlace",
+      "sending": "Enviando…",
+      "backToSignIn": "Volver a iniciar sesión",
+      "sentBody": "Si existe una cuenta de administración para <strong>{email}</strong>, ya va en camino un enlace para elegir una contraseña nueva. Funciona una sola vez y vence en una hora.",
+      "sentHint": "¿No llega nada en unos minutos? Revisa la carpeta de spam o vuelve y pídelo de nuevo."
+    },
+    "setPassword": {
+      "title": "{kind, select, invite {Crea tu contraseña} recovery {Elige una contraseña nueva} other {Cambia tu contraseña}}",
+      "subtitle": "{kind, select, invite {Bienvenido/a al panel de House of Shakti} recovery {Después quedarás con la sesión iniciada} other {Para tu cuenta de House of Shakti}}",
+      "checking": "Revisando tu enlace…",
+      "expired": "Este enlace venció o ya se usó. Los enlaces funcionan una sola vez y durante una hora.",
+      "newLink": "Enviarme un enlace nuevo",
+      "backToSignIn": "Volver a iniciar sesión",
+      "noAccess": "Tu contraseña quedó guardada. Esta cuenta todavía no tiene acceso al panel: pídele al equipo que lo habilite.",
+      "newPassword": "Contraseña nueva",
+      "passwordPlaceholder": "Al menos {min} caracteres",
+      "hint": "Mejor larga que ingeniosa: unas pocas palabras que recuerdes, con un número o un símbolo.",
+      "confirmPassword": "Confirmar contraseña",
+      "confirmPlaceholder": "Una vez más",
+      "submit": "Guardar contraseña y continuar",
+      "saving": "Guardando…",
+      "tooShort": "Usa al menos {min} caracteres.",
+      "mismatch": "Las dos contraseñas no coinciden."
+    },
+    "errors": {
+      "generic": "Algo salió mal. Inténtalo de nuevo.",
+      "tooManyAttempts": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
+      "tooManyRequests": "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo.",
+      "emailNotConfirmed": "Este correo todavía no está confirmado. Usa «¿Olvidaste tu contraseña?» para recibir un enlace y crear tu contraseña.",
+      "offline": "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+      "invalidCredentials": "Correo o contraseña incorrectos.",
+      "invalidEmail": "Eso no parece una dirección de correo.",
+      "resetFailed": "No se pudo enviar el correo en este momento. Inténtalo de nuevo en un momento.",
+      "samePassword": "Elige una contraseña que no hayas usado aquí antes.",
+      "weakPassword": "Esa contraseña es demasiado débil: usa al menos 10 caracteres, combinando letras, números y símbolos.",
+      "linkExpired": "Este enlace venció o ya se usó. Pide uno nuevo desde la página de inicio de sesión.",
+      "updateFailed": "No se pudo guardar la contraseña. Inténtalo de nuevo."
+    }
   }
 }

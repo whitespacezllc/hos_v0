@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -20,21 +21,24 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
+import { setAdminLocale } from '@/app/actions/admin-locale';
+import { routing, type AppLocale } from '@/i18n/routing';
 
 // ─── Navigation items ───────────────────────────────────────────────────────
-// English labels only — the chrome ships English-first per Phase 9.1.
-// The page contents (translated in 9.2–9.4) still use the i18n context.
-type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean };
+// The labels live in the catalogue (admin.nav); the hrefs never change
+// language — there is one /admin, and the panel's language is a preference
+// (lib/admin-locale.ts).
+type NavItem = { href: string; key: 'dashboard' | 'calendar' | 'schedule' | 'bookings' | 'packs' | 'upsells' | 'promo' | 'retreats'; icon: LucideIcon; exact?: boolean };
 
 const navItems: NavItem[] = [
-  { href: '/admin',            label: 'Dashboard',   icon: LayoutDashboard, exact: true },
-  { href: '/admin/calendario', label: 'Calendar',    icon: Calendar },
-  { href: '/admin/clases',     label: 'Schedule',    icon: BookOpen },
-  { href: '/admin/reservas',   label: 'Bookings',    icon: Users },
-  { href: '/admin/paquetes',   label: 'Packs',       icon: Package },
-  { href: '/admin/upsells',    label: 'Upsells',     icon: Tag },
-  { href: '/admin/refers',     label: 'Promo codes', icon: Ticket },
-  { href: '/admin/retreats',   label: 'Retreats',    icon: Palmtree },
+  { href: '/admin',            key: 'dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/calendario', key: 'calendar',  icon: Calendar },
+  { href: '/admin/clases',     key: 'schedule',  icon: BookOpen },
+  { href: '/admin/reservas',   key: 'bookings',  icon: Users },
+  { href: '/admin/paquetes',   key: 'packs',     icon: Package },
+  { href: '/admin/upsells',    key: 'upsells',   icon: Tag },
+  { href: '/admin/refers',     key: 'promo',     icon: Ticket },
+  { href: '/admin/retreats',   key: 'retreats',  icon: Palmtree },
 ];
 
 type PendingCounts = Partial<Record<string, number>>;
@@ -52,8 +56,23 @@ function SidebarBody({
   adminEmail?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const t = useTranslations('admin.sidebar');
+  const tNav = useTranslations('admin.nav');
+  const locale = useLocale() as AppLocale;
   const [signingOut, startSignOut] = useTransition();
+  const [switching, startSwitch] = useTransition();
   const initial = (adminEmail?.trim()[0] ?? 'A').toUpperCase();
+
+  // The toggle writes the preference cookie and re-renders the tree in the
+  // new language; the URL stays where it is.
+  function switchTo(next: AppLocale) {
+    if (next === locale) return;
+    startSwitch(async () => {
+      await setAdminLocale(next);
+      router.refresh();
+    });
+  }
 
   const isActive = (item: NavItem): boolean => {
     if (item.exact) return pathname === item.href;
@@ -65,15 +84,15 @@ function SidebarBody({
       {/* TOP — brand block. Not a link: admin is its own context. */}
       <div className="px-6 pt-10 pb-12">
         <p className="font-body text-[10px] tracking-[0.3em] uppercase text-cream/40">
-          Admin panel
+          {t('eyebrow')}
         </p>
         <h1 className="font-display text-xl font-light text-cream leading-tight mt-2">
-          House of Shakti
+          {t('brand')}
         </h1>
       </div>
 
       {/* MIDDLE — navigation */}
-      <nav className="flex-1 px-3 overflow-y-auto" aria-label="Admin navigation">
+      <nav className="flex-1 px-3 overflow-y-auto" aria-label={t('navigation')}>
         <ul className="space-y-1">
           {navItems.map((item) => {
             const active = isActive(item);
@@ -106,10 +125,10 @@ function SidebarBody({
                     height={18}
                     strokeWidth={1.5}
                   />
-                  <span>{item.label}</span>
+                  <span>{tNav(item.key)}</span>
                   {hasPending && (
                     <span
-                      aria-label={`${count} pending`}
+                      aria-label={t('pending', { count })}
                       className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-cream text-burgundy font-body text-xs font-semibold rounded-full leading-none"
                     >
                       {count > 99 ? '99+' : count}
@@ -136,16 +155,16 @@ function SidebarBody({
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-body text-sm text-cream leading-tight truncate" title={adminEmail}>
-              {adminEmail ?? 'Admin'}
+              {adminEmail ?? t('admin')}
             </p>
-            <p className="font-body text-[10px] text-cream/50 mt-0.5 truncate">Admin · House of Shakti</p>
+            <p className="font-body text-[10px] text-cream/50 mt-0.5 truncate">{t('roleLine')}</p>
           </div>
           <button
             type="button"
             onClick={() => startSignOut(() => signOut())}
             disabled={signingOut}
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label={t('signOut')}
+            title={t('signOut')}
             className="text-cream/50 hover:text-cream transition-colors duration-200 cursor-pointer flex-shrink-0 disabled:opacity-60"
           >
             {signingOut ? (
@@ -156,28 +175,34 @@ function SidebarBody({
           </button>
         </div>
 
-        {/* Language toggle.
-            TODO: implement i18n language switching when ES translations are
-            ready. Currently UI-only — both buttons no-op. */}
-        <div className="flex items-center gap-2">
+        {/* Language toggle — the panel's language, remembered in a cookie. */}
+        <div className="flex items-center gap-2" role="group" aria-label={t('language')}>
           <div
             aria-hidden
             className="w-8 h-8 bg-cream/10 text-cream font-body text-xs flex items-center justify-center rounded-full flex-shrink-0"
           >
-            N
+            {switching ? <Loader2 width={12} height={12} strokeWidth={1.5} className="animate-spin" /> : locale.toUpperCase()[0]}
           </div>
-          <button
-            type="button"
-            className="font-body text-xs text-cream/40 hover:text-cream/70 transition-colors duration-200 cursor-pointer"
-          >
-            ES
-          </button>
-          <button
-            type="button"
-            className="font-body text-xs text-cream tracking-[0.1em] underline underline-offset-4 decoration-[0.5px] cursor-pointer"
-          >
-            EN
-          </button>
+          {routing.locales.map((code) => {
+            const current = code === locale;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => switchTo(code)}
+                disabled={switching}
+                aria-pressed={current}
+                aria-label={t(`languageName.${code}`)}
+                className={
+                  current
+                    ? 'font-body text-xs text-cream tracking-[0.1em] underline underline-offset-4 decoration-[0.5px] cursor-default'
+                    : 'font-body text-xs text-cream/40 hover:text-cream/70 transition-colors duration-200 cursor-pointer disabled:opacity-60'
+                }
+              >
+                {code.toUpperCase()}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -189,6 +214,7 @@ function SidebarBody({
 //  - md+: fixed desktop sidebar
 //  - <md: fixed hamburger button (top-left of viewport) + slide-in drawer
 export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: PendingCounts; adminEmail?: string }) {
+  const t = useTranslations('admin.sidebar');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Close drawer on Escape.
@@ -216,7 +242,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
       {/* Desktop fixed sidebar (md+) */}
       <aside
         className="hidden md:flex fixed left-0 top-0 h-screen w-[260px] z-30"
-        aria-label="Admin sidebar"
+        aria-label={t('sidebar')}
       >
         <SidebarBody pendingCounts={pendingCounts} adminEmail={adminEmail} />
       </aside>
@@ -225,7 +251,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
       <button
         type="button"
         onClick={() => setDrawerOpen(true)}
-        aria-label="Open admin menu"
+        aria-label={t('openMenu')}
         aria-controls="admin-mobile-drawer"
         aria-expanded={drawerOpen}
         className="md:hidden fixed top-4 left-4 z-40 w-10 h-10 flex items-center justify-center bg-white border border-ink/15 text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
@@ -253,7 +279,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
               id="admin-mobile-drawer"
               role="dialog"
               aria-modal="true"
-              aria-label="Admin navigation"
+              aria-label={t('navigation')}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -267,7 +293,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
-                  aria-label="Close admin menu"
+                  aria-label={t('closeMenu')}
                   className="absolute top-4 right-4 text-cream/70 hover:text-cream transition-colors duration-200 cursor-pointer"
                 >
                   <X width={20} height={20} strokeWidth={1.5} />

@@ -3,8 +3,10 @@
 import { useMemo } from 'react';
 import { inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { format, parse } from 'date-fns';
+import { useLocale, useTranslations } from 'next-intl';
+import { dateFnsLocale } from '@/lib/dates';
+import type { AppLocale } from '@/i18n/routing';
 import {
   BarChart,
   Bar,
@@ -64,69 +66,116 @@ const TOOLTIP_STYLE: React.CSSProperties = {
   padding: '12px',
 };
 
+// date-fns' Spanish weekday and month names are lowercase; a label that
+// starts with one reads better capitalized.
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Chart dates arrive as Costa Rica calendar days (`YYYY-MM-DD`, see
+// lib/queries/metrics.ts); parsing them as a plain wall-clock date keeps the
+// day whatever the browser's zone, and the axis label follows the language.
+const CHART_DAY = 'yyyy-MM-dd';
+const parseChartDay = (day: string) => parse(day, CHART_DAY, new Date());
+
 export default function DashboardClient({ data }: { data: DashboardData }) {
+  const t = useTranslations('admin.dashboard');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const now = nowInCostaRica();
   const { metrics, charts, instructors, upcoming } = data;
+
+  const dailyBookingsView = useMemo(
+    () =>
+      charts.dailyBookings.map((d) => ({
+        ...d,
+        date: format(parseChartDay(d.date), 'd MMM', { locale: dfLocale }),
+      })),
+    [charts.dailyBookings, dfLocale],
+  );
+
+  const weeklyRevenueView = useMemo(
+    () =>
+      charts.weeklyRevenue.map((w) => ({
+        ...w,
+        semana: format(parseChartDay(w.semana), 'd MMM', { locale: dfLocale }),
+      })),
+    [charts.weeklyRevenue, dfLocale],
+  );
 
   const pieDataView = useMemo(
     () =>
       charts.classDistribution.map((slice, i) => ({
         ...slice,
+        name: slice.other ? t('charts.other') : slice.name,
         color: DONUT_COLORS[i] ?? DONUT_COLORS[DONUT_COLORS.length - 1],
       })),
-    [charts.classDistribution],
+    [charts.classDistribution, t],
   );
 
-  const todayEyebrow = format(now, 'EEEE, MMMM d, yyyy', { locale: enUS });
+  // An instructor without a name on record still gets a row; the label is copy.
+  const instructorsView = useMemo(
+    () => instructors.map((m) => ({ ...m, name: m.name || t('instructors.unknown') })),
+    [instructors, t],
+  );
+
+  const todayEyebrow = capitalize(format(now, t('dates.today'), { locale: dfLocale }));
+
+  const instructorColumns = [
+    tc('labels.instructor'),
+    t('instructors.columns.classesPerWeek'),
+    t('instructors.columns.hoursPerWeek'),
+    t('instructors.columns.avgAttendees'),
+    t('instructors.columns.revenuePerWeek'),
+    t('instructors.columns.revenuePerMonth'),
+  ];
 
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
-      <PageHeader eyebrow={todayEyebrow} heading="Dashboard" />
+      <PageHeader eyebrow={todayEyebrow} heading={t('title')} />
 
       {/* ─── Stats row ────────────────────────────────────────────────── */}
       <section
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10 lg:mb-12"
-        aria-label="Key metrics"
+        aria-label={t('stats.ariaLabel')}
       >
-        <StatCard icon={Users} color={COLORS.sage} value={metrics.bookingsToday} label="Bookings today" />
+        <StatCard icon={Users} color={COLORS.sage} value={metrics.bookingsToday} label={t('stats.bookingsToday')} />
         <StatCard
           icon={CalendarDays}
           color={COLORS.sage}
           value={metrics.bookingsThisWeek}
-          label="This week"
+          label={t('stats.thisWeek')}
           delta={metrics.bookingsThisWeek - metrics.bookingsLastWeek}
-          deltaLabel="vs last week"
+          deltaLabel={t('stats.vsLastWeek')}
         />
-        <StatCard icon={DollarSign} color={COLORS.terracotta} value={`$${metrics.revenueThisMonth}`} label="Revenue this month" />
-        <StatCard icon={Clock} color={COLORS.sand} value={metrics.classesNext7Days} label="Classes (7 days)" />
-        <StatCard icon={TrendingUp} color={COLORS.burgundy} value={`${metrics.avgOccupancy}%`} label="Avg. occupancy" />
-        <StatCard icon={UserCheck} color={COLORS.warmGray} value={metrics.uniqueStudents} label="Unique students" />
+        <StatCard icon={DollarSign} color={COLORS.terracotta} value={`$${metrics.revenueThisMonth}`} label={t('stats.revenueThisMonth')} />
+        <StatCard icon={Clock} color={COLORS.sand} value={metrics.classesNext7Days} label={t('stats.classesNext7Days')} />
+        <StatCard icon={TrendingUp} color={COLORS.burgundy} value={`${metrics.avgOccupancy}%`} label={t('stats.avgOccupancy')} />
+        <StatCard icon={UserCheck} color={COLORS.warmGray} value={metrics.uniqueStudents} label={t('stats.uniqueStudents')} />
       </section>
 
       {/* ─── Charts row — bar (2/3) + donut (1/3) ──────────────────────── */}
       <section
         className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 lg:mb-12"
-        aria-label="Bookings and class distribution"
+        aria-label={t('charts.ariaLabel')}
       >
         <Card className="lg:col-span-2">
-          <ChartHeading title="Bookings per day" subtitle="Last 30 days" />
+          <ChartHeading title={t('charts.bookingsPerDay')} subtitle={t('charts.last30Days')} />
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={charts.dailyBookings} barSize={6}>
+              <BarChart data={dailyBookingsView} barSize={6}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                 <XAxis dataKey="date" tick={AXIS_TICK} interval={4} />
                 <YAxis tick={AXIS_TICK} width={28} allowDecimals={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(49,49,49,0.04)' }} />
-                <Bar dataKey="reservas" fill={COLORS.sage} radius={0} />
+                <Bar dataKey="reservas" name={t('charts.bookingsSeries')} fill={COLORS.sage} radius={0} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card>
-          <ChartHeading title="Most popular classes" />
+          <ChartHeading title={t('charts.mostPopular')} />
           {pieDataView.length === 0 ? (
-            <p className="font-body text-sm text-ink/50 mt-6">No bookings yet.</p>
+            <p className="font-body text-sm text-ink/50 mt-6">{t('charts.noBookings')}</p>
           ) : (
             <>
               <div className="mt-4">
@@ -167,16 +216,16 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       </section>
 
       {/* ─── Revenue per week (full width) ──────────────────────────────── */}
-      <section className="mb-10 lg:mb-12" aria-label="Revenue trend">
+      <section className="mb-10 lg:mb-12" aria-label={t('charts.revenueAriaLabel')}>
         <Card>
-          <ChartHeading title="Revenue per week" subtitle="Last 8 weeks" />
+          <ChartHeading title={t('charts.revenuePerWeek')} subtitle={t('charts.last8Weeks')} />
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={charts.weeklyRevenue}>
+              <LineChart data={weeklyRevenueView}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                 <XAxis dataKey="semana" tick={AXIS_TICK} />
                 <YAxis tick={AXIS_TICK} width={44} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val: number) => [`$${val}`, 'Revenue']} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val: number) => [`$${val}`, t('charts.revenue')]} />
                 <Line
                   type="monotone"
                   dataKey="ingresos"
@@ -192,22 +241,22 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       </section>
 
       {/* ─── Instructor performance ─────────────────────────────────────── */}
-      <section className="mb-10 lg:mb-12" aria-label="Instructor performance">
+      <section className="mb-10 lg:mb-12" aria-label={t('instructors.ariaLabel')}>
         <header className="mb-6">
-          <h2 className="font-body text-base font-medium text-ink">Instructor performance</h2>
+          <h2 className="font-body text-base font-medium text-ink">{t('instructors.heading')}</h2>
           <p className="font-body text-xs text-ink/50 mt-1">
-            Weekly load from the recurring schedule · participants &amp; revenue from real bookings
+            {t('instructors.subtitle')}
           </p>
         </header>
 
-        {instructors.length === 0 ? (
+        {instructorsView.length === 0 ? (
           <EmptyState
             icon={<UserCheck strokeWidth={1} />}
-            heading="No instructor data yet"
-            description="Assign instructors to your recurring classes to see their metrics here."
+            heading={t('instructors.emptyHeading')}
+            description={t('instructors.emptyDescription')}
             action={
               <Link href="/admin/clases">
-                <Button variant="primary">Go to Classes</Button>
+                <Button variant="primary">{t('goToClasses')}</Button>
               </Link>
             }
           />
@@ -215,14 +264,14 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Revenue bar chart */}
             <Card className="lg:col-span-1">
-              <ChartHeading title="Revenue this month" subtitle="By instructor" />
+              <ChartHeading title={t('instructors.revenueThisMonth')} subtitle={t('instructors.byInstructor')} />
               <div className="mt-4">
-                <ResponsiveContainer width="100%" height={Math.max(160, instructors.length * 44)}>
-                  <BarChart data={instructors} layout="vertical" barSize={14}>
+                <ResponsiveContainer width="100%" height={Math.max(160, instructorsView.length * 44)}>
+                  <BarChart data={instructorsView} layout="vertical" barSize={14}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} horizontal={false} />
                     <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => `$${v}`} />
                     <YAxis type="category" dataKey="name" tick={AXIS_TICK} width={90} />
-                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val: number) => [`$${val}`, 'Revenue']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val: number) => [`$${val}`, t('charts.revenue')]} />
                     <Bar dataKey="revenueThisMonth" fill={COLORS.terracotta} radius={0} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -235,7 +284,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-ink/10">
-                      {['Instructor', 'Classes / wk', 'Hours / wk', 'Avg. attendees', '$ / week', '$ / month'].map(
+                      {instructorColumns.map(
                         (h, i) => (
                           <th
                             key={h}
@@ -248,7 +297,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {instructors.map((m) => (
+                    {instructorsView.map((m) => (
                       <tr key={m.id} className="border-b border-ink/[0.08] last:border-0">
                         <td className="px-3 py-3 font-body text-sm font-medium text-ink">{m.name}</td>
                         <td className="px-3 py-3 font-body text-sm text-ink/80 text-right">{m.classesPerWeek}</td>
@@ -267,25 +316,25 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       </section>
 
       {/* ─── Upcoming classes ───────────────────────────────────────────── */}
-      <section aria-label="Upcoming classes">
+      <section aria-label={t('upcoming.heading')}>
         <header className="flex justify-between items-end mb-6">
-          <h2 className="font-body text-base font-medium text-ink">Upcoming classes</h2>
+          <h2 className="font-body text-base font-medium text-ink">{t('upcoming.heading')}</h2>
           <Link
             href="/admin/calendario"
             className="font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-200"
           >
-            View calendar →
+            {t('upcoming.viewCalendar')}
           </Link>
         </header>
 
         {upcoming.length === 0 ? (
           <EmptyState
             icon={<CalendarPlus strokeWidth={1} />}
-            heading="No upcoming classes"
-            description="Create a recurring class to populate the schedule."
+            heading={t('upcoming.emptyHeading')}
+            description={t('upcoming.emptyDescription')}
             action={
               <Link href="/admin/clases">
-                <Button variant="primary">Go to Classes</Button>
+                <Button variant="primary">{t('goToClasses')}</Button>
               </Link>
             }
           />
@@ -347,6 +396,8 @@ function ChartHeading({ title, subtitle }: { title: string; subtitle?: string })
 type UpcomingClass = DashboardData['upcoming'][number];
 
 function UpcomingClassRow({ clase }: { clase: UpcomingClass }) {
+  const t = useTranslations('admin.dashboard');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const startsAt = inCostaRica(clase.startsAt);
   const booked = clase.capacity - clase.spotsRemaining;
   const remaining = clase.spotsRemaining;
@@ -354,17 +405,18 @@ function UpcomingClassRow({ clase }: { clase: UpcomingClass }) {
 
   const statusVariant: 'active' | 'warning' | 'destructive' =
     remaining === 0 ? 'destructive' : remainingPct < 0.5 ? 'warning' : 'active';
-  const statusLabel = remaining === 0 ? 'Full' : remainingPct < 0.5 ? 'Low' : 'Open';
+  const statusLabel =
+    remaining === 0 ? t('upcoming.status.full') : remainingPct < 0.5 ? t('upcoming.status.low') : t('upcoming.status.open');
 
   return (
     <Card padding="tight" className="hover:border-ink/20 transition-colors duration-200">
       <div className="grid grid-cols-12 gap-4 items-center">
         <div className="col-span-3 md:col-span-1">
           <p className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">
-            {format(startsAt, 'EEE', { locale: enUS })}
+            {capitalize(format(startsAt, 'EEE', { locale: dfLocale }))}
           </p>
           <p className="font-body text-xl font-light text-ink leading-none mt-0.5">
-            {format(startsAt, 'd', { locale: enUS })}
+            {format(startsAt, 'd', { locale: dfLocale })}
           </p>
         </div>
         <div className="col-span-3 md:col-span-1">

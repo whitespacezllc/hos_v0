@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { format, isSameDay } from 'date-fns';
 import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
-import { enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/dates';
+import type { AppLocale } from '@/i18n/routing';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -42,17 +44,19 @@ import AddParticipantModal, {
 
 // ─── Category palette — mirrors /app/yoga/YogaPageClient.tsx exactly so the
 // admin calendar reads the same color language students see on the public site.
-type CategoryStyle = { stripe: string; label: string };
+// The label is a catalogue key (admin.calendar.category.*).
+type CategoryKey = 'flow-vinyasa' | 'yin-restorative' | 'hatha-gentle' | 'ashtanga-intense' | 'meditation';
+type CategoryStyle = { stripe: string; label: CategoryKey };
 
-const CATEGORY_STYLES: Record<string, CategoryStyle> = {
-  'flow-vinyasa':     { stripe: '#8B6F47', label: 'Vinyasa' },           // terracotta
-  'yin-restorative':  { stripe: '#6B7355', label: 'Yin & Restorative' }, // olive
-  'hatha-gentle':     { stripe: '#A6896D', label: 'Hatha' },             // sand
-  'ashtanga-intense': { stripe: '#5A3E2B', label: 'Ashtanga' },          // deep earth
-  'meditation':       { stripe: '#7A6B5D', label: 'Meditation' },        // warm gray
+const CATEGORY_STYLES: Record<CategoryKey, CategoryStyle> = {
+  'flow-vinyasa':     { stripe: '#8B6F47', label: 'flow-vinyasa' },     // terracotta
+  'yin-restorative':  { stripe: '#6B7355', label: 'yin-restorative' },  // olive
+  'hatha-gentle':     { stripe: '#A6896D', label: 'hatha-gentle' },     // sand
+  'ashtanga-intense': { stripe: '#5A3E2B', label: 'ashtanga-intense' }, // deep earth
+  'meditation':       { stripe: '#7A6B5D', label: 'meditation' },       // warm gray
 };
 
-function getCategoryKey(name: string): string {
+function getCategoryKey(name: string): CategoryKey {
   if (['Sunrise Vinyasa', 'Power Flow', 'Breath & Movement', 'Vinyasa Flow', 'Vinyasa Krama', 'Detox Yoga'].includes(name)) return 'flow-vinyasa';
   if (['Yin Yoga', 'Yin & Restore', 'Restorative Yoga', 'Deep Stretch & Breath'].includes(name)) return 'yin-restorative';
   if (['Gentle Flow', 'Hatha Foundations'].includes(name)) return 'hatha-gentle';
@@ -104,25 +108,32 @@ function timeFromOffsetY(offsetY: number): string {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
-// Map payment status → Badge variant + display label.
+// Map payment status → Badge variant + display label (a key of
+// admin.common.status; an unknown status shows its raw value).
 function paymentBadgeFor(status: string): {
   variant: 'active' | 'warning' | 'inactive' | 'destructive' | 'neutral';
-  label: string;
+  labelKey: 'paid' | 'pending' | 'cancelled' | 'noShow' | 'free' | null;
 } {
   switch (status) {
     case 'paid':
-      return { variant: 'active', label: 'Paid' };
+      return { variant: 'active', labelKey: 'paid' };
     case 'pending':
-      return { variant: 'warning', label: 'Pending' };
+      return { variant: 'warning', labelKey: 'pending' };
     case 'cancelled':
-      return { variant: 'inactive', label: 'Cancelled' };
+      return { variant: 'inactive', labelKey: 'cancelled' };
     case 'no-show':
-      return { variant: 'destructive', label: 'No-show' };
+      return { variant: 'destructive', labelKey: 'noShow' };
     case 'free':
-      return { variant: 'neutral', label: 'Free' };
+      return { variant: 'neutral', labelKey: 'free' };
     default:
-      return { variant: 'neutral', label: status };
+      return { variant: 'neutral', labelKey: null };
   }
+}
+
+// date-fns `es` keeps weekday and month names lowercase; a label that starts
+// with one reads better capitalized. Harmless in English.
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -140,6 +151,9 @@ export default function CalendarioClient({
   upsells: UpsellOption[];
 }) {
   const router = useRouter();
+  const t = useTranslations('admin.calendar');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedClass, setSelectedClass] = useState<SerializedClass | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -175,10 +189,10 @@ export default function CalendarioClient({
     const start = weekDays[0];
     const end = weekDays[6];
     if (start.getMonth() === end.getMonth()) {
-      return `${format(start, 'MMM d', { locale: enUS })} — ${format(end, 'd, yyyy', { locale: enUS })}`;
+      return `${format(start, t('weekRange.sameMonthStart'), { locale: dfLocale })} — ${format(end, t('weekRange.sameMonthEnd'), { locale: dfLocale })}`;
     }
-    return `${format(start, 'MMM d', { locale: enUS })} — ${format(end, 'MMM d, yyyy', { locale: enUS })}`;
-  }, [weekDays]);
+    return `${format(start, t('weekRange.otherMonthStart'), { locale: dfLocale })} — ${format(end, t('weekRange.otherMonthEnd'), { locale: dfLocale })}`;
+  }, [weekDays, t, dfLocale]);
 
   const classMap = useMemo(() => {
     const map = new Map<number, SerializedClass[]>();
@@ -286,10 +300,10 @@ export default function CalendarioClient({
       if (!res.ok) {
         setAddError(
           res.error === 'no_spots_available'
-            ? 'Not enough spots left for this class.'
+            ? t('addErrors.noSpots')
             : res.error === 'class_not_found'
-            ? 'This class is no longer available.'
-            : 'Could not add the participant. Please try again.',
+            ? t('addErrors.classNotFound')
+            : t('addErrors.generic'),
         );
         return;
       }
@@ -329,7 +343,7 @@ export default function CalendarioClient({
             <button
               type="button"
               onClick={() => setWeekOffset((o) => o - 1)}
-              aria-label="Previous week"
+              aria-label={t('header.previousWeek')}
               className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               <ChevronLeft width={18} height={18} strokeWidth={1.5} />
@@ -339,12 +353,12 @@ export default function CalendarioClient({
               onClick={() => setWeekOffset(0)}
               className="px-3 py-2 font-body text-sm text-ink hover:bg-neutral-50 transition-colors duration-200 cursor-pointer"
             >
-              Today
+              {tc('labels.today')}
             </button>
             <button
               type="button"
               onClick={() => setWeekOffset((o) => o + 1)}
-              aria-label="Next week"
+              aria-label={t('header.nextWeek')}
               className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               <ChevronRight width={18} height={18} strokeWidth={1.5} />
@@ -359,14 +373,14 @@ export default function CalendarioClient({
             variant="secondary"
             onClick={() => router.push('/admin/clases')}
           >
-            Manage classes
+            {t('header.manageClasses')}
           </Button>
           <Button
             variant="primary"
             icon={<Plus width={16} height={16} strokeWidth={1.5} />}
             onClick={() => openCreate()}
           >
-            New class
+            {t('header.newClass')}
           </Button>
         </div>
       </div>
@@ -375,15 +389,15 @@ export default function CalendarioClient({
       {totalClassesInWeek === 0 ? (
         <EmptyState
           icon={<CalendarX strokeWidth={1} />}
-          heading="No classes this week"
-          description="Classes appear automatically from the recurring weekly schedule. Add a one-off class for this week, or manage the recurring schedule."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
           action={
             <Button
               variant="primary"
               icon={<Plus width={16} height={16} strokeWidth={1.5} />}
               onClick={() => openCreate({ date: localDateStr(weekDays[0]), time: '10:00' })}
             >
-              New class
+              {t('header.newClass')}
             </Button>
           }
         />
@@ -438,7 +452,7 @@ export default function CalendarioClient({
             <motion.aside
               role="dialog"
               aria-modal="true"
-              aria-label="Class details"
+              aria-label={t('drawer.ariaLabel')}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -465,9 +479,9 @@ export default function CalendarioClient({
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete class?"
-        description="This will permanently delete this class and all its bookings. This action cannot be undone."
-        confirmLabel="Delete class"
+        title={t('deleteDialog.title')}
+        description={t('deleteDialog.description')}
+        confirmLabel={t('deleteDialog.confirm')}
         loading={isDeleting}
       />
 
@@ -518,6 +532,7 @@ function DesktopWeekGrid({
   onSelect: (c: SerializedClass) => void;
   onCreate: (day: Date, offsetY: number) => void;
 }) {
+  const t = useTranslations('admin.calendar');
   return (
     <div className="grid grid-cols-[60px_repeat(7,minmax(120px,1fr))] gap-2 lg:gap-3 min-w-[800px]">
       {/* Top-left empty cell */}
@@ -550,7 +565,7 @@ function DesktopWeekGrid({
             const rect = e.currentTarget.getBoundingClientRect();
             onCreate(day, e.clientY - rect.top);
           }}
-          title="Click to add a class"
+          title={t('grid.clickToAdd')}
         >
           {/* Hourly horizontal lines */}
           {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => (
@@ -575,19 +590,21 @@ function DesktopWeekGrid({
 }
 
 function DayHeader({ day }: { day: Date }) {
+  const t = useTranslations('admin.calendar');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const today = isSameDay(day, nowInCostaRica());
   return (
     <div className="text-center pb-4 mb-2 border-b border-ink/10">
       <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-        {format(day, 'EEE', { locale: enUS })}
+        {format(day, t('dayFormats.weekday'), { locale: dfLocale })}
       </p>
       {today ? (
         <span className="mt-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-burgundy text-cream font-body text-base font-medium">
-          {format(day, 'd', { locale: enUS })}
+          {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
         </span>
       ) : (
         <p className="font-body text-xl font-light text-ink leading-none mt-1">
-          {format(day, 'd', { locale: enUS })}
+          {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
         </p>
       )}
     </div>
@@ -655,6 +672,8 @@ function MobileDaySelector({
   selected: number;
   onSelect: (idx: number) => void;
 }) {
+  const t = useTranslations('admin.calendar');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   return (
     <div className="mb-6 -mx-6 px-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex gap-2 min-w-max pb-1">
@@ -680,14 +699,14 @@ function MobileDaySelector({
                   active ? 'text-cream/80' : 'text-ink/50'
                 }`}
               >
-                {format(day, 'EEE', { locale: enUS })}
+                {format(day, t('dayFormats.weekday'), { locale: dfLocale })}
               </span>
               <span
                 className={`font-body text-lg font-light leading-none mt-1 ${
                   today && !active ? 'text-burgundy' : ''
                 }`}
               >
-                {format(day, 'd', { locale: enUS })}
+                {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
               </span>
             </button>
           );
@@ -706,6 +725,7 @@ function MobileDayList({
   onSelect: (c: SerializedClass) => void;
   onCreate: () => void;
 }) {
+  const t = useTranslations('admin.calendar');
   const addButton = (
     <button
       type="button"
@@ -713,7 +733,7 @@ function MobileDayList({
       className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-ink/25 font-body text-sm text-ink/60 hover:border-ink/50 hover:text-ink transition-colors duration-200 cursor-pointer"
     >
       <Plus width={16} height={16} strokeWidth={1.5} />
-      Add class
+      {t('mobile.addClass')}
     </button>
   );
 
@@ -721,7 +741,7 @@ function MobileDayList({
     return (
       <div className="space-y-4">
         <p className="font-body text-sm text-ink/40 italic py-8 text-center">
-          No classes scheduled for this day.
+          {t('mobile.noClassesThisDay')}
         </p>
         {addButton}
       </div>
@@ -754,7 +774,7 @@ function MobileDayList({
                 {clase.name}
               </p>
               <p className="font-body text-xs text-ink/60 mt-0.5">
-                {filled}/{clase.capacity} · {cat.label}
+                {filled}/{clase.capacity} · {t(`category.${cat.label}`)}
               </p>
             </div>
           </button>
@@ -787,14 +807,12 @@ function DrawerContent({
   onDelete: () => void;
   onAddParticipant: () => void;
 }) {
+  const t = useTranslations('admin.calendar');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const cat = categoryFor(clase.name);
   const remaining = clase.spotsRemaining;
-  const remainingLabel =
-    remaining === 0
-      ? 'Fully booked'
-      : remaining === 1
-      ? '1 spot left'
-      : `${remaining} spots available`;
+  const remainingLabel = t('drawer.remaining', { count: remaining });
 
   return (
     <div className="flex flex-col h-full">
@@ -807,13 +825,13 @@ function DrawerContent({
             style={{ background: cat.stripe }}
           />
           <span className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/60 truncate">
-            {cat.label}
+            {t(`category.${cat.label}`)}
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close drawer"
+          aria-label={t('drawer.close')}
           className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
         >
           <X width={20} height={20} strokeWidth={1.5} />
@@ -831,10 +849,10 @@ function DrawerContent({
         <div className="mt-6">
           <div className="flex justify-between items-center">
             <span className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-              Occupancy
+              {t('drawer.occupancy')}
             </span>
             <span className="font-body text-sm text-ink">
-              {occupied}/{clase.capacity} bookings
+              {t('drawer.bookingsCount', { occupied, capacity: clase.capacity })}
             </span>
           </div>
           <div className="h-1 bg-ink/10 mt-2 relative overflow-hidden">
@@ -850,28 +868,30 @@ function DrawerContent({
         <div className="mt-8">
           <MetaRow
             icon={<CalendarIcon width={16} height={16} strokeWidth={1.5} />}
-            label="Date & time"
-            value={`${format(inCostaRica(clase.startsAt), 'EEEE, MMMM d · HH:mm', { locale: enUS })} · Costa Rica`}
+            label={tc('labels.dateTime')}
+            value={t('drawer.dateTimeValue', {
+              date: capitalize(format(inCostaRica(clase.startsAt), t('drawer.dateTimePattern'), { locale: dfLocale })),
+            })}
           />
           <MetaRow
             icon={<Clock width={16} height={16} strokeWidth={1.5} />}
-            label="Duration"
-            value={`${clase.durationMinutes} minutes`}
+            label={tc('labels.duration')}
+            value={tc('units.minutes', { count: clase.durationMinutes })}
           />
           <MetaRow
             icon={<MapPin width={16} height={16} strokeWidth={1.5} />}
-            label="Location"
-            value={clase.location.toLowerCase() === 'open-air shala' ? 'Open-air shala' : clase.location}
+            label={tc('labels.location')}
+            value={clase.location.toLowerCase() === 'open-air shala' ? t('drawer.openAirShala') : clase.location}
           />
           <MetaRow
             icon={<DollarSign width={16} height={16} strokeWidth={1.5} />}
-            label="Price"
-            value={clase.priceUsd === 0 ? 'Free' : `$${clase.priceUsd} USD`}
+            label={tc('labels.price')}
+            value={clase.priceUsd === 0 ? tc('status.free') : tc('units.usd', { amount: clase.priceUsd })}
           />
           {clase.instructor && (
             <MetaRow
               icon={<User width={16} height={16} strokeWidth={1.5} />}
-              label="Instructor"
+              label={tc('labels.instructor')}
               value={clase.instructor}
               isLast
             />
@@ -885,7 +905,7 @@ function DrawerContent({
             icon={<Pencil width={16} height={16} strokeWidth={1.5} />}
             onClick={onEdit}
           >
-            Edit
+            {tc('actions.edit')}
           </Button>
           <button
             type="button"
@@ -893,7 +913,7 @@ function DrawerContent({
             className="inline-flex items-center gap-2 px-3 py-2 font-body text-sm text-burgundy hover:opacity-70 transition-opacity duration-200 cursor-pointer"
           >
             <Trash2 width={16} height={16} strokeWidth={1.5} />
-            <span>Delete</span>
+            <span>{tc('actions.delete')}</span>
           </button>
         </div>
 
@@ -901,7 +921,7 @@ function DrawerContent({
         <div className="mt-10">
           <div className="flex items-center justify-between gap-3">
             <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-              Bookings ({bookings.length})
+              {t('drawer.bookingsHeading', { count: bookings.length })}
             </p>
             <button
               type="button"
@@ -910,17 +930,17 @@ function DrawerContent({
               className="inline-flex items-center gap-1.5 font-body text-xs text-burgundy hover:opacity-70 transition-opacity duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <UserPlus width={14} height={14} strokeWidth={1.5} />
-              <span>Add participant</span>
+              <span>{t('drawer.addParticipant')}</span>
             </button>
           </div>
           {remaining === 0 && (
             <p className="font-body text-[11px] text-ink/40 mt-1">
-              Class is full — free a spot to add a walk-in.
+              {t('drawer.classFull')}
             </p>
           )}
           {bookings.length === 0 ? (
             <p className="font-body text-sm text-ink/40 italic py-8 text-center">
-              No bookings yet
+              {t('drawer.noBookings')}
             </p>
           ) : (
             <ul className="mt-4">
@@ -941,7 +961,9 @@ function DrawerContent({
                         {b.email}
                       </p>
                     </div>
-                    <Badge variant={badge.variant}>{badge.label}</Badge>
+                    <Badge variant={badge.variant}>
+                      {badge.labelKey ? tc(`status.${badge.labelKey}`) : b.paymentStatus}
+                    </Badge>
                   </li>
                 );
               })}

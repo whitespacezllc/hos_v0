@@ -1,111 +1,19 @@
-'use client';
-
-import { useState } from 'react';
-import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { describeResetError } from '@/lib/auth/errors';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AuthShell, AuthError, FIELD_INPUT, FIELD_LABEL, SUBMIT_BUTTON } from '@/components/auth/AuthShell';
+import { setRequestLocale } from 'next-intl/server';
+import { localeFromParams, type LocaleParams } from '@/i18n/routing';
+import { PageMessages } from '@/i18n/PageMessages';
+import ForgotPasswordClient from './ForgotPasswordClient';
 
 // ─── Forgot your password ────────────────────────────────────────────────────
-// Asks Supabase to email a one-time link that lands on /set-password. The
-// answer on screen is the same whether or not the address has an account:
-// the form is not a way to find out which emails are admins. The email
-// itself is the "Reset Password" template in Supabase (supabase/templates/
-// recovery.html), and the link it carries is verified on /set-password on
-// whatever device opens it.
+// The form is ForgotPasswordClient; this shell fixes the language from the
+// URL and hands the `auth` catalogue to the client.
 
-type Phase = 'idle' | 'sending' | 'sent';
-
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setPhase('sending');
-    try {
-      const supabase = createClient();
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/set-password`,
-      });
-      if (resetError) {
-        setError(describeResetError(resetError));
-        setPhase('idle');
-        return;
-      }
-      setPhase('sent');
-    } catch {
-      setError('The email couldn’t be sent right now. Please try again in a moment.');
-      setPhase('idle');
-    }
-  }
-
-  const backToSignIn = (
-    <Link href="/login" className="font-body text-sm text-ink/60 hover:text-ink underline underline-offset-4 decoration-[0.5px]">
-      Back to sign in
-    </Link>
-  );
+export default async function ForgotPasswordPage({ params }: LocaleParams) {
+  const locale = await localeFromParams(params);
+  setRequestLocale(locale);
 
   return (
-    <AuthShell
-      title="Forgot your password?"
-      subtitle="We’ll email you a link to choose a new one"
-      footer="House of Shakti · Admin panel"
-    >
-      {phase === 'sent' ? (
-        <div className="space-y-5" role="status">
-          <p className="font-body text-sm text-ink leading-relaxed">
-            If there’s an admin account for <strong className="font-medium">{email.trim()}</strong>, a link to
-            choose a new password is on its way. It works once and expires in an hour.
-          </p>
-          <p className="font-body text-xs text-ink/60 leading-relaxed">
-            Nothing after a few minutes? Check the spam folder, or come back and ask again.
-          </p>
-          <div className="text-center pt-1">{backToSignIn}</div>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email" className={FIELD_LABEL}>
-              Email
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              aria-invalid={error ? true : undefined}
-              className={FIELD_INPUT}
-            />
-          </div>
-
-          {error && <AuthError>{error}</AuthError>}
-
-          <Button type="submit" className={SUBMIT_BUTTON} disabled={phase === 'sending'} aria-busy={phase === 'sending'}>
-            {phase === 'sending' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden />
-                Sending…
-              </>
-            ) : (
-              'Email me a link'
-            )}
-          </Button>
-
-          <div className="text-center pt-1">{backToSignIn}</div>
-        </form>
-      )}
-    </AuthShell>
+    <PageMessages namespaces={['auth']}>
+      <ForgotPasswordClient />
+    </PageMessages>
   );
 }

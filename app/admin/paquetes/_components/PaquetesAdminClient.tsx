@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Package, Check, Mail, X, Copy, CalendarClock, Users, ArrowRight } from 'lucide-react';
 import type { PackPurchase } from '@/lib/queries/packs';
 import type { PackConfirmationReminder } from '@/types';
@@ -16,6 +17,8 @@ import { confirmBooking } from '@/app/actions/bookings';
 
 export default function PaquetesAdminClient({ purchases }: { purchases: PackPurchase[] }) {
   const router = useRouter();
+  const t = useTranslations('admin.packs');
+  const tc = useTranslations('admin.common');
   const [isPending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -39,8 +42,8 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
       if (res.ok) {
         flash(
           res.emailSent
-            ? `Payment confirmed — code ${res.code} emailed.`
-            : `Payment confirmed — code ${res.code}. Email not sent (configure RESEND_API_KEY, then resend).`,
+            ? t('toast.confirmedEmailed', { code: res.code ?? '' })
+            : t('toast.confirmedNoEmail', { code: res.code ?? '' }),
         );
         // Always remind the admin to reconcile this customer against Bookings.
         // The list is refreshed when the reminder is dismissed (deferring the
@@ -51,7 +54,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
           router.refresh();
         }
       } else {
-        flash('Could not confirm payment.');
+        flash(t('toast.confirmFailed'));
       }
     });
   }
@@ -70,7 +73,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
       await confirmBooking(bookingId);
       setConfirmingBooking(false);
       setReminder(null);
-      flash('Class booking confirmed — pack credit redeemed.');
+      flash(t('toast.bookingConfirmed'));
       router.refresh();
     });
   }
@@ -86,7 +89,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
     startTransition(async () => {
       const res = await resendPackCode(id);
       setBusyId(null);
-      flash(res.ok && res.emailSent ? 'Code email resent.' : 'Email not sent (check RESEND_API_KEY).');
+      flash(res.ok && res.emailSent ? t('toast.resent') : t('toast.resendFailed'));
     });
   }
 
@@ -101,11 +104,22 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
 
   const pendingCount = purchases.filter((p) => p.status === 'pending').length;
 
+  // Column headers live in admin.common.labels; the order is the table's.
+  const headers = [
+    tc('labels.customer'),
+    tc('labels.pack'),
+    tc('labels.code'),
+    tc('labels.usage'),
+    tc('labels.amount'),
+    tc('labels.status'),
+    tc('labels.actions'),
+  ];
+
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-6xl mx-auto">
       <PageHeader
-        heading="Class packs"
-        description={`${purchases.length} purchases · ${pendingCount} awaiting payment`}
+        heading={t('heading')}
+        description={t('summary', { total: purchases.length, pending: pendingCount })}
       />
 
       {toast && (
@@ -117,8 +131,8 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
       {purchases.length === 0 ? (
         <EmptyState
           icon={<Package strokeWidth={1} />}
-          heading="No pack purchases yet"
-          description="When a customer buys a class pack at /paquetes, it appears here for you to confirm payment and issue the code."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
         />
       ) : (
         <div className="bg-white border border-ink/10 overflow-hidden">
@@ -126,16 +140,14 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
             <table className="w-full">
               <thead>
                 <tr className="bg-neutral-50 border-b border-ink/10">
-                  {['Customer', 'Pack', 'Code', 'Usage', 'Amount', 'Status', 'Actions'].map(
-                    (h, i) => (
-                      <th
-                        key={i}
-                        className="text-left px-4 py-3 font-body text-[10px] tracking-[0.2em] uppercase font-medium text-ink/50"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  {headers.map((h, i) => (
+                    <th
+                      key={i}
+                      className="text-left px-4 py-3 font-body text-[10px] tracking-[0.2em] uppercase font-medium text-ink/50"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -159,10 +171,10 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                           type="button"
                           onClick={() => {
                             navigator.clipboard?.writeText(p.code!);
-                            flash(`Copied ${p.code}`);
+                            flash(t('toast.copied', { code: p.code ?? '' }));
                           }}
                           className="inline-flex items-center gap-1.5 font-mono text-xs text-ink bg-neutral-50 px-2 py-1 hover:bg-neutral-50 transition-colors cursor-pointer"
-                          title="Copy code"
+                          title={t('copyCode')}
                         >
                           {p.code}
                           <Copy width={12} height={12} strokeWidth={1.5} className="text-ink/40" />
@@ -193,10 +205,10 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                         }
                       >
                         {p.status === 'paid'
-                          ? 'Paid'
+                          ? tc('status.paid')
                           : p.status === 'pending'
-                          ? 'Pending payment'
-                          : 'Cancelled'}
+                          ? tc('status.awaitingPayment')
+                          : tc('status.cancelled')}
                       </Badge>
                     </td>
                     <td className="px-4 py-4">
@@ -207,12 +219,12 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                               onClick={() => handleConfirm(p.id)}
                               disabled={isPending && busyId === p.id}
                               icon={<Check width={14} height={14} strokeWidth={1.5} />}
-                              label="Confirm payment"
+                              label={t('actions.confirmPayment')}
                             />
                             <IconButton
                               onClick={() => handleCancel(p.id)}
                               disabled={isPending && busyId === p.id}
-                              ariaLabel="Cancel"
+                              ariaLabel={tc('actions.cancel')}
                               hoverDestructive
                             >
                               <X width={15} height={15} strokeWidth={1.5} />
@@ -224,7 +236,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                             onClick={() => handleResend(p.id)}
                             disabled={isPending && busyId === p.id}
                             icon={<Mail width={14} height={14} strokeWidth={1.5} />}
-                            label="Resend email"
+                            label={t('actions.resendEmail')}
                           />
                         )}
                       </div>
@@ -241,12 +253,12 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
       <Modal
         isOpen={!!reminder}
         onClose={closeReminder}
-        title="Payment confirmed — now check Bookings"
-        subtitle="Reconcile this customer so the pack usage stays accurate."
+        title={t('reminder.title')}
+        subtitle={t('reminder.subtitle')}
         footer={
           <>
             <Button variant="secondary" onClick={closeReminder} disabled={confirmingBooking}>
-              Done
+              {tc('actions.done')}
             </Button>
             {reminder?.linkedBooking ? (
               <Button
@@ -255,7 +267,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                 onClick={handleConfirmLinkedBooking}
                 loading={confirmingBooking}
               >
-                Confirm booking now
+                {t('reminder.confirmBookingNow')}
               </Button>
             ) : (
               <Link href={bookingsHref} className="inline-flex">
@@ -263,7 +275,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
                   variant="primary"
                   icon={<ArrowRight width={16} height={16} strokeWidth={1.5} />}
                 >
-                  Go to Bookings
+                  {t('reminder.goToBookings')}
                 </Button>
               </Link>
             )}
@@ -283,10 +295,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
           </div>
 
           <p className="font-body text-sm text-ink/70 leading-relaxed">
-            Go to <strong>Bookings</strong> and match this customer against their class
-            reservations, then confirm each one so the pack&apos;s usage (e.g. 1/5, 2/5) stays
-            up to date. Cash and Venmo need this manual check; card payments (Tilopay) reconcile
-            automatically.
+            {t.rich('reminder.body', { strong: (chunks: React.ReactNode) => <strong>{chunks}</strong> })}
           </p>
 
           {reminder?.linkedBooking ? (
@@ -294,14 +303,14 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
               <CalendarClock width={18} height={18} strokeWidth={1.5} className="text-burgundy flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="font-body text-xs text-ink/60">
-                  This pack was bought with a class booking that&apos;s still pending:
+                  {t('reminder.linkedIntro')}
                 </p>
                 <p className="font-body text-sm font-medium text-ink mt-1">
                   {reminder.linkedBooking.className}
                 </p>
                 <p className="font-mono text-xs text-ink/60 mt-0.5">{reminder.linkedBooking.reference}</p>
                 <p className="font-body text-xs text-ink/60 mt-2">
-                  Confirm it here to redeem the first credit, or review it in Bookings.
+                  {t('reminder.linkedHint')}
                 </p>
               </div>
             </div>
@@ -310,7 +319,7 @@ export default function PaquetesAdminClient({ purchases }: { purchases: PackPurc
               href={bookingsHref}
               className="inline-flex items-center gap-1.5 font-body text-sm text-burgundy hover:opacity-70 transition-opacity"
             >
-              Open this customer in Bookings
+              {t('reminder.openCustomer')}
               <ArrowRight width={14} height={14} strokeWidth={1.5} />
             </Link>
           )}

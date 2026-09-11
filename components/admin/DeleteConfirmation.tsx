@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './Button';
 
@@ -26,10 +27,11 @@ export function DeleteConfirmation({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Delete',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   loading = false,
 }: DeleteConfirmationProps) {
+  const tc = useTranslations('admin.common');
   // Close on Escape.
   useEffect(() => {
     if (!isOpen) return;
@@ -92,14 +94,14 @@ export function DeleteConfirmation({
                 onClick={onClose}
                 disabled={loading}
               >
-                {cancelLabel}
+                {cancelLabel ?? tc('actions.cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={onConfirm}
                 loading={loading}
               >
-                {confirmLabel}
+                {confirmLabel ?? tc('actions.delete')}
               </Button>
             </div>
           </motion.div>

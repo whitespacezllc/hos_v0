@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,13 +26,22 @@ import {
   deleteUpsell,
 } from '@/app/actions/upsells';
 
-const upsellSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  priceUsd: z.coerce.number().min(0, "Price can't be negative"),
-  isActive: z.boolean(),
-});
-type UpsellForm = z.infer<typeof upsellSchema>;
+// The schema is a factory so the validation copy follows the panel's language
+// (same pattern as personalSchema in the public BookingFlow).
+type UpsellSchemaMessages = {
+  nameRequired: string;
+  descriptionRequired: string;
+  priceMin: string;
+};
+
+const upsellSchema = (msgs: UpsellSchemaMessages) =>
+  z.object({
+    name: z.string().min(1, msgs.nameRequired),
+    description: z.string().min(1, msgs.descriptionRequired),
+    priceUsd: z.coerce.number().min(0, msgs.priceMin),
+    isActive: z.boolean(),
+  });
+type UpsellForm = z.infer<ReturnType<typeof upsellSchema>>;
 
 const DEFAULTS: UpsellForm = {
   name: '',
@@ -47,11 +57,23 @@ export default function UpsellsClient({
   initialUpsells: Upsell[];
 }) {
   const router = useRouter();
+  const t = useTranslations('admin.upsells');
+  const tc = useTranslations('admin.common');
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Upsell | undefined>();
   const [deleting, setDeleting] = useState<Upsell | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      upsellSchema({
+        nameRequired: tc('validation.nameRequired'),
+        descriptionRequired: tc('validation.descriptionRequired'),
+        priceMin: tc('validation.priceMin'),
+      }),
+    [tc],
+  );
 
   const {
     register,
@@ -61,7 +83,7 @@ export default function UpsellsClient({
     watch,
     formState: { errors },
   } = useForm<UpsellForm>({
-    resolver: zodResolver(upsellSchema),
+    resolver: zodResolver(schema),
     defaultValues: DEFAULTS,
   });
 
@@ -118,15 +140,15 @@ export default function UpsellsClient({
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto">
       <PageHeader
-        heading="Upsells"
-        description="Additional products and services available at booking."
+        heading={t('heading')}
+        description={t('description')}
         actions={
           <Button
             variant="primary"
             icon={<Plus width={16} height={16} strokeWidth={1.5} />}
             onClick={openCreate}
           >
-            New upsell
+            {t('new')}
           </Button>
         }
       />
@@ -134,15 +156,15 @@ export default function UpsellsClient({
       {initialUpsells.length === 0 && (
         <EmptyState
           icon={<Tag strokeWidth={1} />}
-          heading="No upsells configured"
-          description="Create your first upsell to offer extras during booking."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
           action={
             <Button
               variant="primary"
               icon={<Plus width={16} height={16} strokeWidth={1.5} />}
               onClick={openCreate}
             >
-              New upsell
+              {t('new')}
             </Button>
           }
         />
@@ -159,7 +181,7 @@ export default function UpsellsClient({
                       {u.name}
                     </h3>
                     <Badge variant={u.isActive ? 'active' : 'inactive'}>
-                      {u.isActive ? 'Active' : 'Inactive'}
+                      {u.isActive ? tc('status.active') : tc('status.inactive')}
                     </Badge>
                   </div>
                 </div>
@@ -178,17 +200,17 @@ export default function UpsellsClient({
                     checked={u.isActive}
                     onChange={() => handleToggle(u.id)}
                     disabled={isPending}
-                    ariaLabel={u.isActive ? 'Hide upsell' : 'Show upsell'}
+                    ariaLabel={u.isActive ? t('toggle.hide') : t('toggle.show')}
                   />
                   <span className="font-body text-xs text-ink/60">
-                    {u.isActive ? 'Visible' : 'Hidden'}
+                    {u.isActive ? t('visible') : t('hidden')}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => openEdit(u)}
-                    aria-label="Edit upsell"
+                    aria-label={t('edit')}
                     className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer"
                   >
                     <Pencil width={16} height={16} strokeWidth={1.5} />
@@ -196,7 +218,7 @@ export default function UpsellsClient({
                   <button
                     type="button"
                     onClick={() => setDeleting(u)}
-                    aria-label="Delete upsell"
+                    aria-label={t('delete')}
                     className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-burgundy transition-colors duration-200 cursor-pointer"
                   >
                     <Trash2 width={16} height={16} strokeWidth={1.5} />
@@ -213,7 +235,7 @@ export default function UpsellsClient({
             className="border-2 border-dashed border-ink/15 p-6 flex flex-col items-center justify-center min-h-[180px] hover:border-ink/30 transition-colors duration-200 cursor-pointer text-ink/40 hover:text-ink/60"
           >
             <Plus width={24} height={24} strokeWidth={1} />
-            <span className="font-body text-sm mt-3">Add upsell</span>
+            <span className="font-body text-sm mt-3">{t('add')}</span>
           </button>
         </div>
       )}
@@ -222,8 +244,8 @@ export default function UpsellsClient({
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit upsell' : 'New upsell'}
-        subtitle={editing ? undefined : 'A single add-on offered at booking.'}
+        title={editing ? t('edit') : t('new')}
+        subtitle={editing ? undefined : t('modal.subtitle')}
         footer={
           <>
             <Button
@@ -231,52 +253,52 @@ export default function UpsellsClient({
               onClick={() => setModalOpen(false)}
               disabled={isPending}
             >
-              Cancel
+              {tc('actions.cancel')}
             </Button>
             <Button
               variant="primary"
               onClick={handleSubmit(onSubmit)}
               loading={isPending}
             >
-              {editing ? 'Save changes' : 'Create upsell'}
+              {editing ? t('modal.saveChanges') : t('modal.create')}
             </Button>
           </>
         }
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Input
-            label="Name"
-            placeholder="Premium yoga mat"
+            label={tc('labels.name')}
+            placeholder={t('form.namePlaceholder')}
             error={errors.name?.message}
             {...register('name')}
           />
           <Textarea
-            label="Description"
-            placeholder="Short description shown at booking..."
+            label={tc('labels.description')}
+            placeholder={t('form.descriptionPlaceholder')}
             rows={2}
             error={errors.description?.message}
             {...register('description')}
           />
           <Input
             type="number"
-            label="Price (USD)"
+            label={t('form.priceUsd')}
             min={0}
             step={0.5}
             error={errors.priceUsd?.message}
             {...register('priceUsd')}
           />
           <Field
-            label="Visibility"
-            helper="Hidden upsells don't appear on the booking flow."
+            label={t('form.visibility')}
+            helper={t('form.visibilityHelper')}
           >
             <div className="flex items-center justify-between mt-2">
               <span className="font-body text-sm text-ink">
-                {isActive ? 'Visible at booking' : 'Hidden'}
+                {isActive ? t('form.visibleAtBooking') : t('hidden')}
               </span>
               <Toggle
                 checked={isActive}
                 onChange={(v) => setValue('isActive', v, { shouldDirty: true })}
-                ariaLabel="Toggle visibility"
+                ariaLabel={t('form.toggleVisibility')}
               />
             </div>
           </Field>
@@ -287,9 +309,10 @@ export default function UpsellsClient({
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete upsell?"
-        description="This will remove this upsell from future bookings."
-        confirmLabel="Delete upsell"
+        title={t('deleteConfirm.title')}
+        description={t('deleteConfirm.description')}
+        confirmLabel={t('delete')}
+        cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
       />
     </div>

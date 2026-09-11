@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -22,6 +22,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { Booking } from '@/types';
+import type { AppLocale } from '@/i18n/routing';
+import { dateFnsLocale } from '@/lib/dates';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { Button } from '@/components/admin/Button';
 import { Badge } from '@/components/admin/Badge';
@@ -30,7 +32,7 @@ import { DeleteConfirmation } from '@/components/admin/DeleteConfirmation';
 import { NativeSelect } from '@/components/admin/NativeSelect';
 import { RowIconButton } from '@/app/admin/clases/_components/ClasesClient';
 import { confirmBooking, cancelBookingAdmin } from '@/app/actions/bookings';
-import { paymentMethodLabel } from '@/lib/payment-methods';
+import type { PaymentMethod } from '@/lib/payment-methods';
 import { costaRicaDateString, inCostaRica } from '@/lib/costa-rica-time';
 
 type SerializedBooking = Omit<Booking, 'createdAt'> & { createdAt: string };
@@ -51,39 +53,39 @@ function bookingTotal(b: SerializedBooking): number {
   return (b.totalUsd ?? 0) + (b.packPurchase?.amountUsd ?? 0);
 }
 
+type BadgeVariant = 'active' | 'warning' | 'inactive' | 'destructive' | 'neutral';
+
 // Map paymentStatus → Badge variant + display label (matches Calendar mapping).
-function paymentBadge(status: Booking['paymentStatus']): {
-  variant: 'active' | 'warning' | 'inactive' | 'destructive' | 'neutral';
-  label: string;
-} {
-  switch (status) {
-    case 'paid':
-      return { variant: 'active', label: 'Paid' };
-    case 'free':
-      return { variant: 'neutral', label: 'Free' };
-    case 'pending':
-      return { variant: 'warning', label: 'Pending' };
-    case 'cancelled':
-      return { variant: 'inactive', label: 'Cancelled' };
-    case 'no-show':
-      return { variant: 'destructive', label: 'No-show' };
-    default:
-      return { variant: 'neutral', label: status };
-  }
+// The labels come from admin.common.status, in the admin's language.
+function usePaymentBadge() {
+  const tc = useTranslations('admin.common');
+  return (status: Booking['paymentStatus']): { variant: BadgeVariant; label: string } => {
+    switch (status) {
+      case 'paid':
+        return { variant: 'active', label: tc('status.paid') };
+      case 'free':
+        return { variant: 'neutral', label: tc('status.free') };
+      case 'pending':
+        return { variant: 'warning', label: tc('status.pending') };
+      case 'cancelled':
+        return { variant: 'inactive', label: tc('status.cancelled') };
+      case 'no-show':
+        return { variant: 'destructive', label: tc('status.noShow') };
+      default:
+        return { variant: 'neutral', label: status };
+    }
+  };
+}
+
+// The catalogue key for a booking's payment method. A booking without one is
+// read as paid by card, as the old shared label helper did.
+function paymentMethodKey(method: PaymentMethod | null | undefined): PaymentMethod {
+  return method ?? 'card';
 }
 
 // How many bookings show per page. Keeps the list scannable instead of an
 // endless scroll; pending ones are highlighted so they don't get lost.
 const PAGE_SIZE = 6;
-
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'free', label: 'Free' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'no-show', label: 'No-show' },
-];
 
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ReservasClient({
@@ -98,6 +100,8 @@ export default function ReservasClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations('admin.bookings');
+  const tc = useTranslations('admin.common');
 
   // Filters — `?q=` pre-fills the search (e.g. deep-linked from Packs to
   // reconcile a customer's bookings against their pack).
@@ -116,14 +120,28 @@ export default function ReservasClient({
   const [cancelTarget, setCancelTarget] = useState<SerializedBooking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Status filter options — the values are the database's, the labels the
+  // admin's language.
+  const statusOptions = useMemo(
+    () => [
+      { value: 'all', label: t('filters.allStatuses') },
+      { value: 'paid', label: tc('status.paid') },
+      { value: 'free', label: tc('status.free') },
+      { value: 'pending', label: tc('status.pending') },
+      { value: 'cancelled', label: tc('status.cancelled') },
+      { value: 'no-show', label: tc('status.noShow') },
+    ],
+    [t, tc],
+  );
+
   // Class filter options
   const classOptions = useMemo(() => {
     const present = Array.from(new Set(initialBookings.map((b) => b.className))).sort();
     return [
-      { value: 'all', label: 'All classes' },
+      { value: 'all', label: t('filters.allClasses') },
       ...present.map((name) => ({ value: name, label: name })),
     ];
-  }, [initialBookings]);
+  }, [initialBookings, t]);
 
   // Filter + sort
   const filtered = useMemo(() => {
@@ -222,15 +240,15 @@ export default function ReservasClient({
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
       <PageHeader
-        heading="Bookings"
-        description={`${initialBookings.length} ${initialBookings.length === 1 ? 'booking' : 'bookings'}`}
+        heading={t('heading')}
+        description={tc('units.bookings', { count: initialBookings.length })}
       />
 
       {initialBookings.length === 0 ? (
         <EmptyState
           icon={<UsersIcon strokeWidth={1} />}
-          heading="No bookings yet"
-          description="Bookings made through the public site will appear here."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
         />
       ) : (
         <>
@@ -248,7 +266,7 @@ export default function ReservasClient({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, email, or code..."
+                placeholder={t('filters.searchPlaceholder')}
                 className="w-full pl-7 pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200 placeholder:text-ink/30 placeholder:italic"
               />
             </div>
@@ -257,42 +275,42 @@ export default function ReservasClient({
               value={classFilter}
               onChange={(e) => setClassFilter(e.target.value)}
               options={classOptions}
-              aria-label="Filter by class"
+              aria-label={t('filters.byClass')}
             />
             <NativeSelect
               filter
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              options={STATUS_OPTIONS}
-              aria-label="Filter by status"
+              options={statusOptions}
+              aria-label={t('filters.byStatus')}
             />
             <div className="flex items-end gap-2">
               <label className="flex flex-col gap-1">
-                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">From</span>
+                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">{t('filters.from')}</span>
                 <input
                   type="date"
                   value={fromDate}
                   max={toDate || undefined}
                   onChange={(e) => setFromDate(e.target.value)}
-                  aria-label="From date"
+                  aria-label={t('filters.fromDate')}
                   className="pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">To</span>
+                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">{t('filters.to')}</span>
                 <input
                   type="date"
                   value={toDate}
                   min={fromDate || undefined}
                   onChange={(e) => setToDate(e.target.value)}
-                  aria-label="To date"
+                  aria-label={t('filters.toDate')}
                   className="pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200"
                 />
               </label>
             </div>
             {filtersActive && (
               <Button variant="tertiary" onClick={clearFilters} className="md:ml-auto">
-                Clear
+                {t('filters.clear')}
               </Button>
             )}
           </div>
@@ -300,12 +318,12 @@ export default function ReservasClient({
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Search strokeWidth={1} />}
-              heading="No bookings match your filters"
-              description="Try clearing the filters."
+              heading={t('noMatch.heading')}
+              description={t('noMatch.description')}
               action={
                 filtersActive ? (
                   <Button variant="tertiary" onClick={clearFilters}>
-                    Clear filters
+                    {tc('actions.clearFilters')}
                   </Button>
                 ) : undefined
               }
@@ -347,7 +365,7 @@ export default function ReservasClient({
             <motion.aside
               role="dialog"
               aria-modal="true"
-              aria-label="Booking details"
+              aria-label={t('drawer.title')}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -373,10 +391,10 @@ export default function ReservasClient({
         isOpen={!!cancelTarget}
         onClose={() => setCancelTarget(null)}
         onConfirm={handleConfirmCancel}
-        title="Cancel booking?"
-        description="This will mark the booking as cancelled. The student will be notified."
-        confirmLabel="Cancel booking"
-        cancelLabel="Keep booking"
+        title={t('cancelDialog.title')}
+        description={t('cancelDialog.description')}
+        confirmLabel={t('actions.cancelBooking')}
+        cancelLabel={t('cancelDialog.keep')}
         loading={isCancelling}
       />
     </div>
@@ -399,14 +417,19 @@ function BookingsTable({
   onView: (b: SerializedBooking) => void;
   onCancel: (b: SerializedBooking) => void;
 }) {
+  const t = useTranslations('admin.bookings');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
+  const paymentBadge = usePaymentBadge();
+
   const headers = [
-    { label: 'Code', className: '' },
-    { label: 'Student', className: '' },
-    { label: 'Class', className: '' },
-    { label: 'Date', className: 'hidden md:table-cell' },
-    { label: 'People', className: 'hidden lg:table-cell' },
-    { label: 'Total', className: 'hidden lg:table-cell' },
-    { label: 'Status', className: '' },
+    { label: tc('labels.code'), className: '' },
+    { label: tc('labels.student'), className: '' },
+    { label: tc('labels.class'), className: '' },
+    { label: tc('labels.date'), className: 'hidden md:table-cell' },
+    { label: tc('labels.people'), className: 'hidden lg:table-cell' },
+    { label: tc('labels.total'), className: 'hidden lg:table-cell' },
+    { label: tc('labels.status'), className: '' },
     { label: '', className: '' },
   ];
 
@@ -468,25 +491,25 @@ function BookingsTable({
                     <p className="font-body text-sm text-ink truncate">{b.className}</p>
                     {clase && (
                       <p className="font-body text-xs text-ink/50 mt-0.5">
-                        {format(inCostaRica(clase.startsAt), 'MMM d · HH:mm', { locale: enUS })}
+                        {format(inCostaRica(clase.startsAt), t('dates.classShort'), { locale: dfLocale })}
                       </p>
                     )}
                   </td>
                   <td className="px-4 py-4 hidden md:table-cell">
                     <span className="font-body text-sm text-ink/80">
-                      {format(inCostaRica(b.createdAt), 'MMM d, yyyy', { locale: enUS })}
+                      {format(inCostaRica(b.createdAt), t('dates.dateShort'), { locale: dfLocale })}
                     </span>
                   </td>
                   <td className="px-4 py-4 hidden lg:table-cell">
                     <span className="font-body text-sm text-ink">{b.persons}</span>
                   </td>
                   <td className="px-4 py-4 hidden lg:table-cell">
-                    <span className="font-body text-sm font-medium text-ink">${total}</span>
+                    <span className="font-body text-sm font-medium text-ink">{tc('units.priceUsd', { amount: total })}</span>
                   </td>
                   <td className="px-4 py-4">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                     <p className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/40 mt-1.5">
-                      {paymentMethodLabel(b.paymentMethod)}
+                      {tc(`paymentMethod.${paymentMethodKey(b.paymentMethod)}`)}
                     </p>
                   </td>
                   <td className="px-4 py-4">
@@ -495,13 +518,13 @@ function BookingsTable({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <RowIconButton
-                        ariaLabel="View booking"
+                        ariaLabel={t('table.viewBooking')}
                         onClick={() => onView(b)}
                       >
                         <Eye width={16} height={16} strokeWidth={1.5} />
                       </RowIconButton>
                       <RowIconButton
-                        ariaLabel="Cancel booking"
+                        ariaLabel={t('actions.cancelBooking')}
                         onClick={() => onCancel(b)}
                         hoverDestructive
                         disabled={b.paymentStatus === 'cancelled'}
@@ -536,6 +559,8 @@ function Pagination({
   pageSize: number;
   onPageChange: (p: number) => void;
 }) {
+  const t = useTranslations('admin.bookings');
+
   if (pageCount <= 1) return null;
 
   const first = (page - 1) * pageSize + 1;
@@ -554,15 +579,19 @@ function Pagination({
   return (
     <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <p className="font-body text-xs text-ink/50">
-        Showing <span className="text-ink/70">{first}–{last}</span> of{' '}
-        <span className="text-ink/70">{total}</span>
+        {t.rich('pagination.showing', {
+          first,
+          last,
+          total,
+          n: (chunks: React.ReactNode) => <span className="text-ink/70">{chunks}</span>,
+        })}
       </p>
-      <nav className="flex items-center gap-1" aria-label="Pagination">
+      <nav className="flex items-center gap-1" aria-label={t('pagination.label')}>
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
-          aria-label="Previous page"
+          aria-label={t('pagination.previous')}
           className="p-2 text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft width={16} height={16} strokeWidth={1.5} />
@@ -595,7 +624,7 @@ function Pagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page === pageCount}
-          aria-label="Next page"
+          aria-label={t('pagination.next')}
           className="p-2 text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight width={16} height={16} strokeWidth={1.5} />
@@ -627,7 +656,26 @@ function BookingDrawerContent({
   onConfirmPayment: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('admin.bookings');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
+  const paymentBadge = usePaymentBadge();
   const badge = paymentBadge(booking.paymentStatus);
+
+  // The pack purchase's status is a database value ('pending' | 'paid' |
+  // 'cancelled'); anything else is shown as stored.
+  function packStatusLabel(status: string): string {
+    switch (status) {
+      case 'pending':
+        return t('packStatus.pending');
+      case 'paid':
+        return t('packStatus.paid');
+      case 'cancelled':
+        return t('packStatus.cancelled');
+      default:
+        return status;
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -639,7 +687,7 @@ function BookingDrawerContent({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close drawer"
+          aria-label={t('drawer.close')}
           className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
         >
           <X width={20} height={20} strokeWidth={1.5} />
@@ -654,7 +702,7 @@ function BookingDrawerContent({
         <div className="mt-3 flex items-center gap-3">
           <Badge variant={badge.variant}>{badge.label}</Badge>
           <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">
-            {paymentMethodLabel(booking.paymentMethod)}
+            {tc(`paymentMethod.${paymentMethodKey(booking.paymentMethod)}`)}
           </span>
         </div>
 
@@ -667,7 +715,7 @@ function BookingDrawerContent({
               onClick={onConfirmPayment}
               loading={isPending}
             >
-              {booking.paymentMethod === 'card' ? 'Confirm payment' : 'Mark as paid'}
+              {booking.paymentMethod === 'card' ? t('drawer.confirmPayment') : t('drawer.markAsPaid')}
             </Button>
           )}
           {booking.paymentStatus !== 'cancelled' && (
@@ -677,49 +725,51 @@ function BookingDrawerContent({
               className="inline-flex items-center gap-2 px-3 py-2 font-body text-sm text-burgundy hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               <Trash2 width={16} height={16} strokeWidth={1.5} />
-              <span>Cancel booking</span>
+              <span>{t('actions.cancelBooking')}</span>
             </button>
           )}
         </div>
 
         {/* Student section */}
-        <Section title="Student">
-          <DrawerRow icon={<UserIcon width={14} height={14} strokeWidth={1.5} />} label="Email" value={booking.email} />
+        <Section title={tc('labels.student')}>
+          <DrawerRow icon={<UserIcon width={14} height={14} strokeWidth={1.5} />} label={tc('labels.email')} value={booking.email} />
           {booking.phone && (
-            <DrawerRow icon={<Phone width={14} height={14} strokeWidth={1.5} />} label="Phone" value={booking.phone} />
+            <DrawerRow icon={<Phone width={14} height={14} strokeWidth={1.5} />} label={tc('labels.phone')} value={booking.phone} />
           )}
           {booking.referralCode && (
-            <DrawerRow icon={<Tag width={14} height={14} strokeWidth={1.5} />} label={booking.referralCode.startsWith('PACK-') ? 'Pack code' : 'Promo code'} value={booking.referralCode} />
+            <DrawerRow icon={<Tag width={14} height={14} strokeWidth={1.5} />} label={booking.referralCode.startsWith('PACK-') ? t('drawer.packCode') : t('drawer.promoCode')} value={booking.referralCode} />
           )}
           {booking.packPurchase && (
             <DrawerRow
               icon={<Tag width={14} height={14} strokeWidth={1.5} />}
-              label="Bought with pack"
-              value={`$${booking.packPurchase.amountUsd} · ${booking.packPurchase.status}${booking.packPurchase.code ? ` · ${booking.packPurchase.code}` : ''}`}
+              label={t('drawer.boughtWithPack')}
+              value={`${tc('units.priceUsd', { amount: booking.packPurchase.amountUsd })} · ${packStatusLabel(booking.packPurchase.status)}${booking.packPurchase.code ? ` · ${booking.packPurchase.code}` : ''}`}
             />
           )}
           {booking.tilopayTransaction && (
-            <DrawerRow icon={<DollarSign width={14} height={14} strokeWidth={1.5} />} label="Tilopay transaction" value={booking.tilopayTransaction} />
+            <DrawerRow icon={<DollarSign width={14} height={14} strokeWidth={1.5} />} label={t('drawer.tilopayTransaction')} value={booking.tilopayTransaction} />
           )}
           <DrawerRow
             icon={<CalendarDays width={14} height={14} strokeWidth={1.5} />}
-            label="Booked on"
-            value={format(inCostaRica(booking.createdAt), 'MMM d, yyyy · HH:mm', { locale: enUS })}
+            label={t('drawer.bookedOn')}
+            value={format(inCostaRica(booking.createdAt), t('dates.dateTime'), { locale: dfLocale })}
           />
         </Section>
 
         {/* Class section */}
         {bookingClass && (
-          <Section title="Class">
+          <Section title={tc('labels.class')}>
             <p className="font-body text-sm font-medium text-ink mb-3">{bookingClass.name}</p>
             <DrawerRow
               icon={<CalendarDays width={14} height={14} strokeWidth={1.5} />}
-              label="Date"
-              value={`${format(inCostaRica(bookingClass.startsAt), 'MMM d, yyyy · HH:mm', { locale: enUS })} · Costa Rica`}
+              label={tc('labels.date')}
+              value={t('drawer.classDate', {
+                date: format(inCostaRica(bookingClass.startsAt), t('dates.dateTime'), { locale: dfLocale }),
+              })}
             />
             <DrawerRow
               icon={<MapPin width={14} height={14} strokeWidth={1.5} />}
-              label="People"
+              label={tc('labels.people')}
               value={String(booking.persons)}
             />
           </Section>
@@ -727,7 +777,7 @@ function BookingDrawerContent({
 
         {/* Upsells */}
         {upsells.length > 0 && (
-          <Section title="Extras">
+          <Section title={tc('labels.extras')}>
             <ul className="space-y-2">
               {upsells.map((u) => (
                 <li key={u.id} className="flex items-center justify-between">
@@ -735,7 +785,7 @@ function BookingDrawerContent({
                     <DollarSign width={14} height={14} strokeWidth={1.5} className="text-ink/40" />
                     {u.name}
                   </span>
-                  <span className="font-body text-sm font-medium text-ink">${u.priceUsd}</span>
+                  <span className="font-body text-sm font-medium text-ink">{tc('units.priceUsd', { amount: u.priceUsd })}</span>
                 </li>
               ))}
             </ul>
@@ -744,8 +794,8 @@ function BookingDrawerContent({
 
         {/* Total */}
         <div className="mt-10 flex justify-between items-center bg-burgundy text-cream px-5 py-4">
-          <span className="font-body text-sm text-cream/70">Total</span>
-          <span className="font-body text-lg font-medium text-cream">${total} USD</span>
+          <span className="font-body text-sm text-cream/70">{tc('labels.total')}</span>
+          <span className="font-body text-lg font-medium text-cream">{tc('units.usd', { amount: total })}</span>
         </div>
       </div>
     </div>
