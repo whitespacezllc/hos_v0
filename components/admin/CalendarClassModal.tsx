@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { costaRicaDateString, costaRicaInstant, costaRicaTimeString } from '@/lib/costa-rica-time';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,20 +30,34 @@ export type EditableInstance = {
   isActive: boolean;
 };
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  instructorId: z.string(), // '' = unassigned
-  date: z.string().min(1, 'Date is required'),
-  time: z.string().min(1, 'Time is required'),
-  durationMinutes: z.coerce.number().min(15, 'Minimum 15 minutes').max(480, 'Maximum 8 hours'),
-  capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
-  priceUsd: z.coerce.number().min(0, "Price can't be negative"),
-  location: z.string().min(1, 'Location is required'),
-  isActive: z.boolean(),
-});
+// The messages are the reader's — built inside the component, where the
+// catalogue is at hand (admin.common.validation).
+type FormErrors = {
+  nameRequired: string;
+  dateRequired: string;
+  timeRequired: string;
+  minMinutes: string;
+  maxHours: string;
+  capacityMin: string;
+  priceMin: string;
+  locationRequired: string;
+};
 
-type FormValues = z.infer<typeof schema>;
+const schema = (errors: FormErrors) =>
+  z.object({
+    name: z.string().min(1, errors.nameRequired),
+    description: z.string().optional(),
+    instructorId: z.string(), // '' = unassigned
+    date: z.string().min(1, errors.dateRequired),
+    time: z.string().min(1, errors.timeRequired),
+    durationMinutes: z.coerce.number().min(15, errors.minMinutes).max(480, errors.maxHours),
+    capacity: z.coerce.number().min(1, errors.capacityMin),
+    priceUsd: z.coerce.number().min(0, errors.priceMin),
+    location: z.string().min(1, errors.locationRequired),
+    isActive: z.boolean(),
+  });
+
+type FormValues = z.infer<ReturnType<typeof schema>>;
 
 type Props = {
   open: boolean;
@@ -87,6 +102,23 @@ export default function CalendarClassModal({
   loading,
 }: Props) {
   const isEditing = mode === 'edit';
+  const t = useTranslations('admin.calendar.classModal');
+  const tc = useTranslations('admin.common');
+
+  const resolverSchema = useMemo(
+    () =>
+      schema({
+        nameRequired: tc('validation.nameRequired'),
+        dateRequired: tc('validation.dateRequired'),
+        timeRequired: tc('validation.timeRequired'),
+        minMinutes: tc('validation.minMinutes', { count: 15 }),
+        maxHours: tc('validation.maxHours', { count: 8 }),
+        capacityMin: tc('validation.capacityMin'),
+        priceMin: tc('validation.priceMin'),
+        locationRequired: tc('validation.locationRequired'),
+      }),
+    [tc],
+  );
 
   const {
     register,
@@ -96,7 +128,7 @@ export default function CalendarClassModal({
     watch,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(resolverSchema),
     defaultValues: BASE_DEFAULTS,
   });
 
@@ -148,7 +180,7 @@ export default function CalendarClassModal({
   }
 
   const instructorOptions = [
-    { value: '', label: 'Unassigned' },
+    { value: '', label: t('unassigned') },
     ...instructors.map((i) => ({ value: i.id, label: i.name })),
   ];
 
@@ -156,34 +188,30 @@ export default function CalendarClassModal({
     <Modal
       isOpen={open}
       onClose={() => onOpenChange(false)}
-      title={isEditing ? 'Edit class' : 'New class'}
-      subtitle={
-        isEditing
-          ? 'Changes apply to this single session only.'
-          : 'A one-off session on a specific date and time.'
-      }
+      title={isEditing ? t('editTitle') : t('createTitle')}
+      subtitle={isEditing ? t('editSubtitle') : t('createSubtitle')}
       footer={
         <>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
+            {tc('actions.cancel')}
           </Button>
           <Button variant="primary" type="submit" onClick={handleSubmit(onSubmit)} loading={loading}>
-            {isEditing ? 'Save changes' : 'Create class'}
+            {isEditing ? t('saveChanges') : t('createClass')}
           </Button>
         </>
       }
     >
       <form id="calendar-class-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Input
-          label="Class name"
-          placeholder="Ex: Sunrise Vinyasa"
+          label={t('className')}
+          placeholder={t('classNamePlaceholder')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <Textarea
-          label="Description"
-          placeholder="Short description of the class..."
+          label={tc('labels.description')}
+          placeholder={t('descriptionPlaceholder')}
           rows={3}
           error={errors.description?.message}
           {...register('description')}
@@ -193,14 +221,14 @@ export default function CalendarClassModal({
 
         <div className="grid grid-cols-2 gap-6">
           <NativeSelect
-            label="Instructor"
+            label={tc('labels.instructor')}
             options={instructorOptions}
             error={errors.instructorId?.message}
             {...register('instructorId')}
           />
           <Input
-            label="Location"
-            placeholder="Open-Air Shala"
+            label={tc('labels.location')}
+            placeholder={t('locationPlaceholder')}
             error={errors.location?.message}
             {...register('location')}
           />
@@ -209,13 +237,13 @@ export default function CalendarClassModal({
         <div className="grid grid-cols-2 gap-6">
           <Input
             type="date"
-            label="Date"
+            label={tc('labels.date')}
             error={errors.date?.message}
             {...register('date')}
           />
           <Input
             type="time"
-            label="Start time · Costa Rica"
+            label={t('startTime')}
             error={errors.time?.message}
             {...register('time')}
           />
@@ -224,7 +252,7 @@ export default function CalendarClassModal({
         <div className="grid grid-cols-3 gap-6">
           <Input
             type="number"
-            label="Duration (min)"
+            label={t('durationMin')}
             min={15}
             max={480}
             error={errors.durationMinutes?.message}
@@ -232,14 +260,14 @@ export default function CalendarClassModal({
           />
           <Input
             type="number"
-            label="Capacity"
+            label={tc('labels.capacity')}
             min={1}
             error={errors.capacity?.message}
             {...register('capacity')}
           />
           <Input
             type="number"
-            label="Price (USD)"
+            label={t('priceUsd')}
             min={0}
             step={5}
             error={errors.priceUsd?.message}
@@ -247,15 +275,15 @@ export default function CalendarClassModal({
           />
         </div>
 
-        <Field label="Status" helper="Inactive classes don't appear on the public site.">
+        <Field label={tc('labels.status')} helper={t('statusHelper')}>
           <div className="flex items-center justify-between mt-2">
             <span className="font-body text-sm text-ink">
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? tc('status.active') : tc('status.inactive')}
             </span>
             <Toggle
               checked={isActive}
               onChange={(v) => setValue('isActive', v, { shouldDirty: true })}
-              ariaLabel="Toggle active status"
+              ariaLabel={t('toggleActive')}
             />
           </div>
         </Field>

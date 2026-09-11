@@ -5,12 +5,11 @@ import {
   startOfMonth,
   isToday,
   subDays,
-  format,
   isSameDay,
   isWithinInterval,
 } from 'date-fns';
 import { createServiceClient } from '@/lib/supabase/server';
-import { inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
+import { costaRicaDateString, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 
 // ─── Row shapes (only the columns we read) ──────────────────────────────────
 type ClassRow = {
@@ -56,14 +55,18 @@ export type DashboardMetrics = {
   uniqueStudents: number;
 };
 
+// Chart dates travel as Costa Rica calendar days (`YYYY-MM-DD`); the client
+// formats them in the reader's language. `other` marks the "everything else"
+// slice of the distribution, whose label is copy, not a class name.
 export type ChartData = {
   dailyBookings: { date: string; reservas: number }[];
   weeklyRevenue: { semana: string; ingresos: number }[];
-  classDistribution: { name: string; value: number }[];
+  classDistribution: { name: string; value: number; other?: boolean }[];
 };
 
 export type InstructorMetric = {
   id: string;
+  /** Empty when the instructor has no name on record; the client labels it. */
   name: string;
   classesPerWeek: number;
   hoursPerWeek: number;
@@ -182,7 +185,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const reservas = bookings.filter((b) =>
       isSameDay(inCostaRica(b.created_at), day),
     ).length;
-    return { date: format(day, 'd MMM'), reservas };
+    return { date: costaRicaDateString(day), reservas };
   });
 
   const weeklyRevenue = Array.from({ length: 8 }, (_, i) => {
@@ -196,7 +199,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           ? bookingRevenue(b, classById.get(b.class_id))
           : 0);
     }, 0);
-    return { semana: format(wStart, 'd MMM'), ingresos: Math.round(ingresos) };
+    return { semana: costaRicaDateString(wStart), ingresos: Math.round(ingresos) };
   });
 
   // Class distribution — share of booked persons per class name.
@@ -220,7 +223,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             value: Math.round((v / totalPersons) * 100),
           })),
           ...(otherTotal > 0
-            ? [{ name: 'Other', value: Math.round((otherTotal / totalPersons) * 100) }]
+            ? [{ name: '', value: Math.round((otherTotal / totalPersons) * 100), other: true }]
             : []),
         ]
       : [];
@@ -248,7 +251,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   for (const t of templates) {
     if (!t.is_active || !t.instructor_id) continue;
-    const m = ensure(t.instructor_id, t.instructors?.name ?? 'Unknown');
+    const m = ensure(t.instructor_id, t.instructors?.name ?? '');
     m.classesPerWeek += 1;
     m.hoursPerWeek += t.duration_minutes / 60;
   }
@@ -275,7 +278,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const rev = bookingRevenue(b, c);
     if (rev > 0) {
       const created = inCostaRica(b.created_at);
-      const m = ensure(c.instructor_id, c.instructors?.name ?? 'Unknown');
+      const m = ensure(c.instructor_id, c.instructors?.name ?? '');
       if (created >= monthStart) m.revenueThisMonth += rev;
       if (isWithinInterval(created, { start: thisWeekStart, end: thisWeekEnd }))
         m.revenueThisWeek += rev;

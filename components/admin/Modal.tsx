@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export function Modal({
   footer,
   maxWidth = 'max-w-lg',
 }: ModalProps) {
+  const tc = useTranslations('admin.common');
   // Escape closes the modal.
   useEffect(() => {
     if (!isOpen) return;
@@ -76,7 +78,7 @@ export function Modal({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={tc('actions.close')}
               className="absolute top-6 right-6 text-ink/60 hover:text-ink transition-colors duration-200 cursor-pointer"
             >
               <X width={20} height={20} strokeWidth={1.5} />

@@ -2,6 +2,7 @@
 
 import { useState, type InputHTMLAttributes } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { FIELD_INPUT } from '@/components/auth/AuthShell';
 
@@ -9,6 +10,7 @@ import { FIELD_INPUT } from '@/components/auth/AuthShell';
 // button with a label and a pressed state, so it reads as one to a screen
 // reader; it never submits the form.
 export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  const t = useTranslations('auth.password');
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -16,7 +18,7 @@ export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>) {
       <button
         type="button"
         onClick={() => setShow((v) => !v)}
-        aria-label={show ? 'Hide password' : 'Show password'}
+        aria-label={show ? t('hide') : t('show')}
         aria-pressed={show}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink/70 transition-colors cursor-pointer"
       >

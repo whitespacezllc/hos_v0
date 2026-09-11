@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { Field } from './Field';
 import { uploadClassImage } from '@/app/actions/uploads';
@@ -36,14 +37,16 @@ type Props = {
 export function ImageUpload({
   value,
   onChange,
-  label = 'Image',
-  helper = 'Shown on the public booking page. Optional — falls back to a default photo.',
+  label,
+  helper,
   upload = uploadClassImage,
   aspect = 'aspect-[16/9]',
-  hint = 'JPG, PNG, WebP · max 5 MB',
-  previewAlt = 'Class',
+  hint,
+  previewAlt,
   inputId,
 }: Props) {
+  const t = useTranslations('admin.shared.imageUpload');
+  const tc = useTranslations('admin.common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,11 +54,11 @@ export function ImageUpload({
   async function handleFile(file: File) {
     setError(null);
     if (!ALLOWED.includes(file.type)) {
-      setError('Use a JPG, PNG, WebP or AVIF image.');
+      setError(t('errors.badType'));
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError('Image must be 5 MB or smaller.');
+      setError(t('errors.tooLarge'));
       return;
     }
     setUploading(true);
@@ -68,10 +71,10 @@ export function ImageUpload({
       } else {
         setError(
           res.error === 'too_large'
-            ? 'Image must be 5 MB or smaller.'
+            ? t('errors.tooLarge')
             : res.error === 'bad_type'
-            ? 'Use a JPG, PNG, WebP or AVIF image.'
-            : 'Upload failed. Please try again.',
+            ? t('errors.badType')
+            : t('errors.failed'),
         );
       }
     } finally {
@@ -87,7 +90,12 @@ export function ImageUpload({
   }
 
   return (
-    <Field label={label} helper={error ? undefined : helper} error={error ?? undefined} htmlFor={inputId}>
+    <Field
+      label={label ?? tc('labels.image')}
+      helper={error ? undefined : (helper ?? t('helper'))}
+      error={error ?? undefined}
+      htmlFor={inputId}
+    >
       <input
         ref={inputRef}
         id={inputId}
@@ -100,7 +108,7 @@ export function ImageUpload({
       {value ? (
         <div className={`mt-2 relative w-full ${aspect} overflow-hidden border border-ink/10 bg-neutral-50 group`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt={previewAlt} className="w-full h-full object-cover" />
+          <img src={value} alt={previewAlt ?? t('previewAlt')} className="w-full h-full object-cover" />
           {uploading && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
               <Loader2 className="w-5 h-5 animate-spin text-ink/60" />
@@ -113,7 +121,7 @@ export function ImageUpload({
               disabled={uploading}
               className="px-2.5 py-1 bg-white/90 text-ink font-body text-xs hover:bg-white transition-colors cursor-pointer disabled:opacity-50"
             >
-              Replace
+              {t('replace')}
             </button>
             <button
               type="button"
@@ -122,11 +130,11 @@ export function ImageUpload({
                 onChange(null);
               }}
               disabled={uploading}
-              aria-label="Remove image"
+              aria-label={t('removeImage')}
               className="px-2 py-1 bg-white/90 text-burgundy font-body text-xs hover:bg-white transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
             >
               <X width={12} height={12} strokeWidth={2} />
-              Remove
+              {tc('actions.remove')}
             </button>
           </div>
         </div>
@@ -140,13 +148,13 @@ export function ImageUpload({
           {uploading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="font-body text-xs">Uploading…</span>
+              <span className="font-body text-xs">{t('uploading')}</span>
             </>
           ) : (
             <>
               <ImagePlus width={22} height={22} strokeWidth={1.3} />
-              <span className="font-body text-xs">Upload an image</span>
-              <span className="font-body text-[10px] text-ink/40">{hint}</span>
+              <span className="font-body text-xs">{t('uploadAnImage')}</span>
+              <span className="font-body text-[10px] text-ink/40">{hint ?? t('hint')}</span>
             </>
           )}
         </button>

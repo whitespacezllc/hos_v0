@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Palmtree, ExternalLink, CalendarDays } from 'lucide-react';
 import type { RetreatListing } from '@/types';
+import type { AppLocale } from '@/i18n/routing';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { Card } from '@/components/admin/Card';
 import { Button } from '@/components/admin/Button';
@@ -29,11 +31,16 @@ import {
   DEFAULT_RETREAT_IMAGE,
   RETREAT_DESCRIPTION_MAX,
   RETREAT_IMAGE,
+  RETREAT_INSTRUCTORS_MAX,
+  RETREAT_LABEL_MAX,
+  RETREAT_TITLE_MAX,
+  buildRetreatListingSchema,
   formatRetreatDates,
   isSitePath,
-  retreatListingSchema,
+  retreatListingMessageKey,
   splitRetreatListings,
   type RetreatListingFormValues,
+  type RetreatListingMessages,
 } from '@/lib/retreat-listings';
 
 // ─── Retreats ────────────────────────────────────────────────────────────────
@@ -75,6 +82,8 @@ export default function RetreatsClient({
   today: string;
 }) {
   const router = useRouter();
+  const t = useTranslations('admin.retreats');
+  const tc = useTranslations('admin.common');
   const [isPending, startTransition] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<RetreatListing | undefined>();
@@ -85,6 +94,41 @@ export default function RetreatsClient({
   // A failed toggle or delete is reported on the row it happened to.
   const [rowError, setRowError] = useState<RowError>(null);
 
+  // The schema refuses in the reader's language; the server re-validates in
+  // English and its message is matched back to the same key (describeError).
+  const messages = useMemo<RetreatListingMessages>(
+    () => ({
+      titleRequired: t('validation.titleRequired'),
+      titleTooLong: t('validation.titleTooLong', { max: RETREAT_TITLE_MAX }),
+      labelRequired: t('validation.labelRequired'),
+      labelTooLong: t('validation.labelTooLong', { max: RETREAT_LABEL_MAX }),
+      instructorsRequired: t('validation.instructorsRequired'),
+      instructorsTooLong: t('validation.instructorsTooLong', { max: RETREAT_INSTRUCTORS_MAX }),
+      startsOnRequired: t('validation.startsOnRequired'),
+      endsOnRequired: t('validation.endsOnRequired'),
+      descriptionRequired: t('validation.descriptionRequired'),
+      descriptionTooLong: t('validation.descriptionTooLong', { max: RETREAT_DESCRIPTION_MAX }),
+      urlRequired: t('validation.urlRequired'),
+      urlInvalid: t('validation.urlInvalid'),
+      endsBeforeStarts: t('validation.endsBeforeStarts'),
+    }),
+    [t],
+  );
+  const schema = useMemo(() => buildRetreatListingSchema(messages), [messages]);
+
+  // What a server action refused with, in the reader's words where the
+  // words are known: the schema's own, the action's generic ones, or the
+  // admin check's. A database message has no translation and is shown as
+  // it came.
+  function describeError(message: string): string {
+    const key = retreatListingMessageKey(message);
+    if (key) return messages[key];
+    if (message === 'Please check the form.') return t('errors.checkForm');
+    if (message === 'Something went wrong. Please try again.') return tc('feedback.somethingWentWrong');
+    if (message === 'You need to be signed in as an admin.') return tc('feedback.signedInRequired');
+    return message;
+  }
+
   const {
     register,
     handleSubmit,
@@ -94,7 +138,7 @@ export default function RetreatsClient({
     watch,
     formState: { errors },
   } = useForm<RetreatListingFormValues>({
-    resolver: zodResolver(retreatListingSchema),
+    resolver: zodResolver(schema),
     defaultValues: DEFAULTS,
   });
 
@@ -141,7 +185,7 @@ export default function RetreatsClient({
         ? await updateRetreatListing(editing.id, values)
         : await createRetreatListing(values);
       if (!res.ok) {
-        setSubmitError(res.error);
+        setSubmitError(describeError(res.error));
         return;
       }
       setModalOpen(false);
@@ -154,7 +198,7 @@ export default function RetreatsClient({
     startTransition(async () => {
       const res = await setRetreatListingPublished(l.id, next);
       if (!res.ok) {
-        setRowError({ id: l.id, message: res.error });
+        setRowError({ id: l.id, message: describeError(res.error) });
         return;
       }
       router.refresh();
@@ -172,7 +216,7 @@ export default function RetreatsClient({
       // the admin can see it, not behind a backdrop.
       setDeleting(null);
       if (!res.ok) {
-        setRowError({ id: target.id, message: res.error });
+        setRowError({ id: target.id, message: describeError(res.error) });
         return;
       }
       router.refresh();
@@ -187,15 +231,15 @@ export default function RetreatsClient({
       icon={<Plus width={16} height={16} strokeWidth={1.5} />}
       onClick={openCreate}
     >
-      New retreat
+      {t('actions.newRetreat')}
     </Button>
   );
 
   return (
     <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto">
       <PageHeader
-        heading="Retreats"
-        description="What visitors see on Upcoming Retreats. A retreat lands in date order as soon as it is saved, and moves to Past Retreats by itself once its last day has gone by."
+        heading={t('page.heading')}
+        description={t('page.description')}
         actions={newButton}
       />
 
@@ -204,22 +248,22 @@ export default function RetreatsClient({
           role="alert"
           className="font-body text-sm text-burgundy border border-burgundy/30 bg-burgundy/5 px-4 py-4"
         >
-          The retreats could not be loaded just now. Refresh the page; if it keeps happening,
-          tell the developer — nothing has been lost.
+          {t('loadFailed')}
         </p>
       ) : listings.length === 0 ? (
         <EmptyState
           icon={<Palmtree strokeWidth={1} />}
-          heading="No retreats yet"
-          description="Add the first one and it appears on the site right away."
+          heading={t('empty.heading')}
+          description={t('empty.description')}
           action={newButton}
         />
       ) : (
         <div className="space-y-12">
           <ListingSection
-            title="Upcoming"
-            hint="In date order. The first one here is the first one on the site."
-            emptyText="Nothing on the calendar yet — the site shows a short note in the meantime."
+            title={t('upcoming.title')}
+            ariaLabel={t('upcoming.aria')}
+            hint={t('upcoming.hint')}
+            emptyText={t('upcoming.empty')}
             items={upcoming}
             today={today}
             busy={isPending}
@@ -229,9 +273,10 @@ export default function RetreatsClient({
             onPublish={handlePublish}
           />
           <ListingSection
-            title="Past"
-            hint="Finished retreats gather here on their own and show under “Past Retreats” on the site, most recent first."
-            emptyText="No retreat has finished yet."
+            title={t('past.title')}
+            ariaLabel={t('past.aria')}
+            hint={t('past.hint')}
+            emptyText={t('past.empty')}
             items={past}
             today={today}
             busy={isPending}
@@ -248,16 +293,16 @@ export default function RetreatsClient({
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit retreat' : 'New retreat'}
-        subtitle={editing ? undefined : 'Everything a visitor sees on its card.'}
+        title={editing ? t('form.editTitle') : t('form.newTitle')}
+        subtitle={editing ? undefined : t('form.newSubtitle')}
         maxWidth="max-w-2xl"
         footer={
           <>
             <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={isPending}>
-              Cancel
+              {tc('actions.cancel')}
             </Button>
             <Button variant="primary" onClick={handleSubmit(onSubmit)} loading={isPending}>
-              {editing ? 'Save changes' : 'Add retreat'}
+              {editing ? t('actions.saveChanges') : t('actions.addRetreat')}
             </Button>
           </>
         }
@@ -273,25 +318,25 @@ export default function RetreatsClient({
               onChange={(url) => setValue('imageUrl', url, { shouldDirty: true })}
               upload={uploadRetreatImage}
               aspect={RETREAT_IMAGE.ratio}
-              label="Photo"
-              helper={`Best at ${RETREAT_IMAGE.width} × ${RETREAT_IMAGE.height} px (almost square, 16:15) — it is cropped to that frame. JPG, PNG or WebP, up to 5 MB. Without one, the card shows a photo of the house.`}
-              hint={`${RETREAT_IMAGE.width} × ${RETREAT_IMAGE.height} px`}
-              previewAlt="Retreat"
+              label={t('form.photo.label')}
+              helper={t('form.photo.helper', { width: RETREAT_IMAGE.width, height: RETREAT_IMAGE.height })}
+              hint={t('form.photo.hint', { width: RETREAT_IMAGE.width, height: RETREAT_IMAGE.height })}
+              previewAlt={t('form.photo.previewAlt')}
               inputId="retreat-photo"
             />
             <div className="space-y-6">
               <Input
                 id="retreat-label"
-                label="Label"
-                placeholder="Wellness Retreat"
-                helper="The kind of retreat it is — set in small capitals over the photo."
+                label={t('form.label.label')}
+                placeholder={t('form.label.placeholder')}
+                helper={t('form.label.helper')}
                 error={errors.label?.message}
                 {...register('label')}
               />
               <Input
                 id="retreat-title"
-                label="Retreat name"
-                placeholder="Sol for Soul"
+                label={t('form.title.label')}
+                placeholder={t('form.title.placeholder')}
                 error={errors.title?.message}
                 {...register('title')}
               />
@@ -300,9 +345,9 @@ export default function RetreatsClient({
 
           <Input
             id="retreat-instructors"
-            label="Instructor(s)"
-            placeholder="Elly Miles"
-            helper="One name or several, as it should read on the card."
+            label={t('form.instructors.label')}
+            placeholder={t('form.instructors.placeholder')}
+            helper={t('form.instructors.helper')}
             error={errors.instructors?.message}
             {...register('instructors')}
           />
@@ -314,7 +359,7 @@ export default function RetreatsClient({
             <Input
               id="retreat-starts-on"
               type="date"
-              label="First day"
+              label={t('form.startsOn.label')}
               error={errors.startsOn?.message}
               {...register('startsOn', {
                 onChange: (e) => {
@@ -329,7 +374,7 @@ export default function RetreatsClient({
             <Input
               id="retreat-ends-on"
               type="date"
-              label="Last day"
+              label={t('form.endsOn.label')}
               min={startsOn || undefined}
               error={errors.endsOn?.message}
               {...register('endsOn')}
@@ -338,11 +383,11 @@ export default function RetreatsClient({
 
           <Textarea
             id="retreat-description"
-            label="Brief description"
-            placeholder="A few lines on what the retreat is and who it is for…"
+            label={t('form.description.label')}
+            placeholder={t('form.description.placeholder')}
             rows={3}
             maxLength={RETREAT_DESCRIPTION_MAX}
-            helper={`${description.length} / ${RETREAT_DESCRIPTION_MAX} characters — brief keeps the cards even.`}
+            helper={t('form.description.helper', { count: description.length, max: RETREAT_DESCRIPTION_MAX })}
             error={errors.description?.message}
             {...register('description')}
           />
@@ -351,20 +396,20 @@ export default function RetreatsClient({
             id="retreat-url"
             type="url"
             inputMode="url"
-            label="Link"
-            placeholder="https://… or wa.me/506…"
-            helper="Where “More info” takes people: a website, a WhatsApp link, or a page on this site (for example /yoga-teacher-training)."
+            label={t('form.url.label')}
+            placeholder={t('form.url.placeholder')}
+            helper={t('form.url.helper')}
             error={errors.url?.message}
             {...register('url')}
           />
 
-          <Field label="On the site" helper="Off, the retreat is saved but not shown — handy while the details are still being confirmed.">
+          <Field label={t('form.published.label')} helper={t('form.published.helper')}>
             <div className="flex items-center justify-between mt-2">
-              <span className="font-body text-sm text-ink">{isPublished ? 'Shown' : 'Hidden'}</span>
+              <span className="font-body text-sm text-ink">{isPublished ? t('form.published.shown') : t('form.published.hidden')}</span>
               <Toggle
                 checked={isPublished}
                 onChange={(v) => setValue('isPublished', v, { shouldDirty: true })}
-                ariaLabel="Toggle visibility on the site"
+                ariaLabel={t('form.published.toggleAria')}
               />
             </div>
           </Field>
@@ -378,26 +423,26 @@ export default function RetreatsClient({
               aria-controls="retreat-spanish"
               className="font-body text-[10px] tracking-[0.3em] uppercase text-ink/60 hover:text-ink transition-colors duration-200 cursor-pointer"
             >
-              {spanishOpen ? '− Spanish version' : '+ Spanish version (optional)'}
+              {spanishOpen ? t('form.spanish.close') : t('form.spanish.open')}
             </button>
             {spanishOpen && (
               <div id="retreat-spanish" className="space-y-6 mt-5">
                 <p className="font-body text-xs text-ink/50">
-                  Shown to readers of the Spanish site. Anything left empty reuses the English.
+                  {t('form.spanish.note')}
                 </p>
                 <Input
                   id="retreat-label-es"
-                  label="Label (Spanish)"
-                  placeholder="Retiro de bienestar"
+                  label={t('form.labelEs.label')}
+                  placeholder={t('form.labelEs.placeholder')}
                   error={errors.labelEs?.message}
                   {...register('labelEs')}
                 />
                 <Textarea
                   id="retreat-description-es"
-                  label="Brief description (Spanish)"
+                  label={t('form.descriptionEs.label')}
                   rows={3}
                   maxLength={RETREAT_DESCRIPTION_MAX}
-                  helper={`${descriptionEs.length} / ${RETREAT_DESCRIPTION_MAX} characters`}
+                  helper={t('form.descriptionEs.helper', { count: descriptionEs.length, max: RETREAT_DESCRIPTION_MAX })}
                   error={errors.descriptionEs?.message}
                   {...register('descriptionEs')}
                 />
@@ -417,13 +462,10 @@ export default function RetreatsClient({
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete this retreat?"
-        description={
-          deleting
-            ? `“${deleting.title}” comes off the site for good. To take it down for a while instead, switch it off with the toggle.`
-            : ''
-        }
-        confirmLabel="Delete retreat"
+        title={t('delete.title')}
+        description={deleting ? t('delete.description', { title: deleting.title }) : ''}
+        confirmLabel={t('actions.deleteRetreat')}
+        cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
       />
     </div>
@@ -433,6 +475,7 @@ export default function RetreatsClient({
 // ─── One list: upcoming or past ─────────────────────────────────────────────
 function ListingSection({
   title,
+  ariaLabel,
   hint,
   emptyText,
   items,
@@ -445,6 +488,8 @@ function ListingSection({
   onPublish,
 }: {
   title: string;
+  /** The section's name for assistive tech — "Upcoming retreats", not the bare "Upcoming". */
+  ariaLabel: string;
   hint: string;
   emptyText: string;
   items: RetreatListing[];
@@ -457,7 +502,7 @@ function ListingSection({
   onPublish: (l: RetreatListing, next: boolean) => void;
 }) {
   return (
-    <section aria-label={`${title} retreats`}>
+    <section aria-label={ariaLabel}>
       <header className="mb-4">
         <div className="flex items-baseline gap-3">
           <h2 className="font-body text-base font-medium text-ink">{title}</h2>
@@ -510,6 +555,8 @@ function ListingRow({
   onDelete: () => void;
   onPublish: (next: boolean) => void;
 }) {
+  const t = useTranslations('admin.retreats');
+  const locale = useLocale() as AppLocale;
   const happeningNow = l.startsOn <= today && l.endsOn >= today;
   const external = !isSitePath(l.url);
 
@@ -529,15 +576,15 @@ function ListingRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="neutral">{l.label}</Badge>
-            {happeningNow && <Badge variant="active">Happening now</Badge>}
-            {!l.isPublished && <Badge variant="inactive">Hidden</Badge>}
+            {happeningNow && <Badge variant="active">{t('row.happeningNow')}</Badge>}
+            {!l.isPublished && <Badge variant="inactive">{t('row.hidden')}</Badge>}
           </div>
           <h3 className="font-body text-base font-medium text-ink leading-tight mt-2">{l.title}</h3>
           <p className="font-body text-xs text-ink/60 mt-1 flex items-center gap-x-3 gap-y-1 flex-wrap">
             <span>{l.instructors}</span>
             <span className="inline-flex items-center gap-1">
               <CalendarDays width={12} height={12} strokeWidth={1.5} aria-hidden />
-              {formatRetreatDates(l.startsOn, l.endsOn, 'en')}
+              {formatRetreatDates(l.startsOn, l.endsOn, locale)}
             </span>
           </p>
           <p className="font-body text-sm text-ink/70 leading-normal line-clamp-2 mt-2">
@@ -562,20 +609,20 @@ function ListingRow({
         <div className="flex flex-col items-end gap-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-body text-xs text-ink/60 hidden sm:inline">
-              {l.isPublished ? 'Shown' : 'Hidden'}
+              {l.isPublished ? t('row.shown') : t('row.hidden')}
             </span>
             <Toggle
               checked={l.isPublished}
               onChange={onPublish}
               disabled={busy}
-              ariaLabel={l.isPublished ? 'Hide retreat from the site' : 'Show retreat on the site'}
+              ariaLabel={l.isPublished ? t('row.hideFromSite') : t('row.showOnSite')}
             />
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" onClick={onEdit} aria-label={`Edit ${l.title}`} className={`${ICON_BUTTON} hover:text-ink`}>
+            <button type="button" onClick={onEdit} aria-label={t('row.edit', { title: l.title })} className={`${ICON_BUTTON} hover:text-ink`}>
               <Pencil width={16} height={16} strokeWidth={1.5} />
             </button>
-            <button type="button" onClick={onDelete} aria-label={`Delete ${l.title}`} className={`${ICON_BUTTON} hover:text-burgundy`}>
+            <button type="button" onClick={onDelete} aria-label={t('row.delete', { title: l.title })} className={`${ICON_BUTTON} hover:text-burgundy`}>
               <Trash2 width={16} height={16} strokeWidth={1.5} />
             </button>
           </div>

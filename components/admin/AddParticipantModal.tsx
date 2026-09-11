@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,25 +17,39 @@ import { Button } from './Button';
 // personal fields (name, email, phone, hotel guest + Cloudbeds ref) so a
 // manually-added student looks just like a web booking — but skips the multi-
 // step upsell/pack flow: it's an express add for someone standing at reception.
-const schema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().optional(),
-  persons: z.coerce.number().min(1, 'At least 1').max(20, 'Too many'),
-  paymentMethod: z.enum(['cash', 'venmo', 'card']),
-  markPaid: z.boolean(),
-  isHotelGuest: z.boolean(),
-  cloudbedsRef: z.string().optional(),
-});
+//
+// The messages are the reader's — built inside the component, where the
+// catalogue is at hand.
+type FormErrors = {
+  firstNameRequired: string;
+  lastNameRequired: string;
+  emailInvalid: string;
+  atLeastOne: string;
+  tooMany: string;
+};
+
+const schema = (errors: FormErrors) =>
+  z.object({
+    firstName: z.string().min(1, errors.firstNameRequired),
+    lastName: z.string().min(1, errors.lastNameRequired),
+    email: z.string().email(errors.emailInvalid),
+    phone: z.string().optional(),
+    persons: z.coerce.number().min(1, errors.atLeastOne).max(20, errors.tooMany),
+    paymentMethod: z.enum(['cash', 'venmo', 'card']),
+    markPaid: z.boolean(),
+    isHotelGuest: z.boolean(),
+    cloudbedsRef: z.string().optional(),
+  });
+
+type FormValues = z.infer<ReturnType<typeof schema>>;
 
 export type UpsellOption = { id: string; name: string; priceUsd: number };
 
 // Upsell selection lives outside the zod schema (it's a simple id list managed
 // with local state), so the submitted payload merges the two.
-export type AddParticipantValues = z.infer<typeof schema> & { upsellIds: string[] };
+export type AddParticipantValues = FormValues & { upsellIds: string[] };
 
-const DEFAULTS: z.infer<typeof schema> = {
+const DEFAULTS: FormValues = {
   firstName: '',
   lastName: '',
   email: '',
@@ -46,11 +61,9 @@ const DEFAULTS: z.infer<typeof schema> = {
   cloudbedsRef: '',
 };
 
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'venmo', label: 'Venmo' },
-  { value: 'card', label: 'Card' },
-];
+// The values are what the database stores; the labels come from
+// admin.common.paymentMethod.
+const PAYMENT_METHODS = ['cash', 'venmo', 'card'] as const;
 
 type Props = {
   open: boolean;
@@ -75,6 +88,21 @@ export default function AddParticipantModal({
   loading,
   error,
 }: Props) {
+  const t = useTranslations('admin.calendar.participantModal');
+  const tc = useTranslations('admin.common');
+
+  const resolverSchema = useMemo(
+    () =>
+      schema({
+        firstNameRequired: t('validation.firstNameRequired'),
+        lastNameRequired: t('validation.lastNameRequired'),
+        emailInvalid: tc('validation.emailInvalid'),
+        atLeastOne: tc('validation.atLeastOne'),
+        tooMany: tc('validation.tooMany'),
+      }),
+    [t, tc],
+  );
+
   const {
     register,
     handleSubmit,
@@ -82,10 +110,15 @@ export default function AddParticipantModal({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(resolverSchema),
     defaultValues: DEFAULTS,
   });
+
+  const paymentOptions = PAYMENT_METHODS.map((value) => ({
+    value,
+    label: tc(`paymentMethod.${value}`),
+  }));
 
   // Upsell selection — a plain id list, merged into the payload on submit.
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
@@ -126,15 +159,15 @@ export default function AddParticipantModal({
     <Modal
       isOpen={open}
       onClose={() => onOpenChange(false)}
-      title="Add participant"
-      subtitle={`Manually register a student on ${className}. ${spotsRemaining} spot${spotsRemaining === 1 ? '' : 's'} left.`}
+      title={t('title')}
+      subtitle={t('subtitle', { className, count: spotsRemaining })}
       footer={
         <>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
+            {tc('actions.cancel')}
           </Button>
           <Button variant="primary" type="submit" onClick={submit} loading={loading}>
-            Add participant
+            {t('submit')}
           </Button>
         </>
       }
@@ -154,14 +187,14 @@ export default function AddParticipantModal({
 
         <div className="grid grid-cols-2 gap-6">
           <Input
-            label="First name"
-            placeholder="Ada"
+            label={tc('labels.firstName')}
+            placeholder={t('firstNamePlaceholder')}
             error={errors.firstName?.message}
             {...register('firstName')}
           />
           <Input
-            label="Last name"
-            placeholder="Lovelace"
+            label={tc('labels.lastName')}
+            placeholder={t('lastNamePlaceholder')}
             error={errors.lastName?.message}
             {...register('lastName')}
           />
@@ -169,8 +202,8 @@ export default function AddParticipantModal({
 
         <Input
           type="email"
-          label="Email"
-          placeholder="student@email.com"
+          label={tc('labels.email')}
+          placeholder={t('emailPlaceholder')}
           error={errors.email?.message}
           {...register('email')}
         />
@@ -178,14 +211,14 @@ export default function AddParticipantModal({
         <div className="grid grid-cols-2 gap-6">
           <Input
             type="tel"
-            label="Phone (optional)"
-            placeholder="+506 …"
+            label={t('phoneOptional')}
+            placeholder={t('phonePlaceholder')}
             error={errors.phone?.message}
             {...register('phone')}
           />
           <Input
             type="number"
-            label="People"
+            label={tc('labels.people')}
             min={1}
             max={20}
             error={errors.persons?.message}
@@ -195,48 +228,48 @@ export default function AddParticipantModal({
 
         <div className="grid grid-cols-2 gap-6">
           <NativeSelect
-            label="Payment method"
-            options={PAYMENT_OPTIONS}
+            label={t('paymentMethod')}
+            options={paymentOptions}
             error={errors.paymentMethod?.message}
             {...register('paymentMethod')}
           />
           <Field
-            label="Already paid"
-            helper={markPaid ? 'Recorded as paid.' : 'Left pending — shows in the sidebar badge.'}
+            label={t('alreadyPaid')}
+            helper={markPaid ? t('paidHelper') : t('pendingHelper')}
           >
             <div className="flex items-center justify-between mt-2">
-              <span className="font-body text-sm text-ink">{markPaid ? 'Paid' : 'Pending'}</span>
+              <span className="font-body text-sm text-ink">{markPaid ? tc('status.paid') : tc('status.pending')}</span>
               <Toggle
                 checked={markPaid}
                 onChange={(v) => setValue('markPaid', v, { shouldDirty: true })}
-                ariaLabel="Toggle paid status"
+                ariaLabel={t('togglePaid')}
               />
             </div>
           </Field>
         </div>
 
-        <Field label="Hotel guest" helper="Guests staying at the hotel.">
+        <Field label={t('hotelGuest')} helper={t('hotelGuestHelper')}>
           <div className="flex items-center justify-between mt-2">
-            <span className="font-body text-sm text-ink">{isHotelGuest ? 'Yes' : 'No'}</span>
+            <span className="font-body text-sm text-ink">{isHotelGuest ? tc('actions.yes') : tc('actions.no')}</span>
             <Toggle
               checked={isHotelGuest}
               onChange={(v) => setValue('isHotelGuest', v, { shouldDirty: true })}
-              ariaLabel="Toggle hotel guest"
+              ariaLabel={t('toggleHotelGuest')}
             />
           </div>
         </Field>
 
         {isHotelGuest && (
           <Input
-            label="Cloudbeds reference (optional)"
-            placeholder="Reservation #"
+            label={t('cloudbedsRef')}
+            placeholder={t('cloudbedsPlaceholder')}
             error={errors.cloudbedsRef?.message}
             {...register('cloudbedsRef')}
           />
         )}
 
         {upsells.length > 0 && (
-          <Field label="Extras" helper="Optional add-ons, charged on top of the class.">
+          <Field label={tc('labels.extras')} helper={t('extrasHelper')}>
             <div className="mt-2 space-y-2">
               {upsells.map((u) => {
                 const checked = selectedUpsells.includes(u.id);
@@ -263,7 +296,7 @@ export default function AddParticipantModal({
                       <span className="font-body text-sm text-ink truncate">{u.name}</span>
                     </span>
                     <span className="font-body text-sm text-ink/70 flex-shrink-0">
-                      +${u.priceUsd}
+                      {t('upsellPrice', { amount: u.priceUsd })}
                     </span>
                   </button>
                 );
@@ -274,8 +307,8 @@ export default function AddParticipantModal({
 
         {total > 0 && (
           <div className="flex justify-between items-center bg-neutral-50 px-4 py-3">
-            <span className="font-body text-sm text-ink/60">Total</span>
-            <span className="font-body text-base font-medium text-ink">${total} USD</span>
+            <span className="font-body text-sm text-ink/60">{tc('labels.total')}</span>
+            <span className="font-body text-base font-medium text-ink">{tc('units.usd', { amount: total })}</span>
           </div>
         )}
       </form>

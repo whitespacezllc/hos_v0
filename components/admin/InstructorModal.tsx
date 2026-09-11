@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Check, X as XIcon } from 'lucide-react';
 import type { Instructor } from '@/types';
 import { Modal } from './Modal';
@@ -24,12 +25,20 @@ type Props = {
 type Draft = { name: string; email: string };
 const EMPTY_DRAFT: Draft = { name: '', email: '' };
 
+// The one error the instructor actions raise on purpose (a delete blocked
+// because the instructor still has classes); everything else is a database
+// message, which the reader gets as a generic line in their language.
+const IN_USE_ERROR =
+  'This instructor is assigned to classes. Reassign or remove those classes first.';
+
 export default function InstructorModal({
   open,
   onOpenChange,
   instructors,
   onChanged,
 }: Props) {
+  const t = useTranslations('admin.schedule.instructors');
+  const tc = useTranslations('admin.common');
   const [isPending, startTransition] = useTransition();
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,7 +70,7 @@ export default function InstructorModal({
   function handleSubmit() {
     const name = draft.name.trim();
     if (!name) {
-      setError('Name is required.');
+      setError(t('nameRequired'));
       return;
     }
     const payload = { name, email: draft.email.trim() || null };
@@ -70,7 +79,7 @@ export default function InstructorModal({
         ? await updateInstructor(editingId, payload)
         : await createInstructor(payload);
       if (!res.ok) {
-        setError(res.error);
+        setError(tc('feedback.couldNotSave'));
         return;
       }
       resetForm();
@@ -83,7 +92,7 @@ export default function InstructorModal({
     startTransition(async () => {
       const res = await deleteInstructor(deleting.id);
       if (!res.ok) {
-        setError(res.error);
+        setError(res.error === IN_USE_ERROR ? t('inUse') : tc('feedback.couldNotDelete'));
         setDeleting(null);
         return;
       }
@@ -100,12 +109,12 @@ export default function InstructorModal({
           resetForm();
           onOpenChange(false);
         }}
-        title="Instructors"
-        subtitle="Manage the yoga instructors available for your classes."
+        title={t('title')}
+        subtitle={t('subtitle')}
         maxWidth="max-w-lg"
         footer={
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Done
+            {tc('actions.done')}
           </Button>
         }
       >
@@ -116,7 +125,7 @@ export default function InstructorModal({
 
         {/* List */}
         {instructors.length === 0 ? (
-          <p className="font-body text-sm text-ink/50 py-2">No instructors yet.</p>
+          <p className="font-body text-sm text-ink/50 py-2">{t('empty')}</p>
         ) : (
           <ul className="divide-y divide-ink/[0.08] border-t border-ink/10">
             {instructors.map((i) => (
@@ -127,11 +136,11 @@ export default function InstructorModal({
                     <p className="font-body text-xs text-ink/50 truncate mt-0.5">{i.email}</p>
                   )}
                 </div>
-                <RowIconButton ariaLabel="Edit instructor" onClick={() => startEdit(i)} disabled={isPending}>
+                <RowIconButton ariaLabel={t('edit')} onClick={() => startEdit(i)} disabled={isPending}>
                   <Pencil width={16} height={16} strokeWidth={1.5} />
                 </RowIconButton>
                 <RowIconButton
-                  ariaLabel="Delete instructor"
+                  ariaLabel={t('delete')}
                   onClick={() => {
                     setError(null);
                     setDeleting(i);
@@ -150,19 +159,19 @@ export default function InstructorModal({
         {formOpen ? (
           <div className="mt-6 pt-6 border-t border-ink/10 space-y-4">
             <p className="font-body text-[10px] tracking-[0.3em] uppercase text-ink/60">
-              {editingId ? 'Edit instructor' : 'New instructor'}
+              {editingId ? t('edit') : t('new')}
             </p>
             <Input
-              label="Name"
-              placeholder="Ex: Nancy Goodfellow"
+              label={tc('labels.name')}
+              placeholder={t('namePlaceholder')}
               value={draft.name}
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
               error={error ?? undefined}
             />
             <Input
-              label="Email (optional)"
+              label={t('emailOptional')}
               type="email"
-              placeholder="nancy@houseofshaktiyoga.com"
+              placeholder={t('emailPlaceholder')}
               value={draft.email}
               onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
             />
@@ -173,7 +182,7 @@ export default function InstructorModal({
                 onClick={handleSubmit}
                 loading={isPending}
               >
-                {editingId ? 'Save' : 'Add'}
+                {editingId ? tc('actions.save') : tc('actions.add')}
               </Button>
               <Button
                 variant="tertiary"
@@ -181,7 +190,7 @@ export default function InstructorModal({
                 onClick={resetForm}
                 disabled={isPending}
               >
-                Cancel
+                {tc('actions.cancel')}
               </Button>
             </div>
           </div>
@@ -193,7 +202,7 @@ export default function InstructorModal({
               onClick={startAdd}
               disabled={isPending}
             >
-              Add instructor
+              {t('add')}
             </Button>
           </div>
         )}
@@ -203,9 +212,10 @@ export default function InstructorModal({
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete instructor?"
-        description={`This will permanently delete ${deleting?.name ?? 'this instructor'}. This action cannot be undone.`}
-        confirmLabel="Delete instructor"
+        title={t('deleteTitle')}
+        description={t('deleteDescription', { name: deleting?.name ?? t('thisInstructor') })}
+        confirmLabel={t('delete')}
+        cancelLabel={tc('actions.cancel')}
         loading={isPending}
       />
     </>

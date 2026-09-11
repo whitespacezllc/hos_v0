@@ -785,9 +785,9 @@
         "other": "Other"
       },
       "lengths": {
+        "7": "7 nights",
         "3to4": "3–4 nights",
         "5to6": "5–6 nights",
-        "7": "7 nights",
         "8plus": "8+ nights"
       },
       "groups": {
@@ -1847,6 +1847,834 @@
       "remaining": "{count, plural, =1 {1 class} other {# classes}} left on this code.",
       "bookNow": "Book a class",
       "signoff": "See you on the mat,"
+    }
+  },
+  "admin": {
+    "common": {
+      "actions": {
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleting": "Deleting…",
+        "edit": "Edit",
+        "create": "Create",
+        "creating": "Creating…",
+        "close": "Close",
+        "confirm": "Confirm",
+        "back": "Back",
+        "search": "Search",
+        "clearFilters": "Clear filters",
+        "loading": "Loading…",
+        "retry": "Try again",
+        "add": "Add",
+        "remove": "Remove",
+        "done": "Done",
+        "copy": "Copy",
+        "copied": "Copied",
+        "refresh": "Refresh",
+        "open": "Open",
+        "viewAll": "View all",
+        "yes": "Yes",
+        "no": "No",
+        "apply": "Apply",
+        "upload": "Upload",
+        "view": "View"
+      },
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "cancelled": "Cancelled",
+        "noShow": "No-show",
+        "free": "Free",
+        "confirmed": "Confirmed",
+        "active": "Active",
+        "inactive": "Inactive",
+        "published": "Published",
+        "draft": "Draft",
+        "awaitingPayment": "Pending payment",
+        "upcoming": "Upcoming",
+        "past": "Past",
+        "review": "To verify"
+      },
+      "paymentMethod": {
+        "card": "Card",
+        "cash": "Cash",
+        "venmo": "Venmo"
+      },
+      "labels": {
+        "name": "Name",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "date": "Date",
+        "time": "Time",
+        "dateTime": "Date & time",
+        "duration": "Duration",
+        "capacity": "Capacity",
+        "price": "Price",
+        "location": "Location",
+        "instructor": "Instructor",
+        "description": "Description",
+        "image": "Image",
+        "notes": "Notes",
+        "total": "Total",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions",
+        "code": "Code",
+        "people": "People",
+        "class": "Class",
+        "classes": "Classes",
+        "minutes": "Minutes",
+        "reference": "Reference",
+        "customer": "Customer",
+        "student": "Student",
+        "payment": "Payment",
+        "extras": "Extras",
+        "pack": "Pack",
+        "usage": "Usage",
+        "spots": "Spots",
+        "week": "Week",
+        "today": "Today",
+        "all": "All",
+        "none": "—",
+        "optional": "Optional",
+        "required": "Required",
+        "costaRicaTime": "Costa Rica time",
+        "perClass": "per class"
+      },
+      "units": {
+        "minutes": "{count, plural, =1 {1 minute} other {# minutes}}",
+        "min": "{count} min",
+        "classes": "{count, plural, =1 {1 class} other {# classes}}",
+        "bookings": "{count, plural, =1 {1 booking} other {# bookings}}",
+        "spots": "{count, plural, =1 {1 spot} other {# spots}}",
+        "people": "{count, plural, =1 {1 person} other {# people}}",
+        "usd": "${amount} USD",
+        "priceUsd": "${amount}"
+      },
+      "feedback": {
+        "saved": "Saved.",
+        "deleted": "Deleted.",
+        "somethingWentWrong": "Something went wrong. Please try again.",
+        "couldNotSave": "Couldn't save. Please try again.",
+        "couldNotDelete": "Couldn't delete. Please try again.",
+        "couldNotLoad": "Couldn't load this page. Refresh to try again.",
+        "signedInRequired": "You need to be signed in as an admin."
+      },
+      "validation": {
+        "required": "This field is required",
+        "nameRequired": "Name is required",
+        "descriptionRequired": "Description is required",
+        "emailInvalid": "Please enter a valid email",
+        "dateRequired": "Date is required",
+        "timeRequired": "Time is required",
+        "locationRequired": "Location is required",
+        "minMinutes": "Minimum {count} minutes",
+        "maxHours": "Maximum {count} hours",
+        "capacityMin": "Capacity must be at least 1",
+        "priceMin": "Price can't be negative",
+        "atLeastOne": "At least 1",
+        "tooMany": "Too many"
+      }
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "calendar": "Calendar",
+      "schedule": "Schedule",
+      "bookings": "Bookings",
+      "packs": "Packs",
+      "upsells": "Upsells",
+      "promo": "Promo codes",
+      "retreats": "Retreats"
+    },
+    "sidebar": {
+      "eyebrow": "Admin panel",
+      "brand": "House of Shakti",
+      "navigation": "Admin navigation",
+      "sidebar": "Admin sidebar",
+      "pending": "{count} pending",
+      "roleLine": "Admin · House of Shakti",
+      "admin": "Admin",
+      "signOut": "Sign out",
+      "language": "Language",
+      "openMenu": "Open admin menu",
+      "closeMenu": "Close admin menu",
+      "languageName": {
+        "en": "English",
+        "es": "Español"
+      }
+    },
+    "retreats": {
+      "page": {
+        "heading": "Retreats",
+        "description": "What visitors see on Upcoming Retreats. A retreat lands in date order as soon as it is saved, and moves to Past Retreats by itself once its last day has gone by."
+      },
+      "actions": {
+        "newRetreat": "New retreat",
+        "addRetreat": "Add retreat",
+        "saveChanges": "Save changes",
+        "deleteRetreat": "Delete retreat"
+      },
+      "loadFailed": "The retreats could not be loaded just now. Refresh the page; if it keeps happening, tell the developer — nothing has been lost.",
+      "empty": {
+        "heading": "No retreats yet",
+        "description": "Add the first one and it appears on the site right away."
+      },
+      "upcoming": {
+        "title": "Upcoming",
+        "aria": "Upcoming retreats",
+        "hint": "In date order. The first one here is the first one on the site.",
+        "empty": "Nothing on the calendar yet — the site shows a short note in the meantime."
+      },
+      "past": {
+        "title": "Past",
+        "aria": "Past retreats",
+        "hint": "Finished retreats gather here on their own and show under “Past Retreats” on the site, most recent first.",
+        "empty": "No retreat has finished yet."
+      },
+      "row": {
+        "happeningNow": "Happening now",
+        "shown": "Shown",
+        "hidden": "Hidden",
+        "hideFromSite": "Hide retreat from the site",
+        "showOnSite": "Show retreat on the site",
+        "edit": "Edit {title}",
+        "delete": "Delete {title}"
+      },
+      "form": {
+        "editTitle": "Edit retreat",
+        "newTitle": "New retreat",
+        "newSubtitle": "Everything a visitor sees on its card.",
+        "photo": {
+          "label": "Photo",
+          "helper": "Best at {width} × {height} px (almost square, 16:15) — it is cropped to that frame. JPG, PNG or WebP, up to 5 MB. Without one, the card shows a photo of the house.",
+          "hint": "{width} × {height} px",
+          "previewAlt": "Retreat"
+        },
+        "label": {
+          "label": "Label",
+          "placeholder": "Wellness Retreat",
+          "helper": "The kind of retreat it is — set in small capitals over the photo."
+        },
+        "title": {
+          "label": "Retreat name",
+          "placeholder": "Sol for Soul"
+        },
+        "instructors": {
+          "label": "Instructor(s)",
+          "placeholder": "Elly Miles",
+          "helper": "One name or several, as it should read on the card."
+        },
+        "startsOn": {
+          "label": "First day"
+        },
+        "endsOn": {
+          "label": "Last day"
+        },
+        "description": {
+          "label": "Brief description",
+          "placeholder": "A few lines on what the retreat is and who it is for…",
+          "helper": "{count} / {max} characters — brief keeps the cards even."
+        },
+        "url": {
+          "label": "Link",
+          "placeholder": "https://… or wa.me/506…",
+          "helper": "Where “More info” takes people: a website, a WhatsApp link, or a page on this site (for example /yoga-teacher-training)."
+        },
+        "published": {
+          "label": "On the site",
+          "helper": "Off, the retreat is saved but not shown — handy while the details are still being confirmed.",
+          "shown": "Shown",
+          "hidden": "Hidden",
+          "toggleAria": "Toggle visibility on the site"
+        },
+        "spanish": {
+          "close": "− Spanish version",
+          "open": "+ Spanish version (optional)",
+          "note": "Shown to readers of the Spanish site. Anything left empty reuses the English."
+        },
+        "labelEs": {
+          "label": "Label (Spanish)",
+          "placeholder": "Retiro de bienestar"
+        },
+        "descriptionEs": {
+          "label": "Brief description (Spanish)",
+          "helper": "{count} / {max} characters"
+        }
+      },
+      "delete": {
+        "title": "Delete this retreat?",
+        "description": "“{title}” comes off the site for good. To take it down for a while instead, switch it off with the toggle."
+      },
+      "validation": {
+        "titleRequired": "Give the retreat a name.",
+        "titleTooLong": "Keep the name under {max} characters.",
+        "labelRequired": "Add a label — the kind of retreat it is.",
+        "labelTooLong": "Keep the label under {max} characters.",
+        "instructorsRequired": "Add who runs it.",
+        "instructorsTooLong": "Keep it under {max} characters.",
+        "startsOnRequired": "Pick the first day.",
+        "endsOnRequired": "Pick the last day.",
+        "descriptionRequired": "Add a brief description.",
+        "descriptionTooLong": "Keep it under {max} characters.",
+        "urlRequired": "Add the link \"More info\" should open.",
+        "urlInvalid": "Use a full link (https://…), a WhatsApp link, or a page on this site (/…).",
+        "endsBeforeStarts": "The last day can’t be before the first."
+      },
+      "errors": {
+        "checkForm": "Please check the form."
+      }
+    },
+    "bookings": {
+      "heading": "Bookings",
+      "empty": {
+        "heading": "No bookings yet",
+        "description": "Bookings made through the public site will appear here."
+      },
+      "noMatch": {
+        "heading": "No bookings match your filters",
+        "description": "Try clearing the filters."
+      },
+      "filters": {
+        "searchPlaceholder": "Search by name, email, or code...",
+        "byClass": "Filter by class",
+        "byStatus": "Filter by status",
+        "allClasses": "All classes",
+        "allStatuses": "All statuses",
+        "from": "From",
+        "to": "To",
+        "fromDate": "From date",
+        "toDate": "To date",
+        "clear": "Clear"
+      },
+      "table": {
+        "viewBooking": "View booking"
+      },
+      "actions": {
+        "cancelBooking": "Cancel booking"
+      },
+      "pagination": {
+        "showing": "Showing <n>{first}–{last}</n> of <n>{total}</n>",
+        "label": "Pagination",
+        "previous": "Previous page",
+        "next": "Next page"
+      },
+      "drawer": {
+        "title": "Booking details",
+        "close": "Close drawer",
+        "confirmPayment": "Confirm payment",
+        "markAsPaid": "Mark as paid",
+        "packCode": "Pack code",
+        "promoCode": "Promo code",
+        "boughtWithPack": "Bought with pack",
+        "tilopayTransaction": "Tilopay transaction",
+        "bookedOn": "Booked on",
+        "classDate": "{date} · Costa Rica"
+      },
+      "packStatus": {
+        "pending": "pending",
+        "paid": "paid",
+        "cancelled": "cancelled"
+      },
+      "cancelDialog": {
+        "title": "Cancel booking?",
+        "description": "This will mark the booking as cancelled. The student will be notified.",
+        "keep": "Keep booking"
+      },
+      "dates": {
+        "classShort": "MMM d · HH:mm",
+        "dateShort": "MMM d, yyyy",
+        "dateTime": "MMM d, yyyy · HH:mm"
+      }
+    },
+    "calendar": {
+      "category": {
+        "flow-vinyasa": "Vinyasa",
+        "yin-restorative": "Yin & Restorative",
+        "hatha-gentle": "Hatha",
+        "ashtanga-intense": "Ashtanga",
+        "meditation": "Meditation"
+      },
+      "header": {
+        "previousWeek": "Previous week",
+        "nextWeek": "Next week",
+        "manageClasses": "Manage classes",
+        "newClass": "New class"
+      },
+      "weekRange": {
+        "sameMonthStart": "MMM d",
+        "sameMonthEnd": "d, yyyy",
+        "otherMonthStart": "MMM d",
+        "otherMonthEnd": "MMM d, yyyy"
+      },
+      "dayFormats": {
+        "weekday": "EEE",
+        "dayOfMonth": "d"
+      },
+      "empty": {
+        "heading": "No classes this week",
+        "description": "Classes appear automatically from the recurring weekly schedule. Add a one-off class for this week, or manage the recurring schedule."
+      },
+      "grid": {
+        "clickToAdd": "Click to add a class"
+      },
+      "mobile": {
+        "addClass": "Add class",
+        "noClassesThisDay": "No classes scheduled for this day."
+      },
+      "drawer": {
+        "ariaLabel": "Class details",
+        "close": "Close drawer",
+        "occupancy": "Occupancy",
+        "bookingsCount": "{occupied}/{capacity} bookings",
+        "remaining": "{count, plural, =0 {Fully booked} =1 {1 spot left} other {# spots available}}",
+        "dateTimePattern": "EEEE, MMMM d · HH:mm",
+        "dateTimeValue": "{date} · Costa Rica",
+        "openAirShala": "Open-air shala",
+        "bookingsHeading": "Bookings ({count})",
+        "addParticipant": "Add participant",
+        "classFull": "Class is full — free a spot to add a walk-in.",
+        "noBookings": "No bookings yet"
+      },
+      "deleteDialog": {
+        "title": "Delete class?",
+        "description": "This will permanently delete this class and all its bookings. This action cannot be undone.",
+        "confirm": "Delete class"
+      },
+      "addErrors": {
+        "noSpots": "Not enough spots left for this class.",
+        "classNotFound": "This class is no longer available.",
+        "generic": "Could not add the participant. Please try again."
+      },
+      "classModal": {
+        "editTitle": "Edit class",
+        "createTitle": "New class",
+        "editSubtitle": "Changes apply to this single session only.",
+        "createSubtitle": "A one-off session on a specific date and time.",
+        "saveChanges": "Save changes",
+        "createClass": "Create class",
+        "className": "Class name",
+        "classNamePlaceholder": "Ex: Sunrise Vinyasa",
+        "descriptionPlaceholder": "Short description of the class...",
+        "unassigned": "Unassigned",
+        "locationPlaceholder": "Open-Air Shala",
+        "startTime": "Start time · Costa Rica",
+        "durationMin": "Duration (min)",
+        "priceUsd": "Price (USD)",
+        "statusHelper": "Inactive classes don't appear on the public site.",
+        "toggleActive": "Toggle active status"
+      },
+      "participantModal": {
+        "title": "Add participant",
+        "subtitle": "Manually register a student on {className}. {count, plural, =1 {1 spot} other {# spots}} left.",
+        "submit": "Add participant",
+        "firstNamePlaceholder": "Ada",
+        "lastNamePlaceholder": "Lovelace",
+        "emailPlaceholder": "student@email.com",
+        "phoneOptional": "Phone (optional)",
+        "phonePlaceholder": "+506 …",
+        "paymentMethod": "Payment method",
+        "alreadyPaid": "Already paid",
+        "paidHelper": "Recorded as paid.",
+        "pendingHelper": "Left pending — shows in the sidebar badge.",
+        "togglePaid": "Toggle paid status",
+        "hotelGuest": "Hotel guest",
+        "hotelGuestHelper": "Guests staying at the hotel.",
+        "toggleHotelGuest": "Toggle hotel guest",
+        "cloudbedsRef": "Cloudbeds reference (optional)",
+        "cloudbedsPlaceholder": "Reservation #",
+        "extrasHelper": "Optional add-ons, charged on top of the class.",
+        "upsellPrice": "+${amount}",
+        "validation": {
+          "firstNameRequired": "First name is required",
+          "lastNameRequired": "Last name is required"
+        }
+      }
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "goToClasses": "Go to Classes",
+      "dates": {
+        "today": "EEEE, MMMM d, yyyy"
+      },
+      "stats": {
+        "ariaLabel": "Key metrics",
+        "bookingsToday": "Bookings today",
+        "thisWeek": "This week",
+        "vsLastWeek": "vs last week",
+        "revenueThisMonth": "Revenue this month",
+        "classesNext7Days": "Classes (7 days)",
+        "avgOccupancy": "Avg. occupancy",
+        "uniqueStudents": "Unique students"
+      },
+      "charts": {
+        "ariaLabel": "Bookings and class distribution",
+        "bookingsPerDay": "Bookings per day",
+        "last30Days": "Last 30 days",
+        "bookingsSeries": "Bookings",
+        "mostPopular": "Most popular classes",
+        "noBookings": "No bookings yet.",
+        "other": "Other",
+        "revenueAriaLabel": "Revenue trend",
+        "revenuePerWeek": "Revenue per week",
+        "last8Weeks": "Last 8 weeks",
+        "revenue": "Revenue"
+      },
+      "instructors": {
+        "ariaLabel": "Instructor performance",
+        "heading": "Instructor performance",
+        "subtitle": "Weekly load from the recurring schedule · participants & revenue from real bookings",
+        "emptyHeading": "No instructor data yet",
+        "emptyDescription": "Assign instructors to your recurring classes to see their metrics here.",
+        "revenueThisMonth": "Revenue this month",
+        "byInstructor": "By instructor",
+        "unknown": "Unknown",
+        "columns": {
+          "classesPerWeek": "Classes / wk",
+          "hoursPerWeek": "Hours / wk",
+          "avgAttendees": "Avg. attendees",
+          "revenuePerWeek": "$ / week",
+          "revenuePerMonth": "$ / month"
+        }
+      },
+      "upcoming": {
+        "heading": "Upcoming classes",
+        "viewCalendar": "View calendar →",
+        "emptyHeading": "No upcoming classes",
+        "emptyDescription": "Create a recurring class to populate the schedule.",
+        "status": {
+          "full": "Full",
+          "low": "Low",
+          "open": "Open"
+        }
+      }
+    },
+    "packs": {
+      "heading": "Class packs",
+      "summary": "{total} purchases · {pending} awaiting payment",
+      "copyCode": "Copy code",
+      "empty": {
+        "heading": "No pack purchases yet",
+        "description": "When a customer buys a class pack at /paquetes, it appears here for you to confirm payment and issue the code."
+      },
+      "actions": {
+        "confirmPayment": "Confirm payment",
+        "resendEmail": "Resend email"
+      },
+      "toast": {
+        "confirmedEmailed": "Payment confirmed — code {code} emailed.",
+        "confirmedNoEmail": "Payment confirmed — code {code}. Email not sent (configure RESEND_API_KEY, then resend).",
+        "confirmFailed": "Could not confirm payment.",
+        "bookingConfirmed": "Class booking confirmed — pack credit redeemed.",
+        "resent": "Code email resent.",
+        "resendFailed": "Email not sent (check RESEND_API_KEY).",
+        "copied": "Copied {code}"
+      },
+      "reminder": {
+        "title": "Payment confirmed — now check Bookings",
+        "subtitle": "Reconcile this customer so the pack usage stays accurate.",
+        "confirmBookingNow": "Confirm booking now",
+        "goToBookings": "Go to Bookings",
+        "body": "Go to <strong>Bookings</strong> and match this customer against their class reservations, then confirm each one so the pack's usage (e.g. 1/5, 2/5) stays up to date. Cash and Venmo need this manual check; card payments (Tilopay) reconcile automatically.",
+        "linkedIntro": "This pack was bought with a class booking that's still pending:",
+        "linkedHint": "Confirm it here to redeem the first credit, or review it in Bookings.",
+        "openCustomer": "Open this customer in Bookings"
+      }
+    },
+    "promo": {
+      "heading": "Promo codes",
+      "description": "Manage discount codes for bookings.",
+      "newCode": "New code",
+      "stats": {
+        "total": "Total codes",
+        "active": "Active codes",
+        "uses": "Total uses"
+      },
+      "empty": {
+        "heading": "No promo codes yet",
+        "description": "Create your first code to offer discounts during checkout."
+      },
+      "delete": {
+        "title": "Delete promo code?",
+        "descriptionWithCode": "Students will no longer be able to use \"{code}\". This action cannot be undone.",
+        "description": "Students will no longer be able to use this code. This action cannot be undone.",
+        "confirm": "Delete code"
+      },
+      "benefit": {
+        "percentOff": "{percent}% off",
+        "fixedOff": "${amount} off",
+        "freeNamed": "Free: {name}",
+        "free": "Free upsell"
+      },
+      "row": {
+        "inactive": "Inactive",
+        "expired": "Expired",
+        "benefit": "Benefit",
+        "uses": "Uses",
+        "until": "Until {date}",
+        "range": "{from} — {until}",
+        "noExpiration": "No expiration",
+        "activate": "Activate code",
+        "deactivate": "Deactivate code",
+        "edit": "Edit code",
+        "delete": "Delete code"
+      },
+      "dates": {
+        "short": "MMM d, yyyy",
+        "monthDay": "MMM d"
+      },
+      "modal": {
+        "titleEdit": "Edit code",
+        "titleNew": "New promo code",
+        "saveChanges": "Save changes",
+        "create": "Create code"
+      },
+      "fields": {
+        "codePlaceholder": "SURF-CAMP",
+        "partnerName": "Partner / business name",
+        "partnerNamePlaceholder": "Nosara Surf Camp",
+        "internalDescription": "Internal description",
+        "internalDescriptionPlaceholder": "20% off for surf camp clients",
+        "benefitType": "Benefit type",
+        "typePercent": "% off",
+        "typeFixed": "Fixed ($)",
+        "typeFreeUpsell": "Free upsell",
+        "discountPercent": "Discount percentage (%)",
+        "discountFixed": "Discount amount (USD)",
+        "freeUpsell": "Free upsell to give",
+        "upsellOption": "{name} (${price})",
+        "minPurchase": "Minimum purchase (USD)",
+        "usageLimit": "Usage limit (optional)",
+        "unlimited": "Unlimited",
+        "validFrom": "Valid from",
+        "validUntil": "Valid until"
+      },
+      "validation": {
+        "codeMin": "Code must be at least 2 characters",
+        "codeMax": "Code must be at most 30 characters",
+        "partnerNameRequired": "Partner name is required",
+        "percentRange": "Enter a percentage between 1 and 100",
+        "fixedMin": "Minimum discount is $0.50",
+        "minPurchaseMin": "Minimum purchase can't be negative"
+      }
+    },
+    "schedule": {
+      "heading": "Classes",
+      "subtitle": "Weekly recurring schedule · {count, plural, =1 {1 class} other {# classes}}",
+      "manageInstructors": "Manage instructors",
+      "newClass": "New class",
+      "unassigned": "Unassigned",
+      "empty": {
+        "heading": "No classes yet",
+        "description": "Create your first recurring class to build the weekly schedule."
+      },
+      "noMatch": {
+        "heading": "No classes match your filters",
+        "description": "Try clearing the filters or creating a new class."
+      },
+      "filters": {
+        "searchPlaceholder": "Search by name, slug, or instructor...",
+        "byStatus": "Filter by status",
+        "byCategory": "Filter by category",
+        "allStatuses": "All statuses",
+        "allCategories": "All categories"
+      },
+      "categories": {
+        "flowVinyasa": "Vinyasa",
+        "yinRestorative": "Yin & Restorative",
+        "hathaGentle": "Hatha",
+        "ashtangaIntense": "Ashtanga",
+        "meditation": "Meditation"
+      },
+      "days": {
+        "sun": "Sundays",
+        "mon": "Mondays",
+        "tue": "Tuesdays",
+        "wed": "Wednesdays",
+        "thu": "Thursdays",
+        "fri": "Fridays",
+        "sat": "Saturdays"
+      },
+      "table": {
+        "slug": "Slug",
+        "schedule": "Schedule",
+        "every": "Every {day} · {time}",
+        "seats": "seats"
+      },
+      "actions": {
+        "activate": "Activate class",
+        "deactivate": "Deactivate class",
+        "edit": "Edit class",
+        "delete": "Delete class"
+      },
+      "delete": {
+        "title": "Delete class?",
+        "description": "This removes the recurring class and its upcoming sessions. Past sessions and their bookings are kept. This action cannot be undone.",
+        "confirm": "Delete class"
+      },
+      "form": {
+        "editTitle": "Edit recurring class",
+        "newTitle": "New recurring class",
+        "newSubtitle": "A class that repeats every week on the chosen day and time.",
+        "saveChanges": "Save changes",
+        "createClass": "Create class",
+        "className": "Class name",
+        "classNamePlaceholder": "Ex: Sunrise Vinyasa",
+        "descriptionPlaceholder": "Short description of the class...",
+        "imageHelper": "Shown on the public booking page. Optional — falls back to a default photo.",
+        "locationPlaceholder": "Open-Air Shala",
+        "dayOfWeek": "Day of week",
+        "startTime": "Start time",
+        "durationMin": "Duration (min)",
+        "priceUsd": "Price (USD)",
+        "statusHelper": "Inactive classes don't appear on the public site or generate new sessions.",
+        "toggleActive": "Toggle active status",
+        "days": {
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday",
+          "sun": "Sunday"
+        }
+      },
+      "instructors": {
+        "title": "Instructors",
+        "subtitle": "Manage the yoga instructors available for your classes.",
+        "empty": "No instructors yet.",
+        "edit": "Edit instructor",
+        "new": "New instructor",
+        "add": "Add instructor",
+        "delete": "Delete instructor",
+        "namePlaceholder": "Ex: Nancy Goodfellow",
+        "emailOptional": "Email (optional)",
+        "emailPlaceholder": "nancy@houseofshaktiyoga.com",
+        "nameRequired": "Name is required.",
+        "inUse": "This instructor is assigned to classes. Reassign or remove those classes first.",
+        "deleteTitle": "Delete instructor?",
+        "deleteDescription": "This will permanently delete {name}. This action cannot be undone.",
+        "thisInstructor": "this instructor"
+      }
+    },
+    "shared": {
+      "imageUpload": {
+        "helper": "Shown on the public booking page. Optional — falls back to a default photo.",
+        "hint": "JPG, PNG, WebP · max 5 MB",
+        "previewAlt": "Class",
+        "replace": "Replace",
+        "removeImage": "Remove image",
+        "uploading": "Uploading…",
+        "uploadAnImage": "Upload an image",
+        "errors": {
+          "badType": "Use a JPG, PNG, WebP or AVIF image.",
+          "tooLarge": "Image must be 5 MB or smaller.",
+          "failed": "Upload failed. Please try again."
+        }
+      }
+    },
+    "upsells": {
+      "heading": "Upsells",
+      "description": "Additional products and services available at booking.",
+      "new": "New upsell",
+      "add": "Add upsell",
+      "edit": "Edit upsell",
+      "delete": "Delete upsell",
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "empty": {
+        "heading": "No upsells configured",
+        "description": "Create your first upsell to offer extras during booking."
+      },
+      "toggle": {
+        "hide": "Hide upsell",
+        "show": "Show upsell"
+      },
+      "modal": {
+        "subtitle": "A single add-on offered at booking.",
+        "saveChanges": "Save changes",
+        "create": "Create upsell"
+      },
+      "form": {
+        "namePlaceholder": "Premium yoga mat",
+        "descriptionPlaceholder": "Short description shown at booking...",
+        "priceUsd": "Price (USD)",
+        "visibility": "Visibility",
+        "visibilityHelper": "Hidden upsells don't appear on the booking flow.",
+        "visibleAtBooking": "Visible at booking",
+        "toggleVisibility": "Toggle visibility"
+      },
+      "deleteConfirm": {
+        "title": "Delete upsell?",
+        "description": "This will remove this upsell from future bookings."
+      }
+    }
+  },
+  "auth": {
+    "shell": {
+      "footer": "House of Shakti · Admin panel",
+      "language": "Language"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "login": {
+      "title": "Admin panel",
+      "subtitle": "Sign in to manage the house",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "forgot": "Forgot your password?",
+      "signIn": "Sign in",
+      "signingIn": "Signing in…",
+      "noAccess": "This account doesn’t have access to the admin panel."
+    },
+    "forgot": {
+      "title": "Forgot your password?",
+      "subtitle": "We’ll email you a link to choose a new one",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Email me a link",
+      "sending": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "sentBody": "If there’s an admin account for <strong>{email}</strong>, a link to choose a new password is on its way. It works once and expires in an hour.",
+      "sentHint": "Nothing after a few minutes? Check the spam folder, or come back and ask again."
+    },
+    "setPassword": {
+      "title": "{kind, select, invite {Set your password} recovery {Choose a new password} other {Change your password}}",
+      "subtitle": "{kind, select, invite {Welcome to the House of Shakti panel} recovery {Then you’ll be signed in} other {For your House of Shakti account}}",
+      "checking": "Checking your link…",
+      "expired": "This link has expired or was already used. Links work once and for an hour.",
+      "newLink": "Email me a new link",
+      "backToSignIn": "Back to sign in",
+      "noAccess": "Your password is saved. This account doesn’t have access to the panel yet — ask the team to grant it.",
+      "newPassword": "New password",
+      "passwordPlaceholder": "At least {min} characters",
+      "hint": "Long beats clever: a few words you’ll remember, with a number or a symbol.",
+      "confirmPassword": "Confirm password",
+      "confirmPlaceholder": "Once more",
+      "submit": "Save password and continue",
+      "saving": "Saving…",
+      "tooShort": "Use at least {min} characters.",
+      "mismatch": "The two passwords don’t match."
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "tooManyAttempts": "Too many attempts. Wait a minute and try again.",
+      "tooManyRequests": "Too many requests. Wait a minute and try again.",
+      "emailNotConfirmed": "This email hasn’t been confirmed yet. Use “Forgot your password?” to get a link and set your password.",
+      "offline": "Couldn’t reach the server. Check your connection and try again.",
+      "invalidCredentials": "Incorrect email or password.",
+      "invalidEmail": "That doesn’t look like an email address.",
+      "resetFailed": "The email couldn’t be sent right now. Please try again in a moment.",
+      "samePassword": "Choose a password you haven’t used here before.",
+      "weakPassword": "That password is too weak — use at least 10 characters, mixing letters, numbers and symbols.",
+      "linkExpired": "This link has expired or was already used. Ask for a new one from the sign-in page.",
+      "updateFailed": "Couldn’t save the password. Please try again."
     }
   }
 }

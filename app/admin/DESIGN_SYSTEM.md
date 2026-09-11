@@ -144,3 +144,28 @@ The admin is a tool. Tools open quickly and don't perform.
 
 Sidebar width is `260px` on `md+`, collapsing to an off-canvas drawer below.
 Main content area scrolls naturally; the sidebar stays fixed.
+
+## Language
+
+The panel speaks English and Spanish. Which one is a preference, not a URL:
+there is one `/admin`, and the language lives in the `hos_admin_locale`
+cookie (`lib/admin-locale.ts`), written by the sidebar toggle
+(`app/actions/admin-locale.ts`) and at sign-in to the language of the login
+page. `i18n/request.ts` resolves it for every request outside `app/[locale]`,
+and `app/admin/layout.tsx` hands the `admin` namespace of the catalogue to the
+client tree.
+
+- Every string the admin reads comes from `messages/{en,es}.json` under
+  `admin.*`: `admin.common` (actions, statuses, payment methods, labels,
+  units, feedback, validation — reuse before inventing), `admin.nav`,
+  `admin.sidebar`, then one namespace per area (`admin.dashboard`,
+  `admin.calendar`, `admin.schedule`, `admin.bookings`, `admin.packs`,
+  `admin.upsells`, `admin.promo`, `admin.retreats`, `admin.shared`). The
+  sign-in pages, which live under `app/[locale]`, use the top-level `auth`
+  namespace and take the language from the URL.
+- Client components: `useTranslations('admin.<area>')`; server components:
+  `getTranslations('admin.<area>')`. Dates format with the reader's date-fns
+  locale (`dateFnsLocale(useLocale())`), always in Costa Rica time.
+- Database values (`pending`, `card`, class names, instructor names) are data
+  and stay as they are; only copy is translated. `npm run check:messages`
+  keeps both catalogues in step.

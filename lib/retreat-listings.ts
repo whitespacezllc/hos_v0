@@ -81,52 +81,97 @@ export function isValidRetreatUrl(url: string): boolean {
 // One schema for the form and the server action. The Spanish fields are
 // optional and arrive as empty strings from the form; they are stored as
 // NULL, which the page reads as "reuse the English".
+//
+// The words the schema refuses with are the reader's: the form builds the
+// schema with the panel's catalogue (admin.retreats.validation), while the
+// server action keeps the English set below — and the form maps a server
+// message back to its key, so an admin reading in Spanish never sees the
+// English one.
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export type RetreatListingMessages = {
+  titleRequired: string;
+  titleTooLong: string;
+  labelRequired: string;
+  labelTooLong: string;
+  instructorsRequired: string;
+  instructorsTooLong: string;
+  startsOnRequired: string;
+  endsOnRequired: string;
+  descriptionRequired: string;
+  /** Also the Spanish description's: the two share a limit. */
+  descriptionTooLong: string;
+  urlRequired: string;
+  urlInvalid: string;
+  endsBeforeStarts: string;
+};
+
+/** The English set: what the server action validates with. */
+export const RETREAT_LISTING_MESSAGES_EN: RetreatListingMessages = {
+  titleRequired: 'Give the retreat a name.',
+  titleTooLong: `Keep the name under ${RETREAT_TITLE_MAX} characters.`,
+  labelRequired: 'Add a label — the kind of retreat it is.',
+  labelTooLong: `Keep the label under ${RETREAT_LABEL_MAX} characters.`,
+  instructorsRequired: 'Add who runs it.',
+  instructorsTooLong: `Keep it under ${RETREAT_INSTRUCTORS_MAX} characters.`,
+  startsOnRequired: 'Pick the first day.',
+  endsOnRequired: 'Pick the last day.',
+  descriptionRequired: 'Add a brief description.',
+  descriptionTooLong: `Keep it under ${RETREAT_DESCRIPTION_MAX} characters.`,
+  urlRequired: 'Add the link "More info" should open.',
+  urlInvalid: 'Use a full link (https://…), a WhatsApp link, or a page on this site (/…).',
+  endsBeforeStarts: 'The last day can’t be before the first.',
+};
+
 const optionalText = (max: number, tooLong: string) =>
   z.string().trim().max(max, tooLong).default('');
 
-export const retreatListingSchema = z
-  .object({
-    title: z
-      .string()
-      .trim()
-      .min(1, 'Give the retreat a name.')
-      .max(RETREAT_TITLE_MAX, `Keep the name under ${RETREAT_TITLE_MAX} characters.`),
-    label: z
-      .string()
-      .trim()
-      .min(1, 'Add a label — the kind of retreat it is.')
-      .max(RETREAT_LABEL_MAX, `Keep the label under ${RETREAT_LABEL_MAX} characters.`),
-    instructors: z
-      .string()
-      .trim()
-      .min(1, 'Add who runs it.')
-      .max(RETREAT_INSTRUCTORS_MAX, `Keep it under ${RETREAT_INSTRUCTORS_MAX} characters.`),
-    startsOn: z.string().regex(DATE, 'Pick the first day.'),
-    endsOn: z.string().regex(DATE, 'Pick the last day.'),
-    description: z
-      .string()
-      .trim()
-      .min(1, 'Add a brief description.')
-      .max(RETREAT_DESCRIPTION_MAX, `Keep it under ${RETREAT_DESCRIPTION_MAX} characters.`),
-    url: z
-      .string()
-      .trim()
-      .min(1, 'Add the link "More info" should open.')
-      .transform(normalizeRetreatUrl)
-      .refine(isValidRetreatUrl, 'Use a full link (https://…), a WhatsApp link, or a page on this site (/…).'),
-    imageUrl: z.string().trim().nullable().default(null),
-    labelEs: optionalText(RETREAT_LABEL_MAX, `Keep the label under ${RETREAT_LABEL_MAX} characters.`),
-    descriptionEs: optionalText(
-      RETREAT_DESCRIPTION_MAX,
-      `Keep it under ${RETREAT_DESCRIPTION_MAX} characters.`,
-    ),
-    isPublished: z.boolean().default(true),
-  })
-  .refine((v) => v.endsOn >= v.startsOn, {
-    message: 'The last day can’t be before the first.',
-    path: ['endsOn'],
-  });
+export function buildRetreatListingSchema(m: RetreatListingMessages) {
+  return z
+    .object({
+      title: z.string().trim().min(1, m.titleRequired).max(RETREAT_TITLE_MAX, m.titleTooLong),
+      label: z.string().trim().min(1, m.labelRequired).max(RETREAT_LABEL_MAX, m.labelTooLong),
+      instructors: z
+        .string()
+        .trim()
+        .min(1, m.instructorsRequired)
+        .max(RETREAT_INSTRUCTORS_MAX, m.instructorsTooLong),
+      startsOn: z.string().regex(DATE, m.startsOnRequired),
+      endsOn: z.string().regex(DATE, m.endsOnRequired),
+      description: z
+        .string()
+        .trim()
+        .min(1, m.descriptionRequired)
+        .max(RETREAT_DESCRIPTION_MAX, m.descriptionTooLong),
+      url: z
+        .string()
+        .trim()
+        .min(1, m.urlRequired)
+        .transform(normalizeRetreatUrl)
+        .refine(isValidRetreatUrl, m.urlInvalid),
+      imageUrl: z.string().trim().nullable().default(null),
+      labelEs: optionalText(RETREAT_LABEL_MAX, m.labelTooLong),
+      descriptionEs: optionalText(RETREAT_DESCRIPTION_MAX, m.descriptionTooLong),
+      isPublished: z.boolean().default(true),
+    })
+    .refine((v) => v.endsOn >= v.startsOn, {
+      message: m.endsBeforeStarts,
+      path: ['endsOn'],
+    });
+}
+
+/** The schema in English — what the server action re-validates with. */
+export const retreatListingSchema = buildRetreatListingSchema(RETREAT_LISTING_MESSAGES_EN);
+
+/**
+ * A message the server refused with, matched back to its key so the form
+ * can say it in the reader's language. Null for anything that is not one
+ * of the schema's own words (a database error, say).
+ */
+export function retreatListingMessageKey(message: string): keyof RetreatListingMessages | null {
+  const hit = Object.entries(RETREAT_LISTING_MESSAGES_EN).find(([, english]) => english === message);
+  return hit ? (hit[0] as keyof RetreatListingMessages) : null;
+}
 
 /** What the form holds — strings throughout, the way inputs give them. */
 export type RetreatListingFormValues = z.input<typeof retreatListingSchema>;
