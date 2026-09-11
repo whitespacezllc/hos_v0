@@ -31,6 +31,10 @@ const ROUTES: Entry[] = [
   // The class schedule is regenerated from the recurring templates every week.
   { path: '/yoga', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/stay-with-us', changeFrequency: 'monthly', priority: 0.8 },
+  // The rooms' booking page. The engine inside it renders in the browser, but
+  // the page is a real, permanent destination — "book a room at House of
+  // Shakti" should resolve to it.
+  { path: '/book', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/retreats', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/shakti-experience', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/host-your-retreat', changeFrequency: 'monthly', priority: 0.8 },

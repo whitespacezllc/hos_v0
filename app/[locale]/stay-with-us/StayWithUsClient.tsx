@@ -13,8 +13,8 @@ import { AccommodationsFAQ } from '@/components/accommodations/AccommodationsFAQ
 import { HeroVideo, heroCuts } from '@/components/shared/HeroVideo';
 import { getStays, type StayData } from '@/lib/stays';
 
-// The Cloudbeds immersive loader is mounted once, site-wide, in app/layout.tsx;
-// it exposes window.openImmersiveExperiencePopup, which CheckAvailabilityLink calls.
+// Booking happens on /book, where the Cloudbeds engine renders in the page;
+// every CheckAvailabilityLink below is a plain link there (lib/cloudbeds.ts).
 
 // ─── Word-by-word reveal variants (same easing as home Introduction) ─────────
 const headlineContainer: Variants = {
@@ -239,8 +239,7 @@ function StaysGrid() {
 export default function StayWithUsClient() {
   return (
     <main id="main-content" className="bg-warm-white overflow-hidden">
-      {/* The Cloudbeds immersive booking widget is mounted site-wide in
-          app/layout.tsx; every CheckAvailabilityLink calls the popup it exposes. */}
+      {/* Every CheckAvailabilityLink on this page leads to /book. */}
       <Navigation />
       <AccommodationsHero />
       <AccommodationsIntro />

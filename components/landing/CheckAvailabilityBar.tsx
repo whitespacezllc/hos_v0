@@ -8,22 +8,22 @@ import { dateFnsLocale } from "@/lib/dates";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import {
-  CLOUDBEDS_PROPERTY_CODE,
-  cloudbedsReservationUrl,
-} from "@/lib/cloudbeds";
+import { useRouter } from "@/i18n/navigation";
+import { bookHref } from "@/lib/cloudbeds";
 
 // ─── Hero "Check availability" bar ───────────────────────────────────────────
 // A compact booking pill overlaid on the hero (à la RecenterLife): a date-range
-// field + a "Check availability" action. On submit we open the Cloudbeds
-// reservation with the chosen dates; with no dates we fall back to the immersive
-// popup exposed site-wide by the loader script (app/layout.tsx).
+// field + a "Check availability" action. On submit the reader goes to /book,
+// where the Cloudbeds engine renders in the page and reads the chosen dates
+// from the query string as it starts (lib/cloudbeds.ts); with no dates, to
+// /book as it is.
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
 export function CheckAvailabilityBar() {
   const t = useTranslations("home.hero.availability");
   const tButtons = useTranslations("common.buttons");
   const locale = useLocale();
+  const router = useRouter();
   const [range, setRange] = useState<DateRange | undefined>();
   const [open, setOpen] = useState(false);
 
@@ -61,19 +61,11 @@ export function CheckAvailabilityBar() {
     setOpen(false); // the stay is complete — nothing left to pick
   };
 
+  // Half a stay is no stay: handed only an arrival, the engine would assume
+  // one night — a guess the reader never made — so it opens with nothing
+  // filled in instead.
   const handleCheck = () => {
-    if (from && to) {
-      window.open(cloudbedsReservationUrl(iso(from), iso(to)), "_blank", "noopener,noreferrer");
-      return;
-    }
-    // No complete stay chosen — open the immersive overlay if available, else
-    // the plain page.
-    const openPopup = window.openImmersiveExperiencePopup;
-    if (typeof openPopup === "function") {
-      openPopup({ propertyCode: CLOUDBEDS_PROPERTY_CODE });
-    } else {
-      window.open(cloudbedsReservationUrl(), "_blank", "noopener,noreferrer");
-    }
+    router.push(from && to ? bookHref({ checkin: iso(from), checkout: iso(to) }) : bookHref());
   };
 
   // Naming the half that's still missing, rather than leaving the placeholder

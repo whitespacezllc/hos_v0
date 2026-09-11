@@ -82,7 +82,7 @@ export async function GET() {
       `WhatsApp and phone: ${BUSINESS.phoneDisplay} (${BUSINESS.whatsappUrl}). Email: ${BUSINESS.email.general}. Instagram: ${BUSINESS.instagram}`,
       `Reception: every day ${BUSINESS.openingHours.opens}–${BUSINESS.openingHours.closes}, Costa Rica time (UTC−6, no daylight saving).`,
       `On site: ${BUSINESS.amenities.join(', ')}. Price range: ${BUSINESS.priceRange}.`,
-      'Booking: accommodation through the Cloudbeds engine on the site; yoga classes and class packs on the site; retreats, the teacher training and private group hire over WhatsApp.',
+      `Booking: accommodation at ${BUSINESS.url}/book (the Cloudbeds booking engine, running inside the site); yoga classes and class packs on the site; retreats, the teacher training and private group hire over WhatsApp.`,
     ]),
     '',
     H(2, 'Home'),

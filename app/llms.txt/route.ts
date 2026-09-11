@@ -1,5 +1,6 @@
 import { BUSINESS } from '@/lib/business';
 import { getStays } from '@/lib/stays';
+import { CLOUDBEDS_HOSTED_URL } from '@/lib/cloudbeds';
 
 // ─── /llms.txt ───────────────────────────────────────────────────────────────
 // The short card for language models (llmstxt.org): who the house is, what
@@ -12,7 +13,8 @@ export const dynamic = 'force-static';
 const PAGES: [string, string][] = [
   ['/', 'overview'],
   ['/yoga', 'class schedule, class packs, special activities and booking'],
-  ['/stay-with-us', 'the places to stay, with photographs and a booking engine'],
+  ['/stay-with-us', 'the places to stay, with photographs'],
+  ['/book', 'live availability, rates and booking for the rooms (the Cloudbeds booking engine, in the page)'],
   ['/retreats', 'retreats hosted by House of Shakti'],
   ['/upcoming-retreats', 'upcoming and past retreats by visiting facilitators, with dates and links'],
   ['/yoga-teacher-training', 'the 100-hour Tantra yoga teacher training (Yoga Alliance RYT 200)'],
@@ -46,7 +48,7 @@ export function GET() {
     '',
     '## Booking',
     '',
-    `Accommodation is booked through the Cloudbeds engine linked from every page. Yoga classes and class packs are booked on the site. Retreats, teacher trainings and private group hire are arranged over WhatsApp at ${BUSINESS.phoneDisplay}.`,
+    `Accommodation is booked at ${BUSINESS.url}/book, where the Cloudbeds booking engine runs inside the site (the same engine as Cloudbeds hosts it: ${CLOUDBEDS_HOSTED_URL}). Yoga classes and class packs are booked on the site. Retreats, teacher trainings and private group hire are arranged over WhatsApp at ${BUSINESS.phoneDisplay}.`,
     '',
     '## Pages',
     '',

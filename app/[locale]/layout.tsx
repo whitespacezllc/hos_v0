@@ -8,11 +8,9 @@ import { routing, localeFromParams, type LocaleParams } from '@/i18n/routing'
 import { FONT_VARIABLES } from '@/lib/fonts'
 import { SplashScreen } from '@/components/landing/SplashScreen'
 import { WhatsAppButton } from '@/components/landing/WhatsAppButton'
-import { CLOUDBEDS_IMMERSIVE_SRC } from '@/lib/cloudbeds'
 import { BUSINESS } from '@/lib/business'
 import { DEFAULT_OG_IMAGE, SITE_ICONS, openGraphLocale } from '@/lib/seo'
 import '../globals.css'
-import Script from 'next/script';
 
 // ─── Root layout of the public site ──────────────────────────────────────────
 // One of three root layouts: this one serves everything a guest can reach, in
@@ -154,14 +152,9 @@ export default async function RootLayout({ children, params }: LocaleParams & { 
           <WhatsAppButton />
         </NextIntlClientProvider>
         <Analytics />
-        <Script
-          src="https://static1.cloudbeds.com/booking-engine/latest/static/js/immersive-experience/cb-immersive-experience.js"
-          strategy="afterInteractive"
-        />
-        {/* Per-property immersive loader — exposes window.openImmersiveExperiencePopup
-            site-wide so the hero availability bar and every CheckAvailabilityLink
-            can open the booking engine as an overlay from any page. */}
-        <Script src={CLOUDBEDS_IMMERSIVE_SRC} strategy="afterInteractive" />
+        {/* No Cloudbeds script here: the booking engine loads on /book alone
+            (components/booking-engine/CloudbedsImmersive.tsx), and every
+            other page only links there. */}
       </body>
     </html>
   )

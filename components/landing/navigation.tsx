@@ -8,7 +8,7 @@ import { Menu, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, getPathname, usePathname } from '@/i18n/navigation';
 import { routing, type AppLocale } from '@/i18n/routing';
-import { CLOUDBEDS_PROPERTY_CODE, CLOUDBEDS_URL } from '@/lib/cloudbeds';
+import { BOOK_PATH } from '@/lib/cloudbeds';
 import { rememberLocale } from '@/lib/locale-cookie';
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
@@ -206,36 +206,16 @@ function LangToggle() {
 }
 
 // ─── Reserve CTA ────────────────────────────────────────────────────────────
-// Straight into Cloudbeds, no interstitial page. The immersive loader script
-// (mounted once in app/layout.tsx) opens the booking engine as an overlay, so
-// the reader never leaves the site; the `href` stays as the graceful fallback
-// for when that script is blocked or still loading, and is what a cmd-click
-// opens in a new tab. Same contract as CheckAvailabilityLink on /stay-with-us.
+// A link to /book, where the Cloudbeds engine renders inside the page (see
+// lib/cloudbeds.ts) — the reader never leaves the site. A link like any other
+// in the bar: `Link` adds `/es` for a Spanish reader, and a cmd-click opens it
+// in a new tab. Same door as CheckAvailabilityLink on /stay-with-us.
 function ReserveCta({ className, onNavigate }: { className: string; onNavigate?: () => void }) {
   const t = useTranslations('nav');
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    onNavigate?.();
-    // Let the browser handle modified clicks (new tab, etc.) via the href.
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const openPopup = window.openImmersiveExperiencePopup;
-    if (typeof openPopup === 'function') {
-      e.preventDefault();
-      openPopup({ propertyCode: CLOUDBEDS_PROPERTY_CODE });
-    }
-    // else: fall through to the href (new-tab reservation page).
-  };
-
   return (
-    <a
-      href={CLOUDBEDS_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={handleClick}
-      className={className}
-    >
+    <Link href={BOOK_PATH} onClick={onNavigate} className={className}>
       {t('reserve')}
-    </a>
+    </Link>
   );
 }
 
