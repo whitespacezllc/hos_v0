@@ -6,6 +6,34 @@ import createNextIntlPlugin from 'next-intl/plugin';
 // without messages.
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
+// ─── The old domain ──────────────────────────────────────────────────────────
+// houseofshaktiyoga.com was the Wix site. Its DNS points at this project now,
+// so every request that arrives on that host — www or bare — must leave with
+// a 301 to the same page on houseofshakticr.com, and the new site's content
+// must never be served under the old name.
+//
+// Page by page, not everything to the home: a blanket redirect reads to Google
+// as a soft 404 and discards whatever authority the inner pages had earned.
+// The host condition is on every rule, so houseofshakticr.com is untouched.
+// Wix canonicalised to www, so that is the indexed form, but people type the
+// bare domain too; the regex takes both.
+const OLD_HOST = { type: 'host', value: '(?:www\\.)?houseofshaktiyoga\\.com' };
+const NEW_ORIGIN = 'https://houseofshakticr.com';
+
+/**
+ * A 301 from a path on the old host to a path on the new one. An explicit
+ * `statusCode` rather than `permanent: true`, because Next spells "permanent"
+ * as 308 and a domain move wants the plain 301 every crawler and every old
+ * HTTP client already understands. Both are permanent to Google; 301 is the
+ * one the migration was specified and will be verified against.
+ */
+const fromOldDomain = (source, path) => ({
+  source,
+  destination: `${NEW_ORIGIN}${path}`,
+  statusCode: 301,
+  has: [OLD_HOST],
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -19,6 +47,45 @@ const nextConfig = {
       // page already, and what the site lacked was the words. The old path
       // stays reachable for the links that went out with it.
       { source: '/gallery', destination: '/about', permanent: true },
+
+      // ── houseofshaktiyoga.com → houseofshakticr.com ────────────────────────
+      // First match wins: the named pages come first, the wildcards after,
+      // and the path-preserving catch-all last.
+
+      // Pages whose name changed.
+      fromOldDomain('/santa-teresa-yoga-classes', '/yoga'),
+      fromOldDomain('/yoga-and-breathwork', '/yoga'),
+      fromOldDomain('/online-yoga', '/yoga'),
+      fromOldDomain('/book-yoga-classes', '/yoga'),
+      fromOldDomain('/embody-yoga-teacher-training', '/yoga-teacher-training'),
+      fromOldDomain('/ytt-teaching-team', '/yoga-teacher-training'),
+      // Wix's own typo, kept as is: that is the URL Google indexed.
+      fromOldDomain('/accomodations-santa-teresa-costa-rica', '/stay-with-us'),
+
+      // The blog did not come across. Each post goes to its nearest topic.
+      fromOldDomain('/post/yoga-teacher-training-your-path-to-empowerment', '/yoga-teacher-training'),
+      fromOldDomain('/post/:slug*', '/yoga'),
+      fromOldDomain('/blog', '/yoga'),
+      fromOldDomain('/blog/:path*', '/yoga'),
+
+      // Wix Bookings. Three services have a page of their own on the new site
+      // and must sit before the wildcard; the rest of the booking machinery
+      // lands on the yoga page.
+      fromOldDomain('/booking-calendar/house-of-shakti-experience-1', '/shakti-experience'),
+      fromOldDomain('/booking-calendar/shakti-sadhana-1', '/retreats/shakti-sadhana'),
+      fromOldDomain('/booking-calendar/other-retreats', '/retreats'),
+      fromOldDomain('/booking-calendar/:path*', '/yoga'),
+      fromOldDomain('/service-page/:path*', '/yoga'),
+      fromOldDomain('/bookings-checkout/:path*', '/yoga'),
+      fromOldDomain('/account/:path*', '/'),
+
+      // Everything else keeps its path: /about, /retreats, /contact and any
+      // route that exists under the same name on both sites. A path the new
+      // site does not have gets a real 404 there, which is the right answer.
+      // The home is spelled out because `:path*` with nothing captured
+      // compiles to the bare origin, and the redirect should say `/`.
+      fromOldDomain('/', '/'),
+      fromOldDomain('/:path*', '/:path*'),
     ]
   },
   async headers() {
