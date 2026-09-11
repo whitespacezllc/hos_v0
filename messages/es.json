@@ -1489,7 +1489,6 @@
     "intro": "Disponibilidad y tarifas en tiempo real de cada alojamiento, reservadas directamente con la casa.",
     "failed": "El motor de reservas no pudo cargarse aquí.",
     "hosted": {
-      "lead": "¿Prefieres reservar en la página de Cloudbeds?",
       "link": "Abrir el motor de reservas alojado"
     }
   },

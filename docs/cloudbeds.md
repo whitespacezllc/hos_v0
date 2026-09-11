@@ -56,8 +56,7 @@ La barra del hero arma exactamente eso con `bookHref()` de `lib/cloudbeds.ts`. C
 ## Si no carga
 
 - **Consola con 403 / CORS en llamadas a `*.cloudbeds.com`** → el dominio no está en Whitelisted domains (o Premium Embeds no está en el plan).
-- **El script no llega** (bloqueado por red o extensión) → la página muestra un aviso con el link al motor alojado, con la misma búsqueda.
-- El link al motor alojado está siempre al pie de `/book`, discreto, como segunda puerta.
+- **El script no llega** (bloqueado por red o extensión) → en lugar del motor, la página muestra un aviso con el link al motor alojado, con la misma búsqueda. Es el único lugar donde aparece ese link: con el motor cargado no hay una segunda puerta a Cloudbeds.
 
 ## Lo que no hay que hacer
 
