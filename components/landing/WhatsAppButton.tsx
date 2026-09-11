@@ -37,9 +37,12 @@ const DWELL_MS = 4800;
 // the login screen and the booking flow it would be furniture at best and, in
 // a checkout, a distraction floating over the payment form. (The admin and
 // the portal have their own document now and never mount this; the prefixes
-// stay so the list still reads as the full rule.) Compared against the
-// locale-less pathname, so `/es/booking/…` is excluded like `/booking/…`.
-const EXCLUDED_PREFIXES = ['/admin', '/instructor', '/login', '/forgot-password', '/set-password', '/booking'];
+// stay so the list still reads as the full rule.) /book is out for a plainer
+// reason: the Cloudbeds engine pins its own bar — the cart, with the button
+// that carries the reservation forward — to the bottom of a phone's screen,
+// and this tile would sit on top of it. Compared against the locale-less
+// pathname, so `/es/booking/…` is excluded like `/booking/…`.
+const EXCLUDED_PREFIXES = ['/admin', '/instructor', '/login', '/forgot-password', '/set-password', '/booking', '/book'];
 
 // ─── The three doors ─────────────────────────────────────────────────────────
 // Same conversation, three prepared opening lines. The message is the routing:
