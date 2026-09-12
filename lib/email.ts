@@ -48,6 +48,8 @@ type Deliverable = {
   attachments?: { filename: string; content: string; contentType?: string }[];
   /** Short label for the logs — never an address or a code. */
   tag: string;
+  /** Where a reply lands. The general mailbox unless the sender names another. */
+  replyTo?: string;
 };
 
 async function deliver(mail: Deliverable): Promise<SendResult> {
@@ -59,7 +61,7 @@ async function deliver(mail: Deliverable): Promise<SendResult> {
     const { data, error } = await resend.emails.send({
       from: FROM,
       to: mail.to,
-      replyTo: BUSINESS.email.general,
+      replyTo: mail.replyTo ?? BUSINESS.email.general,
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
@@ -377,7 +379,7 @@ function bookingEmailText(d: BookingEmailData): string {
     `${t(d.event === 'pending' ? 'labels.amountDue' : 'labels.total')}: ${Number(d.totalUsd) === 0 ? t('free') : formatUsd(Number(d.totalUsd))}`,
     '',
     c('questions'),
-    `${BUSINESS.phoneDisplay} · ${BUSINESS.email.general}`,
+    `${BUSINESS.phoneDisplay} · ${BUSINESS.email.yogaStudio}`,
   ];
   return lines.filter((l, i) => l !== '' || lines[i - 1] !== '').join('\n');
 }
@@ -391,6 +393,7 @@ function bookingIcs(d: BookingEmailData): { filename: string; content: string; c
     startsAt: new Date(d.startsAt),
     durationMinutes: d.durationMinutes,
     organizerName: 'House of Shakti',
+    organizerEmail: BUSINESS.email.yogaStudio,
   });
   return {
     filename: 'house-of-shakti-class.ics',
@@ -407,6 +410,8 @@ export async function sendBookingEmail(d: BookingEmailData): Promise<SendResult>
     text: bookingEmailText(d),
     attachments: d.event === 'cancelled' ? undefined : [bookingIcs(d)],
     tag: `booking:${d.event}:${d.reference}`,
+    // Classes and packs are the shala's business: a reply reaches the studio.
+    replyTo: BUSINESS.email.yogaStudio,
   });
 }
 
@@ -456,6 +461,8 @@ export async function sendPackCodeEmail(params: PackCodeEmail): Promise<SendResu
     html: packCodeHtml(params),
     text: [t('hello', { firstName: params.firstName }), '', t('useCode'), '', code, '', t('works', { count: classesTotal })].join('\n'),
     tag: `pack-code:${classesTotal}`,
+    // Classes and packs are the shala's business: a reply reaches the studio.
+    replyTo: BUSINESS.email.yogaStudio,
   });
 }
 

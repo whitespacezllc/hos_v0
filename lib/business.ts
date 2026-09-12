@@ -66,13 +66,23 @@ export const BUSINESS = Object.freeze({
   phoneDisplay: '+506 8560 5115',
   whatsappUrl: WHATSAPP_URL_PLAIN,
 
-  // The mailboxes as the owners confirmed them; they live on the
-  // houseofshaktiyoga.com mail domain, which is separate from the website's.
-  // Change these only once the owners say the addresses themselves moved.
+  // The mailboxes, as the owners settled them on 2026-09-12. They live on the
+  // website's own domain now, one per purpose, so a reader asking about a
+  // class does not land in the same inbox as a journalist. Each has one job
+  // on the site: the contact page names all five, the structured data carries
+  // the four public ones as ContactPoints, and the outgoing mail for classes
+  // and packs replies to the studio's.
   email: Object.freeze({
-    general: 'hello@houseofshaktiyoga.com',
-    retreats: 'retreats@houseofshaktiyoga.com',
-    press: 'press@houseofshaktiyoga.com',
+    /** Stays, general questions, anything without a better home. */
+    general: 'hello@houseofshakticr.com',
+    /** The shala: the class schedule, packs, bookings and their emails. */
+    yogaStudio: 'yogastudio@houseofshakticr.com',
+    /** Retreats of the house, and hosting one here. */
+    retreats: 'retreats@houseofshakticr.com',
+    /** Press, media and editorial. */
+    media: 'media@houseofshakticr.com',
+    /** Nancy's own. The teacher training is hers, so its questions go to her. */
+    founder: 'nancy@houseofshakticr.com',
   }),
 
   instagram: 'https://www.instagram.com/house.of.shakti/',
@@ -134,5 +144,5 @@ export function absoluteUrl(path: string): string {
   return `${BUSINESS.url}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-/** The canonical mail host, for anything that has to build an address. */
-export const EMAIL_DOMAIN = 'houseofshaktiyoga.com';
+/** The canonical mail host, for anything that has to build an address. The website's own since 2026-09-12. */
+export const EMAIL_DOMAIN = 'houseofshakticr.com';

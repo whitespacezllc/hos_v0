@@ -79,7 +79,7 @@ export async function GET() {
     bullets([
       `Name: ${BUSINESS.name} (Google Business profile: ${BUSINESS.alternateName}).`,
       `Where: ${BUSINESS.addressLines.slice(1).join(', ')} — on the Nicoya Peninsula, five minutes from Playa Hermosa. Coordinates ${BUSINESS.geo.latitude}, ${BUSINESS.geo.longitude}. Map: ${BUSINESS.googleMapsUrl}`,
-      `WhatsApp and phone: ${BUSINESS.phoneDisplay} (${BUSINESS.whatsappUrl}). Email: ${BUSINESS.email.general}. Instagram: ${BUSINESS.instagram}`,
+      `WhatsApp and phone: ${BUSINESS.phoneDisplay} (${BUSINESS.whatsappUrl}). Email: ${BUSINESS.email.general} (stays and general questions), ${BUSINESS.email.yogaStudio} (classes and packs), ${BUSINESS.email.retreats} (retreats), ${BUSINESS.email.media} (press). Instagram: ${BUSINESS.instagram}`,
       `Reception: every day ${BUSINESS.openingHours.opens}–${BUSINESS.openingHours.closes}, Costa Rica time (UTC−6, no daylight saving).`,
       `On site: ${BUSINESS.amenities.join(', ')}. Price range: ${BUSINESS.priceRange}.`,
       `Booking: accommodation at ${BUSINESS.url}/book (the Cloudbeds booking engine, running inside the site); yoga classes and class packs on the site; retreats, the teacher training and private group hire over WhatsApp.`,
@@ -234,10 +234,12 @@ export async function GET() {
     '',
     H(2, `Contact — ${BUSINESS.url}/contact`),
     '',
-    `${en.contact.reservations.heading}: ${en.contact.reservations.body}`,
-    `${en.contact.host.heading}: ${en.contact.host.body}`,
+    `${en.contact.reservations.heading}: ${en.contact.reservations.body} ${BUSINESS.email.general}`,
+    `${en.contact.yogaStudio.heading}: ${en.contact.yogaStudio.body} ${BUSINESS.email.yogaStudio}`,
+    `${en.contact.host.heading}: ${en.contact.host.body} ${BUSINESS.email.retreats}`,
+    `${en.contact.training.heading}: ${en.contact.training.body} ${BUSINESS.email.founder}`,
     `${en.contact.visit.heading}: ${en.contact.visit.body}`,
-    `${en.contact.press.heading}: ${en.contact.press.body} ${BUSINESS.email.press}`,
+    `${en.contact.press.heading}: ${en.contact.press.body} ${BUSINESS.email.media}`,
     '',
   ];
 

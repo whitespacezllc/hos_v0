@@ -16,14 +16,15 @@ import { BUSINESS } from '@/lib/business';
 // separated by hairline borders.
 
 // ─── Contact data ───────────────────────────────────────────────────────────
-// Every value on this page now comes from lib/business.ts, which is also what
-// the footer, the calendar invitations and the JSON-LD read. The three email
-// addresses and the Maps link are still marked TODO_CONFIRM there, awaiting
-// Nancy — they render here as they always have, but they are withheld from the
-// structured data until they are confirmed.
+// Every value on this page comes from lib/business.ts, which is also what the
+// footer, the calendar invitations and the JSON-LD read. One mailbox per
+// block, so the page doubles as the map of who answers what: stays and
+// general questions, the shala, retreats, the teacher training, the press.
 const EMAIL_RESERVATIONS = BUSINESS.email.general;
+const EMAIL_STUDIO = BUSINESS.email.yogaStudio;
 const EMAIL_RETREATS = BUSINESS.email.retreats;
-const EMAIL_PRESS = BUSINESS.email.press;
+const EMAIL_TRAINING = BUSINESS.email.founder;
+const EMAIL_MEDIA = BUSINESS.email.media;
 
 const PHONE_E164 = BUSINESS.phone;
 const PHONE_DISPLAY = BUSINESS.phoneDisplay;
@@ -123,6 +124,44 @@ function ContactCTA({
   );
 }
 
+/**
+ * A heading, a sentence on who it is for, and one mailbox. Blocks two to four
+ * of the left column are exactly this; the first also carries WhatsApp and
+ * the phone, so it stays written out.
+ */
+function MailBlock({
+  heading,
+  body,
+  email,
+  emailLabel,
+  delay,
+  inView,
+}: {
+  heading: string;
+  body: string;
+  email: string;
+  emailLabel: string;
+  delay: number;
+  inView: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+      transition={{ duration: 1.0, ease: 'easeOut', delay }}
+      className="border-t border-ink/10 py-10 lg:py-12"
+    >
+      <h2 className="font-display font-light text-ink text-xl lg:text-2xl leading-snug">
+        {heading}
+      </h2>
+      <p className="font-body text-base text-ink leading-relaxed mt-5 max-w-xl">{body}</p>
+      <div className="mt-7 max-w-xl">
+        <ContactCTA href={`mailto:${email}`} icon={Mail} label={emailLabel} value={email} />
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Sections ───────────────────────────────────────────────────────────────
 
 // 1) Page heading — centered, generous breathing room. Mount-animated
@@ -201,28 +240,31 @@ function ContactColumns() {
             </div>
           </motion.div>
 
-          {/* Block 2 — Host a Retreat */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-            transition={{ duration: 1.0, ease: 'easeOut', delay: 0.15 }}
-            className="border-t border-ink/10 py-10 lg:py-12"
-          >
-            <h2 className="font-display font-light text-ink text-xl lg:text-2xl leading-snug">
-              {t('host.heading')}
-            </h2>
-            <p className="font-body text-base text-ink leading-relaxed mt-5 max-w-xl">
-              {t('host.body')}
-            </p>
-            <div className="mt-7 max-w-xl">
-              <ContactCTA
-                href={`mailto:${EMAIL_RETREATS}`}
-                icon={Mail}
-                label={t('reservations.email')}
-                value={EMAIL_RETREATS}
-              />
-            </div>
-          </motion.div>
+          {/* Blocks 2–4 — one mailbox each: the shala, retreats, the training. */}
+          <MailBlock
+            heading={t('yogaStudio.heading')}
+            body={t('yogaStudio.body')}
+            email={EMAIL_STUDIO}
+            emailLabel={t('reservations.email')}
+            delay={0.1}
+            inView={inView}
+          />
+          <MailBlock
+            heading={t('host.heading')}
+            body={t('host.body')}
+            email={EMAIL_RETREATS}
+            emailLabel={t('reservations.email')}
+            delay={0.2}
+            inView={inView}
+          />
+          <MailBlock
+            heading={t('training.heading')}
+            body={t('training.body')}
+            email={EMAIL_TRAINING}
+            emailLabel={t('reservations.email')}
+            delay={0.3}
+            inView={inView}
+          />
         </div>
 
         {/* RIGHT — vertical image (col-span-4 = 40%, smaller than before) */}
@@ -317,8 +359,8 @@ function PressSection() {
           </p>
           <div className="mt-6">
             <DetailRow label={t('emailLabel')}>
-              <ContactLink href={`mailto:${EMAIL_PRESS}`}>
-                {EMAIL_PRESS}
+              <ContactLink href={`mailto:${EMAIL_MEDIA}`}>
+                {EMAIL_MEDIA}
               </ContactLink>
             </DetailRow>
           </div>

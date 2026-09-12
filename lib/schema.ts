@@ -80,6 +80,20 @@ export function lodgingBusinessSchema(): JsonLd {
     image: `${BUSINESS.url}/og-image.jpg`,
     telephone: BUSINESS.phone,
     email: BUSINESS.email.general,
+    // One ContactPoint per public mailbox, so an engine asked "how do I reach
+    // them about X" can name the right inbox. `contactType` is free text in
+    // schema.org; these are the words the contact page itself uses.
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'reservations',
+        email: BUSINESS.email.general,
+        telephone: BUSINESS.phone,
+      },
+      { '@type': 'ContactPoint', contactType: 'yoga studio', email: BUSINESS.email.yogaStudio },
+      { '@type': 'ContactPoint', contactType: 'retreats', email: BUSINESS.email.retreats },
+      { '@type': 'ContactPoint', contactType: 'press', email: BUSINESS.email.media },
+    ],
     priceRange: BUSINESS.priceRange,
     address: postalAddress(),
     geo: geoCoordinates(),
@@ -145,12 +159,7 @@ export function yogaClassEventSchema(yogaClass: YogaClass): JsonLd | null {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     eventStatus: 'https://schema.org/EventScheduled',
     location: placeFor(yogaClass.location),
-    organizer: {
-      '@type': 'Organization',
-      '@id': BUSINESS_ID,
-      name: BUSINESS.name,
-      url: BUSINESS.url,
-    },
+    organizer: organizer(BUSINESS.email.yogaStudio),
     ...(yogaClass.instructor
       ? { performer: { '@type': 'Person', name: yogaClass.instructor } }
       : {}),
@@ -206,12 +215,7 @@ export function retreatEventSchema(retreat: Retreat): JsonLd | null {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     eventStatus: 'https://schema.org/EventScheduled',
     location: placeFor(),
-    organizer: {
-      '@type': 'Organization',
-      '@id': BUSINESS_ID,
-      name: BUSINESS.name,
-      url: BUSINESS.url,
-    },
+    organizer: organizer(BUSINESS.email.retreats),
     ...(retreat.heroImage ? { image: `${BUSINESS.url}${retreat.heroImage}` } : {}),
     // Whoever actually holds the retreat. Only their name goes in: the
     // portraits and Instagram handles in `lib/retreats.ts` are still
@@ -305,12 +309,7 @@ export function retreatListingEventSchema(listing: RetreatListing): JsonLd | nul
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     eventStatus: 'https://schema.org/EventScheduled',
     location: placeFor(),
-    organizer: {
-      '@type': 'Organization',
-      '@id': BUSINESS_ID,
-      name: BUSINESS.name,
-      url: BUSINESS.url,
-    },
+    organizer: organizer(BUSINESS.email.retreats),
     performer: performers(listing.instructors),
     image: image.startsWith('http') ? image : `${BUSINESS.url}${image}`,
     url,
@@ -322,4 +321,18 @@ export function retreatListingEventsSchema(listings: RetreatListing[]): JsonLd[]
   return listings
     .map(retreatListingEventSchema)
     .filter((s): s is JsonLd => s !== null);
+}
+
+/**
+ * The house as the organizer of an event, with the mailbox that actually
+ * answers about it: the studio's for a class, the retreats desk for a retreat.
+ */
+function organizer(email: string): JsonLd {
+  return {
+    '@type': 'Organization',
+    '@id': BUSINESS_ID,
+    name: BUSINESS.name,
+    url: BUSINESS.url,
+    email,
+  };
 }

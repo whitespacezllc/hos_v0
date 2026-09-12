@@ -10,6 +10,7 @@ import { useLocale, useMessages, useTranslations } from 'next-intl';
 import type { YogaClass } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
 import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
+import { isStudioPauseNoticeVisible } from '@/lib/studio-pause';
 import { Navigation } from '@/components/landing/navigation';
 import { Footer } from '@/components/landing/footer';
 import { ClassPacks } from '@/components/yoga/ClassPacks';
@@ -258,6 +259,9 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
 
   const today = nowInCostaRica();
 
+  // The shala's pause, while it lasts. lib/studio-pause.ts holds the date.
+  const pauseNoticeVisible = isStudioPauseNoticeVisible(today);
+
   // "Mon 7" / "lun 7" — the pattern is the catalogue's, the words are date-fns'.
   const dayLabel = (day: Date) => {
     const label = format(day, t('dayFormat'), { locale });
@@ -329,6 +333,22 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
           <h2 className="font-display font-light text-ink text-3xl md:text-4xl leading-[1.15]">
             {t('heading')}
           </h2>
+
+          {/* The pause. Between the heading and the week, so a reader looking
+              for next week's classes meets it before the empty grid does. */}
+          {pauseNoticeVisible && (
+            <div className="mt-8 lg:mt-10 max-w-2xl border border-burgundy/40 bg-burgundy/[0.04] px-6 py-6 lg:px-8 lg:py-7">
+              <p className="font-body text-[10px] tracking-[0.2em] uppercase text-burgundy">
+                {t('pause.eyebrow')}
+              </p>
+              <p className="font-display font-light text-ink text-xl lg:text-2xl leading-snug mt-3">
+                {t('pause.line1')}
+              </p>
+              <p className="font-body text-base text-ink leading-relaxed mt-2">
+                {t('pause.line2')}
+              </p>
+            </div>
+          )}
 
           {/* Week navigation row */}
           <div className="flex items-center justify-between mt-8 lg:mt-10">
