@@ -1249,7 +1249,12 @@
         "fullyBooked": "Fully booked",
         "spotsLeft": "{count, plural, =1 {1 spot left} other {# spots left}}"
       },
-      "timezone": "All times are Costa Rica time."
+      "timezone": "All times are Costa Rica time.",
+      "pause": {
+        "eyebrow": "A note from the studio",
+        "line1": "House of Shakti is taking a moment to rest and renew.",
+        "line2": "We look forward to welcoming you back from November 1st."
+      }
     },
     "categories": {
       "vinyasa": "Vinyasa",
@@ -1464,9 +1469,17 @@
       "call": "Call",
       "email": "Email"
     },
+    "yogaStudio": {
+      "heading": "Yoga Studio",
+      "body": "For the class schedule, class packs and anything about practising with us at the shala."
+    },
     "host": {
       "heading": "Host a Retreat",
       "body": "For teachers, hosts, and brands seeking to use House of Shakti as a setting for retreats or curated gatherings."
+    },
+    "training": {
+      "heading": "Yoga Teacher Training",
+      "body": "For questions about the training, its dates, curriculum and payment plans. Write to Nancy directly."
     },
     "imageAlt": "The saltwater pool framed by the jungle at House of Shakti",
     "visit": {
@@ -2551,7 +2564,7 @@
         "delete": "Delete instructor",
         "namePlaceholder": "Ex: Nancy Goodfellow",
         "emailOptional": "Email (optional)",
-        "emailPlaceholder": "nancy@houseofshaktiyoga.com",
+        "emailPlaceholder": "nancy@houseofshakticr.com",
         "nameRequired": "Name is required.",
         "inUse": "This instructor is assigned to classes. Reassign or remove those classes first.",
         "deleteTitle": "Delete instructor?",

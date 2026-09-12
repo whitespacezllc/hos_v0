@@ -9,6 +9,8 @@ type ICSParams = {
   startsAt: Date;
   durationMinutes: number;
   organizerName?: string;
+  /** The mailbox that answers about this event. The general one when unset. */
+  organizerEmail?: string;
 };
 
 // UTC, with the trailing Z: `20260911T130000Z`. A floating local time (no Z)
@@ -29,7 +31,7 @@ function escapeICSText(s: string): string {
 }
 
 export function generateICS(params: ICSParams): string {
-  const { uid, title, description, location, startsAt, durationMinutes, organizerName } = params;
+  const { uid, title, description, location, startsAt, durationMinutes, organizerName, organizerEmail } = params;
   const endsAt = addMinutes(startsAt, durationMinutes);
   const now = formatICSDate(new Date());
 
@@ -50,10 +52,11 @@ export function generateICS(params: ICSParams): string {
     `DESCRIPTION:${escapeICSText(description)}`,
     `LOCATION:${escapeICSText(location)}`,
     `URL:${BUSINESS.url}/yoga`,
-    // The general mailbox is the one that handles bookings; `info@` was
-    // invented and lived on a domain the business does not own.
+    // The mailbox that answers about this event — the studio's for a class —
+    // falling back to the general one. (`info@` was once invented here and
+    // lived on a domain the business does not own.)
     organizerName
-      ? `ORGANIZER;CN=${escapeICSText(organizerName)}:mailto:${BUSINESS.email.general}`
+      ? `ORGANIZER;CN=${escapeICSText(organizerName)}:mailto:${organizerEmail ?? BUSINESS.email.general}`
       : '',
     'STATUS:CONFIRMED',
     'SEQUENCE:0',

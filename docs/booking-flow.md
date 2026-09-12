@@ -76,7 +76,7 @@ callback dejaría de depender del navegador del cliente.
 | --- | --- | --- |
 | `RESEND_API_KEY` | Enviar correos | ya cargada |
 | `EMAIL_FROM` | Remitente. **Tiene que ser una dirección de un dominio verificado en Resend**, p. ej. `House of Shakti <hello@houseofshakticr.com>`. Con el valor por defecto (`onboarding@resend.dev`) Resend solo entrega a la casilla dueña de la cuenta: los clientes no reciben nada. | **pendiente** |
-| `BOOKING_NOTIFY_EMAIL` | Opcional. Casilla(s) del estudio que reciben aviso de cada reserva y de cada pago en efectivo/Venmo por cobrar. Varias, separadas por coma. | opcional |
+| `BOOKING_NOTIFY_EMAIL` | Opcional. Casilla(s) del estudio que reciben aviso de cada reserva y de cada pago en efectivo/Venmo por cobrar. Varias, separadas por coma. Lo natural es `yogastudio@houseofshakticr.com`. | opcional |
 | `NEXT_PUBLIC_SITE_URL` | `https://houseofshakticr.com`. Base del retorno de Tilopay y de los enlaces de los correos. Sin ella, producción cae a ese mismo dominio (`lib/site-url.ts`), pero conviene fijarla. | verificar |
 | `TILOPAY_API_USER`, `TILOPAY_API_PASSWORD`, `TILOPAY_API_KEY` | Pago con tarjeta y verificación (`consult`) | verificar |
 | `TILOPAY_TRUST_CALLBACK` | Dejar sin definir (o `false`) | — |
@@ -84,13 +84,14 @@ callback dejaría de depender del navegador del cliente.
 
 ### Verificar el dominio en Resend
 
-1. Resend → Domains → Add domain → `houseofshakticr.com` (o
-   `houseofshaktiyoga.com`, donde viven las casillas).
+1. Resend → Domains → Add domain → `houseofshakticr.com` (desde el
+   2026-09-12 las casillas viven en ese mismo dominio).
 2. Cargar en el DNS los registros que Resend indica (DKIM `resend._domainkey`,
    SPF/Return-Path `send`, y opcionalmente DMARC).
 3. Cuando el dominio figure como *Verified*, poner `EMAIL_FROM` en Vercel y
    redeployar.
-4. Las respuestas de los clientes van a `hello@houseofshaktiyoga.com`
+4. Las respuestas de los clientes van a `yogastudio@houseofshakticr.com` en
+   los correos de clases y packs, y a `hello@houseofshakticr.com` en el resto
    (`Reply-To`, desde `lib/business.ts`).
 
 ## Base de datos
