@@ -10,7 +10,7 @@ import { useLocale, useMessages, useTranslations } from 'next-intl';
 import type { YogaClass } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
 import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
-import { isStudioPauseNoticeVisible } from '@/lib/studio-pause';
+import { weekTouchesStudioPause } from '@/lib/studio-pause';
 import { Navigation } from '@/components/landing/navigation';
 import { Footer } from '@/components/landing/footer';
 import { ClassPacks } from '@/components/yoga/ClassPacks';
@@ -259,9 +259,6 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
 
   const today = nowInCostaRica();
 
-  // The shala's pause, while it lasts. lib/studio-pause.ts holds the date.
-  const pauseNoticeVisible = isStudioPauseNoticeVisible(today);
-
   // "Mon 7" / "lun 7" — the pattern is the catalogue's, the words are date-fns'.
   const dayLabel = (day: Date) => {
     const label = format(day, t('dayFormat'), { locale });
@@ -269,6 +266,12 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
   };
 
   const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
+
+  // The shala's pause belongs to the weeks it covers, so the notice follows
+  // the week on screen rather than today's date: the last week of classes
+  // stays clear of it, and every week of the pause carries it over the empty
+  // grid. lib/studio-pause.ts holds both dates.
+  const pauseNoticeVisible = weekTouchesStudioPause(weekDays);
 
   // "September 7 – 13" / "7 – 13 de septiembre": each language keeps its own
   // order of day and month, so the patterns come from the catalogue too.
