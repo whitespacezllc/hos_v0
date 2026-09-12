@@ -14,7 +14,11 @@ import { useDragScroll } from "@/hooks/use-drag-scroll";
 const experiences = [
   { id: "shakti", image: "/images/seccionSeasonalExperiences/card_shakti_experience.webp", href: "/shakti-experience" },
   { id: "ytt", image: "/images/seccionSeasonalExperiences/yoga-teacher-training-nancy.webp", href: "/yoga-teacher-training" },
-  { id: "couples", image: "/images/seccionSeasonalExperiences/card_couples.webp", href: "/stay-with-us" },
+  // Sacred Union has no page of its own yet. Until it does, the card leads to
+  // the Shakti Experience — the nearest thing the site actually describes —
+  // rather than to the rooms, which answer a different question. Point this at
+  // its own route the day that page exists.
+  { id: "couples", image: "/images/seccionSeasonalExperiences/card_couples.webp", href: "/shakti-experience" },
 ] as const;
 
 const cardsContainerVariants: Variants = {
