@@ -18,6 +18,7 @@ import {
   type Service,
 } from '@/lib/checkout/core';
 import type { AppLocale } from '@/i18n/routing';
+import { isOnSchedule } from '@/types';
 
 // How the customer chose to pay. 'card' goes through Tilopay; 'cash'/'venmo' are
 // paid in person and confirmed manually by the admin from /admin/reservas.
@@ -138,10 +139,10 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
   // ── Validate class ──────────────────────────────────────────────────────────
   const { data: clase, error: classError } = await supabase
     .from('classes')
-    .select('id, is_active, starts_at, price_dropin_usd')
+    .select('id, is_active, starts_at, price_dropin_usd, class_templates (is_active)')
     .eq('id', classId)
     .maybeSingle();
-  if (classError || !clase || !clase.is_active) return { ok: false, error: 'class_not_found' };
+  if (classError || !clase || !isOnSchedule(clase)) return { ok: false, error: 'class_not_found' };
 
   const hoursUntil = (new Date(clase.starts_at).getTime() - Date.now()) / 3_600_000;
   if (hoursUntil < 1) return { ok: false, error: 'booking_too_late' };

@@ -69,6 +69,8 @@ export default function ClasesClient({
   const [deletingTemplate, setDeletingTemplate] = useState<ClassTemplate | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [instructorModalOpen, setInstructorModalOpen] = useState(false);
+  // Upcoming sessions an edit couldn't move because people already booked them.
+  const [keptWithBookings, setKeptWithBookings] = useState(0);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -153,8 +155,10 @@ export default function ClasesClient({
   function handleSaveTemplate(data: TemplatePayload) {
     startTransition(async () => {
       if (editingTemplate) {
-        await updateTemplate(editingTemplate.id, data);
+        const result = await updateTemplate(editingTemplate.id, data);
+        setKeptWithBookings(result.keptWithBookings);
       } else {
+        setKeptWithBookings(0);
         await createTemplate(data);
       }
       setModalOpen(false);
@@ -189,6 +193,15 @@ export default function ClasesClient({
           </>
         }
       />
+
+      {keptWithBookings > 0 && (
+        <p
+          role="status"
+          className="mb-6 font-body text-sm text-ink/80 border border-ink/20 bg-neutral-50 px-4 py-4"
+        >
+          {t('keptWithBookings', { count: keptWithBookings })}
+        </p>
+      )}
 
       {templates.length === 0 ? (
         <EmptyState

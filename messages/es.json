@@ -2479,6 +2479,7 @@
       "manageInstructors": "Gestionar instructores",
       "newClass": "Nueva clase",
       "unassigned": "Sin asignar",
+      "keptWithBookings": "{count, plural, =1 {Una sesión próxima ya tenía reservas, así que mantiene su día y hora anteriores, y esa semana también se agregó el horario nuevo. Revísala en el calendario.} other {# sesiones próximas ya tenían reservas, así que mantienen su día y hora anteriores, y esas semanas también se agregó el horario nuevo. Revísalas en el calendario.}}",
       "empty": {
         "heading": "Todavía no hay clases",
         "description": "Crea tu primera clase recurrente para armar el horario semanal."

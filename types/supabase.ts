@@ -145,7 +145,15 @@ export interface Database {
           is_active?: boolean;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'classes_template_id_fkey';
+            columns: ['template_id'];
+            isOneToOne: false;
+            referencedRelation: 'class_templates';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       class_packs: {
         Row: {

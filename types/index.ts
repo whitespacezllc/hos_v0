@@ -196,7 +196,26 @@ export type DbClass = {
   is_active: boolean;
   created_at: string;
   instructors: { id: string; name: string } | null;
+  // The switch of the recurring class this session was materialized from;
+  // null for one-off sessions. Present when the select embeds it (see
+  // CLASS_WITH_INSTRUCTOR in lib/queries/classes.ts).
+  class_templates?: { is_active: boolean | null } | null;
 };
+
+/**
+ * Whether a session is on the schedule — shown on /yoga, in the admin calendar
+ * and to its instructor, and bookable. It takes both switches: the session's
+ * own (a single cancelled session) and the recurring class's. Switching a
+ * recurring class off doesn't touch its sessions, which are materialized ~3
+ * months ahead: it is read here instead, so switching it back on brings them
+ * back exactly as they were, one-by-one cancellations included.
+ */
+export function isOnSchedule(row: {
+  is_active: boolean | null;
+  class_templates?: { is_active: boolean | null } | null;
+}): boolean {
+  return row.is_active === true && row.class_templates?.is_active !== false;
+}
 
 // DbClass mapped to the legacy YogaClass shape used by UI components
 export function dbClassToYogaClass(row: DbClass): YogaClass {
@@ -213,7 +232,7 @@ export function dbClassToYogaClass(row: DbClass): YogaClass {
     spotsRemaining: row.spots_remaining,
     priceUsd: Number(row.price_dropin_usd),
     location: row.location,
-    isActive: row.is_active,
+    isActive: isOnSchedule(row),
     color: row.color ?? undefined,
     imageUrl: row.image_url ?? null,
   };

@@ -2479,6 +2479,7 @@
       "manageInstructors": "Manage instructors",
       "newClass": "New class",
       "unassigned": "Unassigned",
+      "keptWithBookings": "{count, plural, =1 {One upcoming session already had bookings, so it keeps its old day and time, and the new slot was added that week too. Check it in the calendar.} other {# upcoming sessions already had bookings, so they keep their old day and time, and the new slot was added those weeks too. Check them in the calendar.}}",
       "empty": {
         "heading": "No classes yet",
         "description": "Create your first recurring class to build the weekly schedule."
@@ -2513,7 +2514,7 @@
       "table": {
         "slug": "Slug",
         "schedule": "Schedule",
-        "every": "Every {day} · {time}",
+        "every": "{day} · {time}",
         "seats": "seats"
       },
       "actions": {

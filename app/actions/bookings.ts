@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { notifyBooking } from '@/lib/booking-notify';
+import { isOnSchedule } from '@/types';
 import {
   confirmBookingPaid,
   confirmPackPurchase,
@@ -77,10 +78,10 @@ export async function createAdminBooking(
 
   const { data: clase, error: classError } = await supabase
     .from('classes')
-    .select('id, price_dropin_usd, is_active')
+    .select('id, price_dropin_usd, is_active, class_templates (is_active)')
     .eq('id', input.classId)
     .maybeSingle();
-  if (classError || !clase || !clase.is_active) return { ok: false, error: 'class_not_found' };
+  if (classError || !clase || !isOnSchedule(clase)) return { ok: false, error: 'class_not_found' };
 
   // Upsells priced server-side; never trust a client amount.
   let upsellsTotal = 0;
