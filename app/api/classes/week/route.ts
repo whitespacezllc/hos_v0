@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { ensureWeekMaterialized } from '@/lib/queries/classes';
+import { CLASS_WITH_INSTRUCTOR, ensureWeekMaterialized } from '@/lib/queries/classes';
 import type { DbClass } from '@/types';
 import { dbClassToYogaClass } from '@/types';
 import { COSTA_RICA_OFFSET } from '@/lib/costa-rica-time';
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('classes')
-      .select('*, instructors(id, name)')
+      .select(CLASS_WITH_INSTRUCTOR)
       .eq('is_active', true)
       .gte('starts_at', startDate.toISOString())
       .lte('starts_at', endDate.toISOString())
@@ -51,10 +51,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ classes: [] });
     }
 
-    const classes = (data as unknown as DbClass[]).map(dbClassToYogaClass).map((c) => ({
-      ...c,
-      startsAt: c.startsAt.toISOString(),
-    }));
+    const classes = (data as unknown as DbClass[])
+      .map(dbClassToYogaClass)
+      .filter((c) => c.isActive)
+      .map((c) => ({
+        ...c,
+        startsAt: c.startsAt.toISOString(),
+      }));
 
     return NextResponse.json({ classes });
   } catch (err) {

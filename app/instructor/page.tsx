@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import InstructorDashboard from './_components/InstructorDashboard';
 import type { DbClass } from '@/types';
 import { dbClassToYogaClass } from '@/types';
+import { CLASS_WITH_INSTRUCTOR } from '@/lib/queries/classes';
 
 type InstructorRow = { id: string; name: string; email: string };
 
@@ -36,7 +37,7 @@ export default async function InstructorPage() {
   // Clases del instructor (todas, incluyendo pasadas)
   const { data: rawClasses } = await serviceClient
     .from('classes')
-    .select('*, instructors (id, name)')
+    .select(CLASS_WITH_INSTRUCTOR)
     .eq('instructor_id', instructor.id)
     .order('starts_at', { ascending: false })
     .limit(50);

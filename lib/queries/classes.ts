@@ -4,11 +4,16 @@ import type { DbClass, YogaClass } from '@/types';
 import { dbClassToYogaClass } from '@/types';
 import { costaRicaDateString, costaRicaWeekStart, toInstantIso } from '@/lib/costa-rica-time';
 
-const CLASS_WITH_INSTRUCTOR = `
+// Every read of sessions brings the switch of their recurring class along, so
+// `isOnSchedule` (and with it `YogaClass.isActive`) can honor it.
+export const CLASS_WITH_INSTRUCTOR = `
   *,
   instructors (
     id,
     name
+  ),
+  class_templates (
+    is_active
   )
 ` as const;
 
@@ -62,7 +67,7 @@ export async function getActiveClasses(): Promise<YogaClass[]> {
       console.error('[getActiveClasses]', error.message);
       return [];
     }
-    return (data as unknown as DbClass[]).map(dbClassToYogaClass);
+    return (data as unknown as DbClass[]).map(dbClassToYogaClass).filter((c) => c.isActive);
   } catch (err) {
     console.error('[getActiveClasses] unexpected:', err);
     return [];
@@ -107,7 +112,7 @@ export async function getClassesForWeek(
       console.error('[getClassesForWeek]', error.message);
       return [];
     }
-    return (data as unknown as DbClass[]).map(dbClassToYogaClass);
+    return (data as unknown as DbClass[]).map(dbClassToYogaClass).filter((c) => c.isActive);
   } catch (err) {
     console.error('[getClassesForWeek] unexpected:', err);
     return [];

@@ -1,4 +1,5 @@
 import { getClassById } from '@/lib/queries/classes';
+import { isOnSchedule } from '@/types';
 import { getActiveUpsells } from '@/lib/queries/upsells';
 import { getSellablePacks } from '@/lib/queries/packs';
 import { notFound } from 'next/navigation';
@@ -20,7 +21,9 @@ export default async function BookingPage({
     getSellablePacks(),
   ]);
 
-  if (!clase) notFound();
+  // A link to a session that left the schedule (its class was switched off, or
+  // it was cancelled) leads nowhere — checkout would refuse it anyway.
+  if (!clase || !isOnSchedule(clase)) notFound();
 
   // `yoga` too: the class category labels are the schedule's.
   return (

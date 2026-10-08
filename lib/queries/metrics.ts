@@ -10,6 +10,7 @@ import {
 } from 'date-fns';
 import { createServiceClient } from '@/lib/supabase/server';
 import { costaRicaDateString, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
+import { isOnSchedule } from '@/types';
 
 // ─── Row shapes (only the columns we read) ──────────────────────────────────
 type ClassRow = {
@@ -23,6 +24,7 @@ type ClassRow = {
   price_dropin_usd: number;
   is_active: boolean;
   instructors: { id: string; name: string } | null;
+  class_templates: { is_active: boolean | null } | null;
 };
 
 type BookingRow = {
@@ -107,7 +109,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     supabase
       .from('classes')
       .select(
-        'id, name, instructor_id, starts_at, duration_minutes, capacity, spots_remaining, price_dropin_usd, is_active, instructors(id, name)',
+        'id, name, instructor_id, starts_at, duration_minutes, capacity, spots_remaining, price_dropin_usd, is_active, instructors(id, name), class_templates(is_active)',
       ),
     supabase
       .from('bookings')
@@ -157,7 +159,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const upcomingActive = classes.filter(
-    (c) => c.is_active && inCostaRica(c.starts_at) >= now,
+    (c) => isOnSchedule(c) && inCostaRica(c.starts_at) >= now,
   );
   const classesNext7Days = upcomingActive.filter(
     (c) => inCostaRica(c.starts_at) <= in7,
