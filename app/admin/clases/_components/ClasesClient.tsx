@@ -27,7 +27,9 @@ import {
   updateTemplate,
   deleteTemplate,
   toggleTemplateActive,
+  upcomingBookingsForTemplate,
 } from '@/app/actions/classes';
+import type { ActionResult } from '@/lib/schedule/sessions';
 
 // ─── Category palette — mirrors /yoga and /admin/calendario ────────────────
 // The label of each category lives in the catalogue (admin.schedule.categories).
@@ -69,8 +71,13 @@ export default function ClasesClient({
   const [deletingTemplate, setDeletingTemplate] = useState<ClassTemplate | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [instructorModalOpen, setInstructorModalOpen] = useState(false);
-  // Upcoming sessions an edit couldn't move because people already booked them.
-  const [keptWithBookings, setKeptWithBookings] = useState(0);
+  // What the last save or delete left to say: sessions kept aside for their
+  // bookings, or that it failed.
+  const [notice, setNotice] = useState<{ tone: 'info' | 'error'; text: string } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Upcoming sessions with bookings of the class about to be deleted.
+  const [deleteSummary, setDeleteSummary] = useState<{ sessions: number; persons: number } | null>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -133,36 +140,81 @@ export default function ClasesClient({
     setCategoryFilter('all');
   }
 
+  function failureText(error: Extract<ActionResult, { ok: false }>['error']): string {
+    if (error === 'not_admin') return tc('feedback.signedInRequired');
+    return error === 'delete_failed' ? tc('feedback.couldNotDelete') : tc('feedback.couldNotSave');
+  }
+
   function handleToggleActive(id: string) {
     startTransition(async () => {
-      await toggleTemplateActive(id);
-      router.refresh();
+      try {
+        const res = await toggleTemplateActive(id);
+        if (!res.ok) {
+          setNotice({ tone: 'error', text: failureText(res.error) });
+          return;
+        }
+        setNotice(null);
+        router.refresh();
+      } catch {
+        setNotice({ tone: 'error', text: tc('feedback.couldNotSave') });
+      }
     });
+  }
+
+  function openDelete(tpl: ClassTemplate) {
+    setDeleteError(null);
+    setDeleteSummary(null);
+    setDeletingTemplate(tpl);
+    // Who is booked into its upcoming sessions, for the confirmation to say.
+    upcomingBookingsForTemplate(tpl.id)
+      .then((res) => {
+        if (res.ok) setDeleteSummary({ sessions: res.sessions, persons: res.persons });
+      })
+      .catch(() => {});
   }
 
   async function handleConfirmDelete() {
     if (!deletingTemplate) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteTemplate(deletingTemplate.id);
+      const res = await deleteTemplate(deletingTemplate.id);
+      if (!res.ok) {
+        setDeleteError(failureText(res.error));
+        return;
+      }
       setDeletingTemplate(null);
+      setNotice(
+        res.keptWithBookings > 0
+          ? { tone: 'info', text: t('deletedKept', { count: res.keptWithBookings }) }
+          : null,
+      );
       router.refresh();
+    } catch {
+      setDeleteError(tc('feedback.couldNotDelete'));
     } finally {
       setIsDeleting(false);
     }
   }
 
   function handleSaveTemplate(data: TemplatePayload) {
+    setSaveError(null);
     startTransition(async () => {
-      if (editingTemplate) {
-        const result = await updateTemplate(editingTemplate.id, data);
-        setKeptWithBookings(result.keptWithBookings);
-      } else {
-        setKeptWithBookings(0);
-        await createTemplate(data);
+      try {
+        const res: ActionResult<{ keptWithBookings?: number }> = editingTemplate
+          ? await updateTemplate(editingTemplate.id, data)
+          : await createTemplate(data);
+        if (!res.ok) {
+          setSaveError(failureText(res.error));
+          return;
+        }
+        const kept = res.keptWithBookings ?? 0;
+        setNotice(kept > 0 ? { tone: 'info', text: t('keptWithBookings', { count: kept }) } : null);
+        setModalOpen(false);
+        router.refresh();
+      } catch {
+        setSaveError(tc('feedback.couldNotSave'));
       }
-      setModalOpen(false);
-      router.refresh();
     });
   }
 
@@ -185,6 +237,7 @@ export default function ClasesClient({
               icon={<Plus width={16} height={16} strokeWidth={1.5} />}
               onClick={() => {
                 setEditingTemplate(undefined);
+                setSaveError(null);
                 setModalOpen(true);
               }}
             >
@@ -194,12 +247,16 @@ export default function ClasesClient({
         }
       />
 
-      {keptWithBookings > 0 && (
+      {notice && (
         <p
-          role="status"
-          className="mb-6 font-body text-sm text-ink/80 border border-ink/20 bg-neutral-50 px-4 py-4"
+          role={notice.tone === 'error' ? 'alert' : 'status'}
+          className={`mb-6 font-body text-sm px-4 py-4 border ${
+            notice.tone === 'error'
+              ? 'text-burgundy border-burgundy/30 bg-burgundy/5'
+              : 'text-ink/80 border-ink/20 bg-neutral-50'
+          }`}
         >
-          {t('keptWithBookings', { count: keptWithBookings })}
+          {notice.text}
         </p>
       )}
 
@@ -214,6 +271,7 @@ export default function ClasesClient({
               icon={<Plus width={16} height={16} strokeWidth={1.5} />}
               onClick={() => {
                 setEditingTemplate(undefined);
+                setSaveError(null);
                 setModalOpen(true);
               }}
             >
@@ -279,9 +337,10 @@ export default function ClasesClient({
               onToggleActive={handleToggleActive}
               onEdit={(tpl) => {
                 setEditingTemplate(tpl);
+                setSaveError(null);
                 setModalOpen(true);
               }}
-              onDelete={setDeletingTemplate}
+              onDelete={openDelete}
             />
           )}
         </>
@@ -294,6 +353,7 @@ export default function ClasesClient({
         template={editingTemplate}
         instructors={instructors}
         loading={isPending}
+        error={saveError}
       />
 
       <InstructorModal
@@ -308,10 +368,15 @@ export default function ClasesClient({
         onClose={() => setDeletingTemplate(null)}
         onConfirm={handleConfirmDelete}
         title={t('delete.title')}
-        description={t('delete.description')}
+        description={
+          deleteSummary && deleteSummary.sessions > 0
+            ? `${t('delete.description')} ${t('delete.withBookings', deleteSummary)}`
+            : t('delete.description')
+        }
         confirmLabel={t('delete.confirm')}
         cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
+        error={deleteError}
       />
     </div>
   );

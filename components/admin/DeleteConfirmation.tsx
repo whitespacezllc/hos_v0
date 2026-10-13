@@ -19,6 +19,8 @@ type DeleteConfirmationProps = {
   confirmLabel?: string;
   cancelLabel?: string;
   loading?: boolean;
+  /** Why the last confirm failed; shown under the description. */
+  error?: string | null;
 };
 
 export function DeleteConfirmation({
@@ -30,6 +32,7 @@ export function DeleteConfirmation({
   confirmLabel,
   cancelLabel,
   loading = false,
+  error,
 }: DeleteConfirmationProps) {
   const tc = useTranslations('admin.common');
   // Close on Escape.
@@ -87,6 +90,11 @@ export function DeleteConfirmation({
             <p className="font-body text-sm text-ink/60 leading-normal mt-3">
               {description}
             </p>
+            {error && (
+              <p role="alert" className="font-body text-sm text-burgundy mt-3">
+                {error}
+              </p>
+            )}
 
             <div className="flex justify-end gap-3 mt-8">
               <Button

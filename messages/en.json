@@ -1989,7 +1989,8 @@
         "capacityMin": "Capacity must be at least 1",
         "priceMin": "Price can't be negative",
         "atLeastOne": "At least 1",
-        "tooMany": "Too many"
+        "tooMany": "Too many",
+        "dayRequired": "Pick a day of the week"
       }
     },
     "nav": {
@@ -2253,7 +2254,7 @@
       },
       "deleteDialog": {
         "title": "Delete class?",
-        "description": "This will permanently delete this class and all its bookings. This action cannot be undone.",
+        "description": "This takes the session off the schedule and the public site. Its bookings are kept in Bookings. This action cannot be undone.",
         "confirm": "Delete class"
       },
       "addErrors": {
@@ -2526,7 +2527,8 @@
       "delete": {
         "title": "Delete class?",
         "description": "This removes the recurring class and its upcoming sessions. Past sessions and their bookings are kept. This action cannot be undone.",
-        "confirm": "Delete class"
+        "confirm": "Delete class",
+        "withBookings": "{sessions, plural, =1 {One upcoming session has} other {# upcoming sessions have}} bookings ({persons, plural, =1 {1 person} other {# people}}). {sessions, plural, =1 {It} other {They}} will be taken off the schedule; the bookings stay in Bookings so you can reach out."
       },
       "form": {
         "editTitle": "Edit recurring class",
@@ -2553,7 +2555,8 @@
           "fri": "Friday",
           "sat": "Saturday",
           "sun": "Sunday"
-        }
+        },
+        "chooseDay": "Choose a day"
       },
       "instructors": {
         "title": "Instructors",
@@ -2571,7 +2574,8 @@
         "deleteTitle": "Delete instructor?",
         "deleteDescription": "This will permanently delete {name}. This action cannot be undone.",
         "thisInstructor": "this instructor"
-      }
+      },
+      "deletedKept": "Class deleted. {count, plural, =1 {One upcoming session had bookings and was taken off the schedule; its bookings are} other {# upcoming sessions had bookings and were taken off the schedule; their bookings are}} in Bookings."
     },
     "shared": {
       "imageUpload": {

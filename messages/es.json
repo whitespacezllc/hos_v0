@@ -1989,7 +1989,8 @@
         "capacityMin": "El cupo debe ser al menos 1",
         "priceMin": "El precio no puede ser negativo",
         "atLeastOne": "Al menos 1",
-        "tooMany": "Demasiados"
+        "tooMany": "Demasiados",
+        "dayRequired": "Elige un día de la semana"
       }
     },
     "nav": {
@@ -2132,7 +2133,7 @@
       },
       "deleteDialog": {
         "title": "¿Eliminar clase?",
-        "description": "Esto eliminará permanentemente esta clase y todas sus reservas. Esta acción no se puede deshacer.",
+        "description": "Esto saca la sesión del horario y del sitio público. Sus reservas se conservan en Reservas. Esta acción no se puede deshacer.",
         "confirm": "Eliminar clase"
       },
       "addErrors": {
@@ -2526,7 +2527,8 @@
       "delete": {
         "title": "¿Eliminar la clase?",
         "description": "Esto elimina la clase recurrente y sus próximas sesiones. Las sesiones pasadas y sus reservas se conservan. Esta acción no se puede deshacer.",
-        "confirm": "Eliminar clase"
+        "confirm": "Eliminar clase",
+        "withBookings": "{sessions, plural, =1 {Una sesión próxima tiene} other {# sesiones próximas tienen}} reservas ({persons, plural, =1 {1 persona} other {# personas}}). {sessions, plural, =1 {Saldrá} other {Saldrán}} del horario; las reservas quedan en Reservas para que puedas avisarles."
       },
       "form": {
         "editTitle": "Editar clase recurrente",
@@ -2553,7 +2555,8 @@
           "fri": "Viernes",
           "sat": "Sábado",
           "sun": "Domingo"
-        }
+        },
+        "chooseDay": "Elige un día"
       },
       "instructors": {
         "title": "Instructores",
@@ -2571,7 +2574,8 @@
         "deleteTitle": "¿Eliminar instructor/a?",
         "deleteDescription": "Se eliminará permanentemente a {name}. Esta acción no se puede deshacer.",
         "thisInstructor": "este/a instructor/a"
-      }
+      },
+      "deletedKept": "Clase eliminada. {count, plural, =1 {Una sesión próxima tenía reservas y salió del horario; sus reservas quedan} other {# sesiones próximas tenían reservas y salieron del horario; sus reservas quedan}} en Reservas."
     },
     "shared": {
       "imageUpload": {

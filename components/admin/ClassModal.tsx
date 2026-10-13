@@ -27,12 +27,14 @@ export const DAY_OPTIONS = [
   { value: '6', key: 'sat' },
   { value: '0', key: 'sun' },
 ] as const;
+const DAY_VALUES = new Set(DAY_OPTIONS.map((d) => String(d.value)));
 
 // The validation messages are the reader's — built inside the component,
 // where the catalogue is at hand (admin.common.validation).
 type SchemaMessages = {
   nameRequired: string;
   timeRequired: string;
+  dayRequired: string;
   minMinutes: string;
   maxHours: string;
   capacityMin: string;
@@ -45,7 +47,8 @@ const templateSchema = (msgs: SchemaMessages) =>
     name: z.string().min(1, msgs.nameRequired),
     description: z.string().optional(),
     instructorId: z.string(), // '' means unassigned
-    dayOfWeek: z.coerce.number().min(0).max(6),
+    // The select's value; '' is the placeholder, and no day is a default.
+    dayOfWeek: z.string().refine((v) => DAY_VALUES.has(v), msgs.dayRequired),
     timeStart: z.string().min(1, msgs.timeRequired),
     durationMinutes: z.coerce.number().min(15, msgs.minMinutes).max(480, msgs.maxHours),
     capacity: z.coerce.number().min(1, msgs.capacityMin),
@@ -78,13 +81,15 @@ type Props = {
   template?: ClassTemplate;
   instructors: Instructor[];
   loading?: boolean;
+  /** Why the last save failed; shown inside the form. */
+  error?: string | null;
 };
 
 const DEFAULTS: TemplateFormValues = {
   name: '',
   description: '',
   instructorId: '',
-  dayOfWeek: 1,
+  dayOfWeek: '',
   timeStart: '10:00',
   durationMinutes: 90,
   capacity: 20,
@@ -100,6 +105,7 @@ export default function ClassModal({
   template,
   instructors,
   loading,
+  error,
 }: Props) {
   const isEditing = !!template;
   const t = useTranslations('admin.schedule');
@@ -110,6 +116,7 @@ export default function ClassModal({
       templateSchema({
         nameRequired: tc('validation.nameRequired'),
         timeRequired: tc('validation.timeRequired'),
+        dayRequired: tc('validation.dayRequired'),
         minMinutes: tc('validation.minMinutes', { count: 15 }),
         maxHours: tc('validation.maxHours', { count: 8 }),
         capacityMin: tc('validation.capacityMin'),
@@ -144,7 +151,7 @@ export default function ClassModal({
         name: template.name,
         description: template.description ?? '',
         instructorId: template.instructor_id ?? '',
-        dayOfWeek: template.day_of_week,
+        dayOfWeek: String(template.day_of_week),
         timeStart: (template.time_start ?? '10:00').slice(0, 5),
         durationMinutes: template.duration_minutes,
         capacity: template.capacity,
@@ -168,7 +175,7 @@ export default function ClassModal({
           .replace(/[^a-z0-9-]/g, ''),
       description: values.description?.trim() ? values.description : null,
       instructor_id: values.instructorId || null,
-      day_of_week: values.dayOfWeek,
+      day_of_week: Number(values.dayOfWeek),
       time_start: values.timeStart,
       duration_minutes: values.durationMinutes,
       capacity: values.capacity,
@@ -184,7 +191,10 @@ export default function ClassModal({
     ...instructors.map((i) => ({ value: i.id, label: i.name })),
   ];
 
-  const dayOptions = DAY_OPTIONS.map((d) => ({ value: d.value, label: t(`form.days.${d.key}`) }));
+  const dayOptions = [
+    { value: '', label: t('form.chooseDay') },
+    ...DAY_OPTIONS.map((d) => ({ value: String(d.value), label: t(`form.days.${d.key}`) })),
+  ];
 
   return (
     <Modal
@@ -295,6 +305,11 @@ export default function ClassModal({
             />
           </div>
         </Field>
+        {error && (
+          <p role="alert" className="font-body text-sm text-burgundy">
+            {error}
+          </p>
+        )}
       </form>
     </Modal>
   );
