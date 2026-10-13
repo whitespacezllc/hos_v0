@@ -69,6 +69,8 @@ type Props = {
   instance?: EditableInstance;
   prefill?: { date: string; time: string };
   loading?: boolean;
+  /** Why the last save failed; shown inside the form. */
+  error?: string | null;
 };
 
 // The form's date and time are Santa Teresa's — the class happens there, and
@@ -100,6 +102,7 @@ export default function CalendarClassModal({
   instance,
   prefill,
   loading,
+  error,
 }: Props) {
   const isEditing = mode === 'edit';
   const t = useTranslations('admin.calendar.classModal');
@@ -287,6 +290,11 @@ export default function CalendarClassModal({
             />
           </div>
         </Field>
+        {error && (
+          <p role="alert" className="font-body text-sm text-burgundy">
+            {error}
+          </p>
+        )}
       </form>
     </Modal>
   );

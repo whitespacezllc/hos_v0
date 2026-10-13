@@ -171,6 +171,8 @@ export default function CalendarioClient({
   const [addOpen, setAddOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Mobile: which day index (0–6) is currently visible. Defaults to today if
   // today is within the displayed week, otherwise 0 (Monday).
@@ -232,15 +234,29 @@ export default function CalendarioClient({
     setTimeout(() => setSelectedClass((cur) => (drawerOpen ? cur : null)), 250);
   }
 
+  function openDelete() {
+    setDeleteError(null);
+    openDelete();
+  }
+
   async function handleConfirmDelete() {
     if (!selectedClass) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteClass(selectedClass.id);
+      const res = await deleteClass(selectedClass.id);
+      if (!res.ok) {
+        setDeleteError(
+          res.error === 'not_admin' ? tc('feedback.signedInRequired') : tc('feedback.couldNotDelete'),
+        );
+        return;
+      }
       setDeleteOpen(false);
       setDrawerOpen(false);
       setSelectedClass(null);
       router.refresh();
+    } catch {
+      setDeleteError(tc('feedback.couldNotDelete'));
     } finally {
       setIsDeleting(false);
     }
@@ -248,6 +264,7 @@ export default function CalendarioClient({
 
   // ── Create / edit ──────────────────────────────────────────────────────────
   function openCreate(prefill?: { date: string; time: string }) {
+    setSaveError(null);
     setModalMode('create');
     setEditInstance(undefined);
     setCreatePrefill(prefill);
@@ -256,6 +273,7 @@ export default function CalendarioClient({
 
   function openEditFromDrawer() {
     if (!selectedClass) return;
+    setSaveError(null);
     setModalMode('edit');
     setEditInstance({
       name: selectedClass.name,
@@ -319,15 +337,23 @@ export default function CalendarioClient({
 
   async function handleSaveClass(payload: ClassInstancePayload) {
     setIsSaving(true);
+    setSaveError(null);
     try {
-      if (modalMode === 'edit' && selectedClass) {
-        await updateClassInstance(selectedClass.id, payload);
-      } else {
-        await createClassInstance(payload);
+      const res =
+        modalMode === 'edit' && selectedClass
+          ? await updateClassInstance(selectedClass.id, payload)
+          : await createClassInstance(payload);
+      if (!res.ok) {
+        setSaveError(
+          res.error === 'not_admin' ? tc('feedback.signedInRequired') : tc('feedback.couldNotSave'),
+        );
+        return;
       }
       setModalOpen(false);
       setSelectedClass(null);
       router.refresh();
+    } catch {
+      setSaveError(tc('feedback.couldNotSave'));
     } finally {
       setIsSaving(false);
     }
@@ -466,7 +492,7 @@ export default function CalendarioClient({
                 occupancyPct={occupancyPct}
                 onClose={() => setDrawerOpen(false)}
                 onEdit={openEditFromDrawer}
-                onDelete={() => setDeleteOpen(true)}
+                onDelete={() => openDelete()}
                 onAddParticipant={openAddParticipant}
               />
             </motion.aside>
@@ -483,6 +509,7 @@ export default function CalendarioClient({
         description={t('deleteDialog.description')}
         confirmLabel={t('deleteDialog.confirm')}
         loading={isDeleting}
+        error={deleteError}
       />
 
       {/* ─── Create / edit class modal ──────────────────────────────────── */}
@@ -495,6 +522,7 @@ export default function CalendarioClient({
         instance={editInstance}
         prefill={createPrefill}
         loading={isSaving}
+        error={saveError}
       />
 
       {/* ─── Add participant modal ──────────────────────────────────────── */}
