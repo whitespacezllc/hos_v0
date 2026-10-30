@@ -2,9 +2,9 @@
   "ytt": {
     "hero": {
       "location": "Santa Teresa, Costa Rica",
-      "dates": "21 de noviembre – 4 de diciembre, 2026",
+      "dates": "28 de noviembre – 4 de diciembre de 2026",
       "title": "The Awakened Body: Formación de Profesores de Tantra Yoga",
-      "subtitle": "Una inmersión de 100 horas, con un programa online opcional de 100 horas, que conduce a una Formación de Profesores de Yoga de 200 horas registrada en Yoga Alliance — guiada por Nancy Goodfellow.",
+      "subtitle": "Una inmersión residencial de 50 horas que conduce a la certificación de House of Shakti en Formación de Profesores de Yoga de 50 horas — guiada por Nancy Goodfellow.",
       "cta": "Reserva tu lugar"
     },
     "intro": {
@@ -39,35 +39,38 @@
       ]
     },
     "pathway": {
-      "heading": "Dos caminos, un mismo viaje.",
-      "phases": [
+      "heading": "Una inmersión, completamente presencial.",
+      "title": "Inmersión residencial de 50 horas",
+      "body": "Siete días de práctica diaria, filosofía y encarnación en la selva sobre Playa Hermosa. Las 50 horas son presenciales, en House of Shakti, junto a tus maestras y al grupo.",
+      "facts": [
         {
-          "tag": "Fase uno",
-          "title": "Inmersión residencial de 100 horas",
-          "place": "House of Shakti · Costa Rica",
-          "formatLabel": "Presencial",
-          "body": "Tu viaje comienza con una inmersión residencial de 100 horas: práctica diaria, filosofía y encarnación en la selva sobre Playa Hermosa. Al completarla recibes un Certificado de 100 Horas."
+          "label": "Fechas",
+          "value": "28 de noviembre – 4 de diciembre de 2026"
         },
         {
-          "tag": "Fase dos",
-          "title": "Formación online de 100 horas",
-          "place": "Opcional · Desde cualquier parte del mundo",
-          "formatLabel": "Online",
-          "body": "Para quienes deseen continuar, la experiencia se extiende con un plan de estudios online en profundidad, diseñado para la integración y el desarrollo profesional — estudiando desde cualquier parte del mundo."
+          "label": "Lugar",
+          "value": "House of Shakti · Santa Teresa, Costa Rica"
+        },
+        {
+          "label": "Modalidad",
+          "value": "Presencial"
+        },
+        {
+          "label": "Formación",
+          "value": "50 horas · seis módulos"
         }
       ],
-      "rytBefore": "Completa ambas fases para recibir tu ",
-      "rytHighlight": "Certificado de Formación de Profesores de Yoga de 200 Horas registrado en Yoga Alliance (RYT 200)",
-      "rytAfter": " — una de las credenciales de enseñanza de yoga más reconocidas del mundo, con validez internacional."
+      "certBefore": "Completa la inmersión para recibir tu ",
+      "certHighlight": "certificación de House of Shakti en Formación de Profesores de Yoga de 50 horas",
+      "certAfter": "."
     },
     "curriculum": {
-      "heading": "Seis módulos. 100 horas de estudio encarnado.",
+      "heading": "Seis módulos. 50 horas de estudio encarnado.",
       "sub": "Abre cualquier módulo para ver qué incluye.",
       "modules": [
         {
           "title": "La visión tántrica",
           "focus": "Filosofía y cosmovisión",
-          "hours": "15 h",
           "points": [
             "Qué es el Tantra: disipar mitos, entrar en la tradición real",
             "Shivaísmo de Cachemira y filosofía no dual",
@@ -78,7 +81,6 @@
         {
           "title": "El cuerpo vivo",
           "focus": "Anatomía encarnada y fisiología tántrica",
-          "hours": "20 h",
           "points": [
             "Los koshas desde una mirada tántrica",
             "Prana, nadis y el cuerpo sutil",
@@ -89,7 +91,6 @@
         {
           "title": "Prácticas de la corriente sagrada",
           "focus": "Asana avanzada y movimiento",
-          "hours": "35 h",
           "points": [
             "El asana como ritual: moverse con intención",
             "Secuenciación avanzada a través de un arco tántrico",
@@ -100,7 +101,6 @@
         {
           "title": "La respiración como portal",
           "focus": "Pranayama y breathwork",
-          "hours": "15 h",
           "points": [
             "Pranayama clásico: nadi shodhana, kapalabhati, bhastrika",
             "Breathwork tántrico: la respiración como activación de Shakti",
@@ -111,7 +111,6 @@
         {
           "title": "Sonido, mantra y meditación",
           "focus": "Tecnologías internas",
-          "hours": "5 h",
           "points": [
             "El mantra como medicina vibracional: bija mantras, sonidos semilla",
             "Nada yoga: el yoga del sonido sagrado",
@@ -122,7 +121,6 @@
         {
           "title": "La enseñanza despierta",
           "focus": "Sostener el espacio sagrado",
-          "hours": "10 h",
           "points": [
             "Ética al enseñar prácticas avanzadas y devocionales",
             "Facilitación informada en trauma en contextos tántricos",
@@ -137,17 +135,16 @@
       "author": "Sacha Revillard"
     },
     "included": {
-      "heading": "La inmersión de 100 horas en Costa Rica incluye.",
+      "heading": "La inmersión de 50 horas en Costa Rica incluye.",
       "items": [
         "Alojamiento en House of Shakti",
         "Dos comidas nutritivas al día (brunch y cena)",
-        "Formación completa de 100 horas",
+        "Formación completa de 50 horas",
         "Yoga, meditación y prácticas de encarnación a diario",
         "Dos viajes de breathwork",
         "Experiencias de sauna y baño de hielo",
-        "Paseo en barco",
         "Manual completo de la formación",
-        "Certificado de finalización (100 horas)",
+        "Certificado de finalización (50 horas)",
         "Conexión con la naturaleza y comunidad consciente"
       ],
       "notHeading": "No incluye.",
@@ -163,7 +160,6 @@
     },
     "rhythm": {
       "heading": "Tu día a día",
-      "eyebrow": "De lunes a sábado",
       "blocks": [
         {
           "time": "8:00 AM – 11:30 AM",
@@ -191,7 +187,6 @@
           "detail": "Sauna y baño de hielo · Ritual · Reflexión grupal alrededor del fuego"
         }
       ],
-      "footnote": "*2.º y 3.er domingo: ¡día libre para disfrutar!",
       "trackAria": "Momentos del ritmo diario"
     },
     "teachers": {
@@ -202,7 +197,7 @@
           "Su estilo de enseñanza es compasivo, auténtico y profundamente vivencial, entretejiendo la sabiduría atemporal del Tantra con enfoques somáticos modernos. Cree que el yoga no es simplemente algo que practicamos: es una forma de vivir."
         ],
         [
-          "Nayla es coach internacional certificada en respiración y mindfulness, profesora certificada por Yoga Alliance y oradora motivacional con más de 2,500 horas de formación.",
+          "Nayla es coach internacional certificada en respiración y mindfulness, profesora certificada por Yoga Alliance y oradora motivacional con más de 2500 horas de formación.",
           "Estudió en la India durante muchos meses junto a maestros del Himalaya y otros referentes de renombre mundial. Sobreviviente de una experiencia cercana a la muerte, hoy enseña sobre respiración, mindfulness y resiliencia."
         ]
       ]
@@ -240,26 +235,19 @@
       "closing": "No se requiere experiencia previa enseñando."
     },
     "pricing": {
-      "heading": "Inmersión en Costa Rica — 100 horas.",
+      "heading": "Inmersión en Costa Rica — 50 horas.",
       "tiers": [
         {
-          "tag": "Precio anticipado · Agosto",
-          "price": "USD $4,015",
-          "detail": "Habitación privada · Inmersión de 100 horas en Costa Rica"
+          "name": "Tarifa regular",
+          "price": "$2,620",
+          "detail": "Habitación privada · Inmersión de 50 horas en Costa Rica"
         },
         {
-          "tag": "Regular",
-          "price": "USD $4,340",
-          "detail": "Habitación privada · Inmersión de 100 horas en Costa Rica"
-        },
-        {
-          "tag": "Solo formación",
-          "price": "USD $2,620",
+          "name": "Solo formación",
+          "price": "$1,250",
           "detail": "Formación + 1 comida · sin alojamiento"
         }
       ],
-      "onlineLine": "Programa online opcional de 100 horas: precios y fechas disponibles a pedido. Contáctanos para conocer las opciones de pago.",
-      "requestCta": "Consultar precios y fechas",
       "paymentHeading": "Plan de pagos",
       "schedule": [
         "Se requiere un depósito no reembolsable de $500 para asegurar tu lugar (una vez aceptada tu postulación).",
@@ -283,7 +271,7 @@
         "Fortalecer tu voz auténtica y tu liderazgo.",
         "Experimentar mayor presencia, resiliencia y autoconocimiento.",
         "Unirte a una comunidad global de practicantes y profesores.",
-        "Recibir tu certificación de Yoga Alliance, reconocida internacionalmente, al completar ambas fases."
+        "Recibir tu certificación reconocida de Yoga de 50 horas al completar la inmersión."
       ]
     },
     "closing": {
@@ -304,11 +292,7 @@
         },
         {
           "q": "¿Recibiré un certificado?",
-          "a": "Sí. Al completar la inmersión en Costa Rica recibes un Certificado de 100 Horas. Quienes completan además el programa online de 100 horas reciben el Certificado de Formación de Profesores de Yoga de 200 Horas registrado en Yoga Alliance (RYT 200)."
-        },
-        {
-          "q": "¿La certificación tiene validez internacional?",
-          "a": "Sí. Al completar con éxito ambas fases, puedes registrarte en Yoga Alliance como RYT 200, una de las credenciales de enseñanza de yoga más reconocidas del mundo."
+          "a": "Sí. Al completar la inmersión de 50 horas en Costa Rica recibes tu certificación de House of Shakti en Formación de Profesores de Yoga de 50 horas."
         },
         {
           "q": "¿A qué aeropuerto debo volar?",
@@ -324,12 +308,11 @@
       "aria": "¿Tienes preguntas? Escríbenos por WhatsApp",
       "q": "¿Tienes preguntas?",
       "cta": "Escríbenos.",
-      "message": "¡Hola! Me gustaría saber más sobre The Awakened Body, la Formación de Profesores de Tantra Yoga en House of Shakti.",
-      "messagePricing": "¡Hola! Me gustaría conocer los precios y las fechas del programa online opcional de 100 horas de la Formación The Awakened Body en House of Shakti."
+      "message": "¡Hola! Me gustaría saber más sobre The Awakened Body, la Formación de Profesores de Tantra Yoga en House of Shakti."
     },
     "meta": {
       "title": "The Awakened Body — Yoga Teacher Training",
-      "description": "Una formación de profesores de Tantra yoga de 100 horas en Santa Teresa, Costa Rica, con certificación Yoga Alliance RYT 200. Del 21 de noviembre al 4 de diciembre de 2026."
+      "description": "Una inmersión de 50 horas de formación de profesores de Tantra yoga en Santa Teresa, Costa Rica, con certificación de House of Shakti. Del 28 de noviembre al 4 de diciembre de 2026."
     }
   },
   "shaktiExperience": {
@@ -1134,7 +1117,7 @@
       "ytt": {
         "title": "Yoga Teacher Training",
         "paragraphs": [
-          "Una inmersión presencial de 100 horas con un programa online opcional de 100 horas, que conduce a una formación de 200 horas registrada en Yoga Alliance, guiada por Nancy Goodfellow. Un viaje de práctica profunda, autodescubrimiento y aprendizaje encarnado."
+          "Una inmersión presencial de 50 horas que conduce a la certificación de House of Shakti en Formación de Profesores de Yoga de 50 horas, guiada por Nancy Goodfellow. Un viaje de práctica profunda, autodescubrimiento y aprendizaje encarnado."
         ],
         "cta": "Ver más"
       }

@@ -12,7 +12,6 @@ type CurriculumModule = {
   n: string;
   title: string;
   focus: string;
-  hours: string;
   points: string[];
 };
 
@@ -97,12 +96,12 @@ function Module({
                 to its own column on the right, where it lines up into a legible
                 index down the edge of the section. */}
             <span className="block md:hidden font-body text-[11px] tracking-[0.15em] uppercase text-cream/55 mt-2">
-              {mod.focus} · {mod.hours}
+              {mod.focus}
             </span>
           </span>
 
           <span className="hidden md:block shrink-0 font-body text-[11px] tracking-[0.15em] uppercase text-cream/55 text-right pt-1.5">
-            {mod.focus} · {mod.hours}
+            {mod.focus}
           </span>
 
           <span

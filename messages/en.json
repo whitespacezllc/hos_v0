@@ -2,9 +2,9 @@
   "ytt": {
     "hero": {
       "location": "Santa Teresa, Costa Rica",
-      "dates": "November 21 – December 4, 2026",
+      "dates": "November 28 – December 4, 2026",
       "title": "The Awakened Body: Tantra Yoga Teacher Training",
-      "subtitle": "A 100-hour immersion, with an optional 100-hour online program, leading to a Yoga Alliance Registered 200-Hour Yoga Teacher Training — guided by Nancy Goodfellow.",
+      "subtitle": "A 50-hour residential immersion leading to a House of Shakti 50-Hour Yoga Teacher Training certification — guided by Nancy Goodfellow.",
       "cta": "Reserve your place"
     },
     "intro": {
@@ -39,35 +39,38 @@
       ]
     },
     "pathway": {
-      "heading": "Two pathways, one journey.",
-      "phases": [
+      "heading": "One immersion, fully in person.",
+      "title": "50-Hour Residential Immersion",
+      "body": "Seven days of daily practice, philosophy, and embodiment in the jungle above Playa Hermosa. All 50 hours happen in person at House of Shakti, alongside your teachers and the group.",
+      "facts": [
         {
-          "tag": "Phase One",
-          "title": "100-Hour Residential Immersion",
-          "place": "House of Shakti · Costa Rica",
-          "formatLabel": "In person",
-          "body": "Your journey begins with a 100-hour residential immersion — daily practice, philosophy, and embodiment held in the jungle above Playa Hermosa. On completion you receive a 100-Hour Certificate of Completion."
+          "label": "Dates",
+          "value": "November 28 – December 4, 2026"
         },
         {
-          "tag": "Phase Two",
-          "title": "100-Hour Online Training",
-          "place": "Optional · From anywhere in the world",
-          "formatLabel": "Online",
-          "body": "For those who wish to continue, the experience extends through an in-depth online curriculum designed for integration and professional development — allowing you to study from anywhere in the world."
+          "label": "Location",
+          "value": "House of Shakti · Santa Teresa, Costa Rica"
+        },
+        {
+          "label": "Format",
+          "value": "In person"
+        },
+        {
+          "label": "Training",
+          "value": "50 hours · six modules"
         }
       ],
-      "rytBefore": "Complete both phases to receive your ",
-      "rytHighlight": "Yoga Alliance Registered 200-Hour Yoga Teacher Training Certificate (RYT 200)",
-      "rytAfter": " — one of the world’s most widely recognized yoga teaching credentials, recognized internationally."
+      "certBefore": "Complete the immersion to receive your ",
+      "certHighlight": "House of Shakti 50-Hour Yoga Teacher Training Certification",
+      "certAfter": "."
     },
     "curriculum": {
-      "heading": "Six modules. 100 hours of embodied study.",
+      "heading": "Six modules. 50 hours of embodied study.",
       "sub": "Open any module to see what it covers.",
       "modules": [
         {
           "title": "The Tantric View",
           "focus": "Philosophy & Worldview",
-          "hours": "15 hrs",
           "points": [
             "What Tantra is — dispelling myths, entering the real tradition",
             "Kashmir Shaivism & non-dual philosophy",
@@ -78,7 +81,6 @@
         {
           "title": "The Living Body",
           "focus": "Embodied Anatomy & Tantric Physiology",
-          "hours": "20 hrs",
           "points": [
             "The koshas through a Tantric lens",
             "Prana, nadis & the subtle body",
@@ -89,7 +91,6 @@
         {
           "title": "Sacred Current Practices",
           "focus": "Advanced Asana & Movement",
-          "hours": "35 hrs",
           "points": [
             "Asana as ritual — moving with intention",
             "Advanced sequencing through a Tantric arc",
@@ -100,7 +101,6 @@
         {
           "title": "Breath as Gateway",
           "focus": "Pranayama & Breathwork",
-          "hours": "15 hrs",
           "points": [
             "Classical pranayama — nadi shodhana, kapalabhati, bhastrika",
             "Tantric breathwork — breath as Shakti activation",
@@ -111,7 +111,6 @@
         {
           "title": "Sound, Mantra & Meditation",
           "focus": "Inner Technologies",
-          "hours": "5 hrs",
           "points": [
             "Mantra as vibrational medicine — bija mantras, seed sounds",
             "Nada yoga — the yoga of sacred sound",
@@ -122,7 +121,6 @@
         {
           "title": "The Awakened Teacher",
           "focus": "Holding Sacred Space",
-          "hours": "10 hrs",
           "points": [
             "Ethics of teaching advanced & devotional practices",
             "Trauma-informed facilitation in Tantric contexts",
@@ -137,17 +135,16 @@
       "author": "Sacha Revillard"
     },
     "included": {
-      "heading": "The 100 Hours Costa Rica Immersion includes.",
+      "heading": "The 50-Hour Costa Rica Immersion includes.",
       "items": [
         "Accommodation at House of Shakti",
         "Two nourishing meals daily (brunch & dinner)",
-        "Full 100-Hour Yoga Teacher Training",
+        "Full 50-Hour Yoga Teacher Training",
         "Daily yoga, meditation & embodiment practices",
         "Two breathwork journeys",
         "Sauna & ice bath experiences",
-        "Boat tour",
         "Comprehensive training manual",
-        "Certificate of Completion (100 hours)",
+        "Certificate of Completion (50 hours)",
         "Connection with nature & conscious community"
       ],
       "notHeading": "Not included.",
@@ -163,7 +160,6 @@
     },
     "rhythm": {
       "heading": "Your Daily Schedule",
-      "eyebrow": "Monday to Saturday",
       "blocks": [
         {
           "time": "8:00 AM – 11:30 AM",
@@ -191,7 +187,6 @@
           "detail": "Sauna & Ice Bath · Ritual · Group Reflection around fire pit"
         }
       ],
-      "footnote": "*2nd & 3rd Sundays — free day to play!",
       "trackAria": "Moments from the daily rhythm"
     },
     "teachers": {
@@ -240,26 +235,19 @@
       "closing": "No previous teaching experience is required."
     },
     "pricing": {
-      "heading": "Costa Rica Immersion — 100 hours.",
+      "heading": "Costa Rica Immersion — 50 hours.",
       "tiers": [
         {
-          "tag": "Early Bird · August",
-          "price": "USD $4,015",
-          "detail": "Private room · 100-Hour Costa Rica immersion"
+          "name": "Regular",
+          "price": "$2,620",
+          "detail": "Private room · 50-Hour Costa Rica immersion"
         },
         {
-          "tag": "Regular",
-          "price": "USD $4,340",
-          "detail": "Private room · 100-Hour Costa Rica immersion"
-        },
-        {
-          "tag": "Training Only",
-          "price": "USD $2,620",
+          "name": "Training Only",
+          "price": "$1,250",
           "detail": "Training + 1 meal · without accommodation"
         }
       ],
-      "onlineLine": "Optional 100-Hour online program — pricing and schedule available upon request. Please contact us for available payment options.",
-      "requestCta": "Request pricing & dates",
       "paymentHeading": "Payment Schedule",
       "schedule": [
         "A Non-refundable deposit of $500 is required to hold your space (once accepted into program).",
@@ -283,7 +271,7 @@
         "Strengthen your authentic voice and leadership.",
         "Experience greater presence, resilience, and self-awareness.",
         "Join a global community of practitioners and teachers.",
-        "Receive your internationally recognized Yoga Alliance certification upon completion of both phases."
+        "Receive your recognized 50-hour Yoga certification upon completing the immersion."
       ]
     },
     "closing": {
@@ -304,11 +292,7 @@
         },
         {
           "q": "Will I receive a certificate?",
-          "a": "Yes. After completing the Costa Rica immersion you receive a 100-Hour Certificate of Completion. Students who complete the additional 100-hour online program receive a Yoga Alliance Registered 200-Hour Yoga Teacher Training Certificate (RYT 200)."
-        },
-        {
-          "q": "Is the certification recognized internationally?",
-          "a": "Yes. Upon successful completion of both phases, graduates are eligible to register with Yoga Alliance as RYT 200 — one of the world’s most widely recognized yoga teaching credentials."
+          "a": "Yes. On completing the 50-hour immersion in Costa Rica you receive your House of Shakti 50-Hour Yoga Teacher Training certification."
         },
         {
           "q": "What airport should I fly into?",
@@ -324,12 +308,11 @@
       "aria": "Any questions? Chat with us on WhatsApp",
       "q": "Any questions?",
       "cta": "Chat with us.",
-      "message": "Hi! I’d like to know more about The Awakened Body — Tantra Yoga Teacher Training at House of Shakti.",
-      "messagePricing": "Hi! I’d like to know the pricing and dates for the optional 100-hour online program of The Awakened Body Teacher Training at House of Shakti."
+      "message": "Hi! I’d like to know more about The Awakened Body — Tantra Yoga Teacher Training at House of Shakti."
     },
     "meta": {
       "title": "The Awakened Body — Yoga Teacher Training",
-      "description": "A 100-hour Tantra yoga teacher training in Santa Teresa, Costa Rica, leading to Yoga Alliance RYT 200. November 21 – December 4, 2026."
+      "description": "A 50-hour Tantra yoga teacher training immersion in Santa Teresa, Costa Rica, certified by House of Shakti. November 28 – December 4, 2026."
     }
   },
   "shaktiExperience": {
@@ -1134,7 +1117,7 @@
       "ytt": {
         "title": "Teacher Training Yoga",
         "paragraphs": [
-          "A 100-hour in-person immersion with an optional 100-hour online program, leading to a Yoga Alliance Registered 200-Hour Yoga Teacher Training guided by Nancy Goodfellow. A journey of deep practice, self-discovery, and embodied learning."
+          "A 50-hour in-person immersion leading to a House of Shakti 50-Hour Yoga Teacher Training certification, guided by Nancy Goodfellow. A journey of deep practice, self-discovery, and embodied learning."
         ],
         "cta": "See more"
       }

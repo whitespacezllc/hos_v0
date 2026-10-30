@@ -12,7 +12,7 @@ import { whatsappUrl } from '@/lib/whatsapp';
 // Payment schedule and tier text live in the dictionary, in both languages.
 
 // Which tier is visually featured is structural, not textual.
-const TIER_FEATURED = [true, false, false];
+const TIER_FEATURED = [true, false];
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -46,54 +46,49 @@ export function YTTPricing() {
           variants={container}
           initial="hidden"
           animate={inView ? 'visible' : 'hidden'}
-          className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-14 lg:mt-16"
+          className="grid md:grid-cols-2 gap-6 lg:gap-8 mt-14 lg:mt-16"
         >
+          {/* Two tiers side by side from md: the full immersion, featured in
+              cream, and the training without the stay. The tier is named in
+              plain type, the price carries the card, and what each one covers
+              sits under a hairline. Prices are quoted in USD in both
+              languages, as on the retreat pages. */}
           {t.pricing.tiers.map((tier, i) => (
             <motion.article
-              key={tier.tag}
+              key={tier.name}
               variants={item}
-              className={`p-8 md:p-10 flex flex-col ${
+              className={`p-8 md:p-10 lg:p-12 flex flex-col ${
                 TIER_FEATURED[i]
                   ? 'bg-cream text-dark'
                   : 'border border-cream/20 text-cream'
               }`}
             >
-              <p
-                className={`font-body text-[10px] tracking-[0.25em] uppercase ${
-                  TIER_FEATURED[i] ? 'text-burgundy' : 'text-cream/60'
+              <h3
+                className={`font-display font-light text-2xl leading-snug ${
+                  TIER_FEATURED[i] ? 'text-burgundy' : 'text-cream'
                 }`}
               >
-                {tier.tag}
+                {tier.name}
+              </h3>
+              <p className="font-display font-light text-5xl lg:text-6xl leading-none mt-8 lg:mt-10">
+                {tier.price}
+                <span
+                  className={`font-body text-sm tracking-[0.05em] ml-2 ${
+                    TIER_FEATURED[i] ? 'text-dark/60' : 'text-cream/60'
+                  }`}
+                >
+                  USD
+                </span>
               </p>
-              <p className="font-display font-light text-3xl md:text-4xl mt-5">{tier.price}</p>
               <p
-                className={`font-body text-sm leading-[1.7] mt-4 ${
-                  TIER_FEATURED[i] ? 'text-dark/70' : 'text-cream/70'
+                className={`font-body text-sm leading-[1.7] mt-8 pt-6 border-t ${
+                  TIER_FEATURED[i] ? 'text-dark/75 border-dark/15' : 'text-cream/75 border-cream/15'
                 }`}
               >
                 {tier.detail}
               </p>
             </motion.article>
           ))}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 1.0, ease: 'easeOut', delay: 0.4 }}
-          className="mt-12 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10"
-        >
-          <p className="font-body text-sm text-cream/70 leading-[1.7] max-w-md">
-            {t.pricing.onlineLine}
-          </p>
-          <a
-            href={whatsappUrl(t.whatsapp.messagePricing)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block shrink-0 bg-cream text-dark font-body text-sm tracking-[0.05em] px-8 py-3.5 hover:bg-burgundy hover:text-cream transition-colors duration-300"
-          >
-            {t.pricing.requestCta}
-          </a>
         </motion.div>
 
         {/* Payment schedule + apply block */}
