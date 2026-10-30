@@ -12,15 +12,15 @@ const FRAMES = Array.from(
 );
 
 // The schedule lives in the dictionary, in both languages; the section itself
-// is the shared DaySchedule.
+// is the shared DaySchedule. No eyebrow and no footnote: the seven-day
+// immersion runs Saturday to Friday, so the day reads as the rhythm of every
+// day of it.
 export function YTTRhythm() {
   const t = useMessages().ytt.rhythm;
   return (
     <DaySchedule
       heading={t.heading}
-      eyebrow={t.eyebrow}
       blocks={t.blocks}
-      footnote={t.footnote}
       trackAria={t.trackAria}
       frames={FRAMES}
     />

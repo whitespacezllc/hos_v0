@@ -1,104 +1,18 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, Variants, useInView } from 'framer-motion';
-import { MapPin, Globe } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
 import { useMessages } from 'next-intl';
 
-type Phase = {
-  tag: string;
-  title: string;
-  place: string;
-  body: string;
-  format: 'in-person' | 'online';
-  formatLabel: string;
-};
-
-// Text lives in the dictionary; only the structural format keys live here,
-// zipped with it by index at render.
-const PHASE_FORMATS: Phase['format'][] = ['in-person', 'online'];
-
-const container: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.18 } },
-};
-const item: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 1.0, ease: 'easeOut' } },
-};
-
-function FormatPill({ phase }: { phase: Phase }) {
-  const Icon = phase.format === 'in-person' ? MapPin : Globe;
-  const classes =
-    phase.format === 'in-person'
-      ? 'bg-cream/15 text-cream'
-      : 'bg-ink/5 text-ink/70 ring-1 ring-inset ring-ink/15';
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-body text-[10px] tracking-[0.18em] uppercase ${classes}`}
-    >
-      <Icon aria-hidden strokeWidth={1.5} className="h-3.5 w-3.5" />
-      {phase.formatLabel}
-    </span>
-  );
-}
-
-function PhaseCard({ phase }: { phase: Phase }) {
-  const inPerson = phase.format === 'in-person';
-
-  // In-person = solid, grounded, the anchor of the pathway.
-  // Online = lighter, dashed border to read as the optional, remote companion.
-  const cardClasses = inPerson
-    ? 'bg-dark text-cream border border-dark'
-    : 'bg-warm-white text-ink border border-dashed border-ink/30';
-
-  return (
-    <motion.article variants={item} className={`p-8 md:p-10 flex flex-col ${cardClasses}`}>
-      <div className="flex items-center justify-between gap-4">
-        <p
-          className={`font-body text-[10px] tracking-[0.25em] uppercase ${
-            inPerson ? 'text-cream/60' : 'text-burgundy'
-          }`}
-        >
-          {phase.tag}
-        </p>
-        <FormatPill phase={phase} />
-      </div>
-
-      <h3
-        className={`font-display font-light text-2xl leading-snug mt-5 ${
-          inPerson ? 'text-cream' : 'text-ink'
-        }`}
-      >
-        {phase.title}
-      </h3>
-      <p
-        className={`font-body text-xs tracking-[0.05em] uppercase mt-3 ${
-          inPerson ? 'text-cream/50' : 'text-ink/50'
-        }`}
-      >
-        {phase.place}
-      </p>
-      <p
-        className={`font-body text-sm leading-[1.8] mt-6 ${
-          inPerson ? 'text-cream/75' : 'text-ink'
-        }`}
-      >
-        {phase.body}
-      </p>
-    </motion.article>
-  );
-}
-
+// The training is a single phase: the 50-hour immersion, held in person at the
+// house. One card carries it — the story on one side, and on the other the
+// facts a prospect checks before anything else (when, where, how, how much
+// study), set as a quiet index so the section reads at a glance. Below it, the
+// line that says what completing it earns.
 export function YTTPathway() {
-  const t = useMessages().ytt;
+  const t = useMessages().ytt.pathway;
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
-
-  const phases: Phase[] = t.pathway.phases.map((phase, i) => ({
-    ...phase,
-    format: PHASE_FORMATS[i],
-  }));
 
   return (
     <section className="bg-warm-white py-20 lg:py-28">
@@ -110,20 +24,39 @@ export function YTTPathway() {
             transition={{ duration: 1.0, ease: 'easeOut' }}
             className="font-display font-light text-ink text-3xl md:text-4xl leading-[1.15]"
           >
-            {t.pathway.heading}
+            {t.heading}
           </motion.h2>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate={inView ? 'visible' : 'hidden'}
-          className="grid md:grid-cols-2 gap-8 lg:gap-10 mt-14 lg:mt-16 items-stretch"
+        <motion.article
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 1.0, ease: 'easeOut', delay: 0.18 }}
+          className="mt-14 lg:mt-16 bg-dark text-cream p-8 md:p-10 lg:p-14 lg:grid lg:grid-cols-12 lg:gap-16"
         >
-          {phases.map((phase) => (
-            <PhaseCard key={phase.tag} phase={phase} />
-          ))}
-        </motion.div>
+          <div className="lg:col-span-7">
+            <h3 className="font-display font-light text-cream text-2xl md:text-3xl leading-snug">
+              {t.title}
+            </h3>
+            <p className="font-body text-sm md:text-base text-cream/75 leading-[1.8] mt-6 max-w-xl">
+              {t.body}
+            </p>
+          </div>
+
+          {/* Label beside value from sm up; stacked on narrow phones, where a
+              label column would squeeze the values into ragged two-word lines. */}
+          <dl className="lg:col-span-5 mt-10 lg:mt-0 border-t border-cream/15">
+            {t.facts.map((fact) => (
+              <div
+                key={fact.label}
+                className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-6 py-4 border-b border-cream/15"
+              >
+                <dt className="font-body text-xs text-cream/60 sm:w-24 shrink-0">{fact.label}</dt>
+                <dd className="font-body text-sm text-cream leading-[1.6]">{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </motion.article>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -132,9 +65,9 @@ export function YTTPathway() {
           className="mt-10 lg:mt-12 border-l-2 border-burgundy pl-6 md:pl-8 max-w-3xl"
         >
           <p className="font-body text-sm md:text-base text-ink leading-[1.8]">
-            {t.pathway.rytBefore}
-            <span className="text-burgundy">{t.pathway.rytHighlight}</span>
-            {t.pathway.rytAfter}
+            {t.certBefore}
+            <span className="text-burgundy">{t.certHighlight}</span>
+            {t.certAfter}
           </p>
         </motion.div>
       </div>
