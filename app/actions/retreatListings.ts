@@ -20,12 +20,15 @@ type Result = { ok: true } | { ok: false; error: string };
 
 const BUCKET = 'retreat-images';
 
-// The panel's list, and the public page under both locale prefixes.
+// The panel's list, the public page under both locale prefixes, and the long
+// card for language models, which lists every retreat with its dates and would
+// otherwise keep the old ones for up to an hour.
 function revalidateRetreatPages(): void {
   revalidatePath('/admin/retreats');
   revalidatePath('/[locale]/upcoming-retreats', 'page');
   revalidatePath('/upcoming-retreats');
   revalidatePath('/es/upcoming-retreats');
+  revalidatePath('/llms-full.txt');
 }
 
 // The form's strings, checked and shaped into a row. Spanish fields left

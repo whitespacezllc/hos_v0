@@ -282,17 +282,17 @@ export const SEED_RETREAT_LISTINGS: RetreatListing[] = [
     title: 'The Awakened Body: A Tantric Yoga Intensive',
     label: 'Yoga Teacher Training',
     instructors: 'Nancy Goodfellow',
-    startsOn: '2026-11-21',
+    startsOn: '2026-11-28',
     endsOn: '2026-12-04',
     description:
-      'A transformational immersion for those who wish to deepen their relationship with yoga beyond the physical practice. One hundred hours on the embodied path of Tantra — movement, breath, ritual and self-inquiry.',
+      'A transformational immersion for those who wish to deepen their relationship with yoga beyond the physical practice. Fifty hours on the embodied path of Tantra — movement, breath, ritual and self-inquiry.',
     url: '/yoga-teacher-training',
     imageUrl: '/images/introduction/ytt-introduction-07.webp',
     imageAlt: 'A group practising together in the open shala',
     imageAltEs: 'Un grupo practicando junto en la shala abierta',
     labelEs: 'Yoga Teacher Training',
     descriptionEs:
-      'Una inmersión transformadora para quienes desean profundizar su relación con el yoga más allá de la práctica física. Cien horas en el camino encarnado del Tantra: movimiento, respiración, ritual e indagación interior.',
+      'Una inmersión transformadora para quienes desean profundizar su relación con el yoga más allá de la práctica física. Cincuenta horas en el camino encarnado del Tantra: movimiento, respiración, ritual e indagación interior.',
   }),
   seeded('3', {
     title: 'NOURISH: 50hr Restorative + Yin Training',
