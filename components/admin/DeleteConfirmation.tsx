@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { useScrollLock } from '@/hooks/use-scroll-lock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './Button';
 
@@ -21,6 +22,10 @@ type DeleteConfirmationProps = {
   loading?: boolean;
   /** Why the last confirm failed; shown under the description. */
   error?: string | null;
+  /** Anything the confirmation needs answered first. */
+  children?: ReactNode;
+  /** Holds the confirm button until that's answered. */
+  confirmDisabled?: boolean;
 };
 
 export function DeleteConfirmation({
@@ -33,6 +38,8 @@ export function DeleteConfirmation({
   cancelLabel,
   loading = false,
   error,
+  children,
+  confirmDisabled = false,
 }: DeleteConfirmationProps) {
   const tc = useTranslations('admin.common');
   // Close on Escape.
@@ -45,20 +52,12 @@ export function DeleteConfirmation({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose, loading]);
 
-  // Body scroll lock while open.
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
             aria-hidden
@@ -79,7 +78,7 @@ export function DeleteConfirmation({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative max-w-md w-full mx-6 bg-white border border-ink/10 p-8"
+            className="relative max-w-md w-full max-h-full overflow-y-auto bg-white border border-ink/10 p-5 sm:p-8"
           >
             <h2
               id="delete-confirmation-title"
@@ -87,16 +86,17 @@ export function DeleteConfirmation({
             >
               {title}
             </h2>
-            <p className="font-body text-sm text-ink/60 leading-normal mt-3">
+            <p className="font-body text-sm text-ink/70 leading-normal mt-3">
               {description}
             </p>
+            {children}
             {error && (
               <p role="alert" className="font-body text-sm text-burgundy mt-3">
                 {error}
               </p>
             )}
 
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex flex-wrap justify-end gap-3 mt-6 sm:mt-8">
               <Button
                 variant="secondary"
                 onClick={onClose}
@@ -108,6 +108,7 @@ export function DeleteConfirmation({
                 variant="destructive"
                 onClick={onConfirm}
                 loading={loading}
+                disabled={confirmDisabled}
               >
                 {confirmLabel ?? tc('actions.delete')}
               </Button>

@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { motion, AnimatePresence, Variants, useInView } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useMessages, useTranslations } from 'next-intl';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 
 // FAQ content — copy provided by the client for the yoga and wellness page,
 // in the catalogue under yoga.faq.items.
@@ -147,12 +148,20 @@ export function YogaFAQ() {
           <p className="font-body text-sm text-ink max-w-md leading-relaxed">
             {t('outro')}
           </p>
-          <Link
-            href="/contact"
-            className="inline-block font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300 mt-6"
-          >
-            {t('cta')}
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mt-6">
+            <Link
+              href="/contact"
+              className="font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+            >
+              {t('cta')}
+            </Link>
+            <Link
+              href={SHALA_POLICY_PATH}
+              className="font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+            >
+              {t('policyLink')}
+            </Link>
+          </div>
         </motion.div>
       </div>
     </section>

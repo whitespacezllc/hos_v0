@@ -20,11 +20,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         rows={rows}
         {...props}
         className={`
-          w-full pb-2 bg-transparent resize-none
-          border-b ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
+          block w-full min-w-0 px-3 py-2.5 bg-white resize-y
+          border ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
           font-body text-base text-ink leading-normal
           outline-none transition-colors duration-200
-          placeholder:text-ink/30 placeholder:italic
+          placeholder:text-ink/50
           ${className}
         `}
       />

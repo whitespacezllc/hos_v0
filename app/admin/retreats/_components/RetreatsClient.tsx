@@ -8,7 +8,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Pencil, Trash2, Palmtree, ExternalLink, CalendarDays } from 'lucide-react';
 import type { RetreatListing } from '@/types';
 import type { AppLocale } from '@/i18n/routing';
+import { PageContainer } from '@/components/admin/PageContainer';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { RowIconButton } from '@/components/admin/RowIconButton';
 import { Card } from '@/components/admin/Card';
 import { Button } from '@/components/admin/Button';
 import { Badge } from '@/components/admin/Badge';
@@ -64,9 +66,6 @@ const DEFAULTS: RetreatListingFormValues = {
   descriptionEs: '',
   isPublished: true,
 };
-
-const ICON_BUTTON =
-  'w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 transition-colors duration-200 cursor-pointer';
 
 type RowError = { id: string; message: string } | null;
 
@@ -236,7 +235,7 @@ export default function RetreatsClient({
   );
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto">
+    <PageContainer>
       <PageHeader
         heading={t('page.heading')}
         description={t('page.description')}
@@ -421,13 +420,13 @@ export default function RetreatsClient({
               onClick={() => setSpanishOpen((o) => !o)}
               aria-expanded={spanishOpen}
               aria-controls="retreat-spanish"
-              className="font-body text-[10px] tracking-[0.3em] uppercase text-ink/60 hover:text-ink transition-colors duration-200 cursor-pointer"
+              className="font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               {spanishOpen ? t('form.spanish.close') : t('form.spanish.open')}
             </button>
             {spanishOpen && (
               <div id="retreat-spanish" className="space-y-6 mt-5">
-                <p className="font-body text-xs text-ink/50">
+                <p className="font-body text-xs text-ink/70">
                   {t('form.spanish.note')}
                 </p>
                 <Input
@@ -468,7 +467,7 @@ export default function RetreatsClient({
         cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
       />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -506,13 +505,13 @@ function ListingSection({
       <header className="mb-4">
         <div className="flex items-baseline gap-3">
           <h2 className="font-body text-base font-medium text-ink">{title}</h2>
-          <span className="font-body text-xs text-ink/50">{items.length}</span>
+          <span className="font-body text-xs text-ink/70">{items.length}</span>
         </div>
-        <p className="font-body text-xs text-ink/50 mt-1">{hint}</p>
+        <p className="font-body text-xs text-ink/70 mt-1">{hint}</p>
       </header>
 
       {items.length === 0 ? (
-        <p className="font-body text-sm text-ink/50 border border-dashed border-ink/15 px-4 py-5">
+        <p className="font-body text-sm text-ink/70 border border-dashed border-ink/15 px-4 py-5">
           {emptyText}
         </p>
       ) : (
@@ -562,7 +561,7 @@ function ListingRow({
 
   return (
     <Card padding="tight" className={!l.isPublished || muted ? 'opacity-75' : ''}>
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-wrap sm:flex-nowrap gap-x-4 gap-y-3 items-start">
         <div className={`w-20 sm:w-24 flex-shrink-0 ${RETREAT_IMAGE.ratio} overflow-hidden bg-neutral-100`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -573,7 +572,7 @@ function ListingRow({
           />
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[calc(100%-6rem)] sm:basis-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="neutral">{l.label}</Badge>
             {happeningNow && <Badge variant="active">{t('row.happeningNow')}</Badge>}
@@ -594,7 +593,7 @@ function ListingRow({
             href={l.url}
             target={external ? '_blank' : undefined}
             rel={external ? 'noopener noreferrer' : undefined}
-            className="font-body text-xs text-ink/50 hover:text-ink transition-colors duration-200 mt-2 inline-flex items-center gap-1 max-w-full"
+            className="font-body text-xs text-ink/70 hover:text-ink transition-colors duration-200 mt-2 inline-flex items-center gap-1 max-w-full"
           >
             <span className="truncate">{l.url}</span>
             {external && <ExternalLink width={11} height={11} strokeWidth={1.5} aria-hidden className="flex-shrink-0" />}
@@ -606,9 +605,9 @@ function ListingRow({
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-3 flex-shrink-0">
+        <div className="w-full sm:w-auto flex sm:flex-col items-center sm:items-end justify-between gap-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="font-body text-xs text-ink/60 hidden sm:inline">
+            <span className="font-body text-xs text-ink/70">
               {l.isPublished ? t('row.shown') : t('row.hidden')}
             </span>
             <Toggle
@@ -619,12 +618,12 @@ function ListingRow({
             />
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" onClick={onEdit} aria-label={t('row.edit', { title: l.title })} className={`${ICON_BUTTON} hover:text-ink`}>
+            <RowIconButton onClick={onEdit} ariaLabel={t('row.edit', { title: l.title })}>
               <Pencil width={16} height={16} strokeWidth={1.5} />
-            </button>
-            <button type="button" onClick={onDelete} aria-label={t('row.delete', { title: l.title })} className={`${ICON_BUTTON} hover:text-burgundy`}>
+            </RowIconButton>
+            <RowIconButton onClick={onDelete} ariaLabel={t('row.delete', { title: l.title })} hoverDestructive>
               <Trash2 width={16} height={16} strokeWidth={1.5} />
-            </button>
+            </RowIconButton>
           </div>
         </div>
       </div>

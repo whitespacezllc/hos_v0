@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service';
 import type { Database } from '@/types/supabase';
 import type { ClassInstancePayload } from '@/types';
 import { isAdminSession } from '@/lib/auth/require-admin';
+import { cancelClassBookings, type ClassCancellation } from '@/lib/checkout/cancel';
 import { costaRicaDateString, costaRicaWeekStart } from '@/lib/costa-rica-time';
 import {
   type ActionResult,
@@ -198,13 +199,13 @@ export async function upcomingBookingsForTemplate(
  */
 export async function deleteTemplate(
   id: string,
-): Promise<ActionResult<{ keptWithBookings: number }>> {
+): Promise<ActionResult<ClassCancellation>> {
   if (!(await isAdminSession())) return NOT_ADMIN;
   const supabase = createServiceRoleClient();
 
-  let keptWithBookings = 0;
+  let keptIds: string[] = [];
   try {
-    ({ keptWithBookings } = await releaseTemplateSessions(supabase, id));
+    ({ keptIds } = await releaseTemplateSessions(supabase, id));
   } catch (err) {
     console.error('[deleteTemplate] sessions', err);
     return DELETE_FAILED;
@@ -222,8 +223,21 @@ export async function deleteTemplate(
     if (deactivateError) return DELETE_FAILED;
   }
 
+  // The class is gone: whoever was booked into what's left of it hears from the
+  // studio. The class is already deleted if this stumbles, so it reports (the
+  // panel says to check Bookings) rather than fails.
+  let tally: ClassCancellation = { cancelled: 0, emailsFailed: 0 };
+  try {
+    tally = await cancelClassBookings(keptIds);
+  } catch (err) {
+    console.error('[deleteTemplate] cancelling bookings', err);
+    // At least one person per session: nobody was told.
+    tally = { cancelled: 0, emailsFailed: keptIds.length };
+  }
+
   revalidateSchedule();
-  return { ok: true, keptWithBookings };
+  revalidatePath('/admin/reservas');
+  return { ok: true, ...tally };
 }
 
 // ─── Single sessions (the calendar) ──────────────────────────────────────────
@@ -266,16 +280,30 @@ export async function updateClassDetails(id: string, data: ClassUpdate): Promise
  * Takes one session off the schedule. Its bookings are kept; the session is
  * switched off rather than removed so they still have a class to point at.
  */
-export async function deleteClass(id: string): Promise<ActionResult> {
+export async function deleteClass(id: string): Promise<ActionResult<ClassCancellation>> {
   if (!(await isAdminSession())) return NOT_ADMIN;
   const supabase = createServiceRoleClient();
+  // Off the schedule first, so nobody books into it while the others are told.
   const { error } = await supabase.from('classes').update({ is_active: false }).eq('id', id);
   if (error) {
     console.error('[deleteClass]', error.message);
     return DELETE_FAILED;
   }
+
+  let tally: ClassCancellation = { cancelled: 0, emailsFailed: 0 };
+  try {
+    tally = await cancelClassBookings([id]);
+  } catch (err) {
+    // Nobody could be told: put it back, so the admin sees it and can try again.
+    // Whoever was already told is skipped on the next attempt.
+    console.error('[deleteClass] cancelling bookings', id, err);
+    await supabase.from('classes').update({ is_active: true }).eq('id', id);
+    return DELETE_FAILED;
+  }
+
   revalidateSchedule();
-  return { ok: true };
+  revalidatePath('/admin/reservas');
+  return { ok: true, ...tally };
 }
 
 // A dated, one-off `classes` row (not a recurring template). Used by the

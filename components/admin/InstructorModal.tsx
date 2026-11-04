@@ -8,7 +8,7 @@ import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
 import { DeleteConfirmation } from './DeleteConfirmation';
-import { RowIconButton } from '@/app/admin/clases/_components/ClasesClient';
+import { RowIconButton } from '@/components/admin/RowIconButton';
 import {
   createInstructor,
   updateInstructor,
@@ -120,12 +120,12 @@ export default function InstructorModal({
       >
         {/* Global error (e.g. delete blocked because instructor is in use) */}
         {error && !formOpen && (
-          <p className="font-body text-xs italic text-burgundy mb-4">{error}</p>
+          <p className="font-body text-xs text-burgundy mb-4">{error}</p>
         )}
 
         {/* List */}
         {instructors.length === 0 ? (
-          <p className="font-body text-sm text-ink/50 py-2">{t('empty')}</p>
+          <p className="font-body text-sm text-ink/70 py-2">{t('empty')}</p>
         ) : (
           <ul className="divide-y divide-ink/[0.08] border-t border-ink/10">
             {instructors.map((i) => (
@@ -133,7 +133,7 @@ export default function InstructorModal({
                 <div className="min-w-0 flex-1">
                   <p className="font-body text-sm font-medium text-ink truncate">{i.name}</p>
                   {i.email && (
-                    <p className="font-body text-xs text-ink/50 truncate mt-0.5">{i.email}</p>
+                    <p className="font-body text-xs text-ink/70 truncate mt-0.5">{i.email}</p>
                   )}
                 </div>
                 <RowIconButton ariaLabel={t('edit')} onClick={() => startEdit(i)} disabled={isPending}>
@@ -158,7 +158,7 @@ export default function InstructorModal({
         {/* Inline add/edit form */}
         {formOpen ? (
           <div className="mt-6 pt-6 border-t border-ink/10 space-y-4">
-            <p className="font-body text-[10px] tracking-[0.3em] uppercase text-ink/60">
+            <p className="font-body text-xs text-ink/60">
               {editingId ? t('edit') : t('new')}
             </p>
             <Input

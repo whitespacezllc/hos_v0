@@ -31,7 +31,7 @@ export default function AdminError({
         </Button>
       </div>
       {error.digest && (
-        <p className="mt-6 font-mono text-xs text-ink/40">{error.digest}</p>
+        <p className="mt-6 font-mono text-xs text-ink/60">{error.digest}</p>
       )}
     </div>
   );

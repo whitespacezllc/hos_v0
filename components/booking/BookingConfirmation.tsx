@@ -5,6 +5,8 @@ import { useRouter } from '@/i18n/navigation';
 import { Calendar } from 'lucide-react';
 import { addMinutes, format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 import type { Upsell, ReferralCode } from '@/types';
 import { dateFnsLocale } from '@/lib/dates';
 import { inCostaRica } from '@/lib/costa-rica-time';
@@ -206,6 +208,13 @@ export function BookingConfirmation({
         >
           {t('backToClasses')}
         </button>
+
+        <Link
+          href={SHALA_POLICY_PATH}
+          className="font-body text-sm text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+        >
+          {t('policyLink')}
+        </Link>
       </motion.div>
     </div>
   );

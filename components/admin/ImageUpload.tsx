@@ -143,7 +143,7 @@ export function ImageUpload({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className={`mt-2 w-full ${aspect} flex flex-col items-center justify-center gap-2 border border-dashed border-ink/25 bg-neutral-50/50 text-ink/50 hover:border-ink/40 hover:text-ink/70 transition-colors cursor-pointer disabled:opacity-60`}
+          className={`mt-2 w-full ${aspect} flex flex-col items-center justify-center gap-2 border border-dashed border-ink/25 bg-neutral-50/50 text-ink/70 hover:border-ink/40 hover:text-ink/70 transition-colors cursor-pointer disabled:opacity-60`}
         >
           {uploading ? (
             <>
@@ -154,7 +154,7 @@ export function ImageUpload({
             <>
               <ImagePlus width={22} height={22} strokeWidth={1.3} />
               <span className="font-body text-xs">{t('uploadAnImage')}</span>
-              <span className="font-body text-[10px] text-ink/40">{hint ?? t('hint')}</span>
+              <span className="font-body text-[10px] text-ink/60">{hint ?? t('hint')}</span>
             </>
           )}
         </button>

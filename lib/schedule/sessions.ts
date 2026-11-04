@@ -282,11 +282,13 @@ export async function upcomingBookings(
   db: Db,
   templateId: string,
 ): Promise<{ sessions: number; persons: number }> {
+  // Sessions switched off count too: deleting the class cancels their bookings
+  // as well (releaseTemplateSessions + cancelClassBookings), so the warning has
+  // to name them.
   const { data: upcoming } = await db
     .from('classes')
     .select('id')
     .eq('template_id', templateId)
-    .eq('is_active', true)
     .gte('starts_at', new Date().toISOString());
   const ids = (upcoming ?? []).map((s) => s.id);
   if (ids.length === 0) return { sessions: 0, persons: 0 };
@@ -315,7 +317,7 @@ export async function upcomingBookings(
 export async function releaseTemplateSessions(
   db: Db,
   templateId: string,
-): Promise<{ keptWithBookings: number }> {
+): Promise<{ keptWithBookings: number; keptIds: string[] }> {
   const { data: upcoming, error } = await db
     .from('classes')
     .select('id, capacity, spots_remaining, is_active')
@@ -324,6 +326,7 @@ export async function releaseTemplateSessions(
   if (error) throw new Error(error.message);
 
   let keptWithBookings = 0;
+  const keptIds: string[] = [];
   for (const session of upcoming) {
     const empty = session.spots_remaining >= session.capacity;
     if (empty && (await dropEmptySession(db, session)) !== 'skipped') continue;
@@ -333,6 +336,7 @@ export async function releaseTemplateSessions(
       .update({ is_active: false })
       .eq('id', session.id);
     if (offError) throw new Error(offError.message);
+    keptIds.push(session.id);
     if (session.is_active) keptWithBookings++;
   }
 
@@ -342,5 +346,5 @@ export async function releaseTemplateSessions(
     .eq('template_id', templateId);
   if (detachError) throw new Error(detachError.message);
 
-  return { keptWithBookings };
+  return { keptWithBookings, keptIds };
 }

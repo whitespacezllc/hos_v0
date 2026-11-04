@@ -828,7 +828,8 @@
       "retreats": "Retiros",
       "host": "Host Your Retreat",
       "about": "Nosotras",
-      "contact": "Contacto"
+      "contact": "Contacto",
+      "policy": "Política de cancelación"
     }
   },
   "whatsapp": {
@@ -1237,7 +1238,8 @@
         "eyebrow": "Una nota del estudio",
         "line1": "House of Shakti se toma un momento para descansar y renovarse.",
         "line2": "Esperamos volver a recibirte a partir del 1 de noviembre."
-      }
+      },
+      "policyLink": "Política de cancelación"
     },
     "categories": {
       "vinyasa": "Vinyasa",
@@ -1250,7 +1252,7 @@
     "packs": {
       "eyebrow": "Packs de clases",
       "heading": "Compra una vez, vuelve clase a clase",
-      "body": "Cinco, diez o veinte clases compradas juntas, cada una a menor costo que reservarla por separado. Un pack se paga una sola vez y se usa despacio, cuando la semana lo permite, sin nada que agendar de antemano.",
+      "body": "Cinco o diez clases compradas juntas, cada una a menor costo que reservarla por separado. Un pack se paga una sola vez y se usa despacio, cuando la semana lo permite, sin nada que agendar de antemano.",
       "classes": "Clases",
       "sizes": {
         "5": {
@@ -1260,10 +1262,6 @@
         "10": {
           "cadence": "Dos o tres por semana",
           "note": "Un mes de práctica constante, sin decidir nada de antemano."
-        },
-        "20": {
-          "cadence": "Una práctica diaria",
-          "note": "Para una estadía larga, y el precio por clase más bajo que ofrecemos."
         }
       },
       "cta": "Comprar un pack de clases",
@@ -1432,10 +1430,15 @@
         {
           "question": "¿Cómo reservo una experiencia?",
           "answer": "Escríbenos con la experiencia que te interesa, la fecha que prefieres y la cantidad de personas, y nuestro equipo te ayuda a organizarla."
+        },
+        {
+          "question": "¿Cuál es la política de cancelación de las clases?",
+          "answer": "Las cancelaciones realizadas con más de 12 horas de anticipación se pueden reprogramar, sujeto a disponibilidad. Las realizadas con menos de 12 horas de anticipación no son reembolsables y no se pueden reprogramar. No se realizan reembolsos, salvo que la actividad la cancele House of Shakti o quien facilita."
         }
       ],
       "outro": "Escríbenos: te ayudamos a encontrar la clase adecuada o a coordinar una sesión privada.",
-      "cta": "Contáctanos"
+      "cta": "Contáctanos",
+      "policyLink": "Leer la política completa de cancelación y asistencia"
     },
     "galleryAria": "Galería de yoga"
   },
@@ -1579,7 +1582,7 @@
       },
       "venmoNote": "Te mostraremos los datos de Venmo para completar el pago. Tu lugar queda pendiente hasta que lo verifiquemos.",
       "cashNote": "Te guardamos el lugar: solo paga en efectivo en la recepción del estudio antes de tu clase.",
-      "cancellation": "✓ Cancelación gratuita hasta 2 horas antes de la clase.",
+      "cancellation": "Con más de 12 horas de anticipación puedes reprogramar, sujeto a disponibilidad. Con menos, la clase no es reembolsable ni se puede reprogramar.",
       "errors": {
         "noSpots": "Lo sentimos, esta clase ya está completa.",
         "tooLate": "Las reservas cierran 1 hora antes de la clase.",
@@ -1592,7 +1595,8 @@
         "venmo": "Pagar con Venmo",
         "cash": "Reservar"
       },
-      "packOf": "Pack de {count}"
+      "packOf": "Pack de {count}",
+      "cancellationLink": "Leer la política completa"
     },
     "navigation": {
       "back": "Atrás",
@@ -1643,7 +1647,8 @@
       "dateFormat": "EEEE d 'de' MMMM 'de' yyyy",
       "icsDescription": "Clase de yoga con {instructor} en House of Shakti. Ref.: {ref}",
       "icsLocation": "{location}, House of Shakti, Costa Rica",
-      "timezone": "hora de Costa Rica"
+      "timezone": "hora de Costa Rica",
+      "policyLink": "Política de cancelación"
     },
     "venmo": {
       "title": "Pagar con Venmo",
@@ -1696,7 +1701,8 @@
       "bookAgain": "Reservar de nuevo",
       "backToClasses": "Volver a las clases",
       "whatsapp": "Escríbenos por WhatsApp",
-      "dateFormat": "EEEE d 'de' MMMM 'de' yyyy"
+      "dateFormat": "EEEE d 'de' MMMM 'de' yyyy",
+      "policyLink": "Política de cancelación"
     }
   },
   "packs": {
@@ -1752,7 +1758,8 @@
         "title": "Estamos confirmando tu pago",
         "body": "Tilopay reportó tu pago como aprobado y lo estamos verificando. Tu código de clases llegará por correo en cuanto quede confirmado."
       }
-    }
+    },
+    "policyLink": "Las clases siguen nuestra política de cancelación"
   },
   "email": {
     "common": {
@@ -1789,7 +1796,9 @@
         "confirmed": "Tu lugar en <strong>{className}</strong> está confirmado. Aquí tienes todo lo que necesitas.",
         "paid": "Recibimos tu pago. Tu lugar en <strong>{className}</strong> está confirmado.",
         "pending": "Te guardamos un lugar en <strong>{className}</strong>. La reserva queda confirmada en cuanto recibamos tu pago.",
-        "cancelled": "Tu reserva <strong>{reference}</strong> para <strong>{className}</strong> el {date} a las {time} fue cancelada."
+        "cancelled": "Tu reserva <strong>{reference}</strong> para <strong>{className}</strong> el {date} a las {time} fue cancelada.",
+        "cancelledByStudio": "Lo sentimos: tuvimos que cancelar tu reserva <strong>{reference}</strong> para <strong>{className}</strong> el {date} a las {time}.",
+        "cancelledAtRequest": "Como nos pediste, cancelamos tu reserva <strong>{reference}</strong> para <strong>{className}</strong> el {date} a las {time}."
       },
       "pack": {
         "confirmed": "Esta clase está cubierta por tu <strong>{packName}</strong>. Tu código personal para las clases restantes llega en un correo aparte.",
@@ -1825,11 +1834,21 @@
         "venmo": "Envía <strong>{amount}</strong> por Venmo a <strong>{handle}</strong> y agrega tu referencia de reserva <strong>{reference}</strong> en la nota. Confirmaremos tu lugar en cuanto llegue.",
         "cash": "Paga <strong>{amount}</strong> en efectivo en la recepción del estudio antes de tu clase. Tu lugar queda reservado hasta entonces."
       },
-      "arrive": "Te sugerimos llegar unos minutos antes para instalarte con calma.",
-      "cancellation": "Cancelación gratuita hasta 2 horas antes de la clase: responde a este correo o escríbenos por WhatsApp.",
+      "arrive": "Te recomendamos llegar entre 5 y 10 minutos antes para instalarte con calma.",
       "calendar": "Adjuntamos una invitación de calendario para que la clase quede directamente en tu agenda.",
       "cancelledPayment": "Si tienes alguna duda sobre un pago, responde a este correo y lo resolvemos.",
-      "schedule": "Ver el horario"
+      "schedule": "Ver el horario",
+      "reschedule": "Para reprogramar, responde a este correo o escríbenos por WhatsApp.",
+      "policyLink": "Leer la política en nuestro sitio",
+      "studioCancel": {
+        "refundOffer": "Puedes pasarla a otra clase o pedir el reembolso completo, lo que prefieras. Escríbenos por WhatsApp y nos ocupamos.",
+        "rescheduleOffer": "Puedes pasarla a otra clase: escríbenos por WhatsApp y nos ocupamos.",
+        "whatsapp": "Escríbenos por WhatsApp",
+        "number": "WhatsApp: {phone}",
+        "draftRefund": "¡Hola! Cancelaron mi reserva {reference}. Quisiera reprogramarla o pedir el reembolso.",
+        "draftReschedule": "¡Hola! Cancelaron mi reserva {reference}. Quisiera reprogramarla."
+      },
+      "customerCancel": "Si cancelaste con más de 12 horas de anticipación, puedes reprogramar, sujeto a disponibilidad: escríbenos por WhatsApp al {phone}. Con menos anticipación, la clase no es reembolsable ni se puede reprogramar."
     },
     "packCode": {
       "subject": "Tu {packName} está listo — House of Shakti",
@@ -1987,12 +2006,11 @@
       "retreats": "Retiros"
     },
     "sidebar": {
-      "eyebrow": "Panel de administración",
       "brand": "House of Shakti",
       "navigation": "Navegación del panel",
       "sidebar": "Barra lateral del panel",
       "pending": "{count} pendientes",
-      "roleLine": "Admin · House of Shakti",
+      "roleLine": "Admin",
       "admin": "Admin",
       "signOut": "Cerrar sesión",
       "language": "Idioma",
@@ -2007,7 +2025,7 @@
       "heading": "Reservas",
       "empty": {
         "heading": "Aún no hay reservas",
-        "description": "Las reservas hechas desde el sitio público aparecerán aquí."
+        "description": "Las reservas hechas en el sitio aparecen aquí. También puedes agregarlas tú."
       },
       "noMatch": {
         "heading": "Ninguna reserva coincide con tus filtros",
@@ -2023,10 +2041,15 @@
         "to": "Hasta",
         "fromDate": "Fecha desde",
         "toDate": "Fecha hasta",
-        "clear": "Limpiar"
+        "clear": "Limpiar",
+        "anyDate": "Cualquier fecha",
+        "dateField": "Filtrar fechas por",
+        "classDate": "Fecha de la clase",
+        "bookedDate": "Fecha de la reserva"
       },
       "table": {
-        "viewBooking": "Ver reserva"
+        "viewBooking": "Ver reserva",
+        "people": "{count} personas"
       },
       "actions": {
         "cancelBooking": "Cancelar reserva"
@@ -2056,13 +2079,30 @@
       },
       "cancelDialog": {
         "title": "¿Cancelar la reserva?",
-        "description": "La reserva se marcará como cancelada. Se le avisará al alumno/a.",
-        "keep": "Conservar reserva"
+        "description": "La reserva se marcará como cancelada y el alumno/a recibirá un correo.",
+        "keep": "Conservar reserva",
+        "who": "¿Quién cancela?",
+        "studio": "El estudio",
+        "studioHint": "El correo se disculpa y ofrece, por WhatsApp, reprogramar o, si estaba pagada, el reembolso completo.",
+        "customer": "Lo pidió el alumno/a",
+        "customerHint": "El correo lo confirma y le recuerda la política de las 12 horas.",
+        "emailFailed": "La reserva se canceló, pero el correo no se pudo enviar. Escríbele a {email}."
       },
       "dates": {
         "classShort": "d MMM · HH:mm",
         "dateShort": "d MMM yyyy",
         "dateTime": "d MMM yyyy · HH:mm"
+      },
+      "addBooking": "Agregar reserva",
+      "picker": {
+        "title": "Agregar reserva",
+        "subtitle": "Elige la clase.",
+        "date": "Fecha",
+        "previousDay": "Día anterior",
+        "nextDay": "Día siguiente",
+        "noClasses": "No hay clases este día.",
+        "spots": "{count, plural, =1 {Queda 1 cupo} other {Quedan # cupos}}",
+        "full": "Llena"
       }
     },
     "calendar": {
@@ -2110,14 +2150,18 @@
         "dateTimeValue": "{date} · Costa Rica",
         "openAirShala": "Shala al aire libre",
         "bookingsHeading": "Reservas ({count})",
-        "addParticipant": "Agregar participante",
+        "addParticipant": "Agregar reserva",
         "classFull": "La clase está llena: libera un cupo para agregar a alguien sin reserva previa.",
         "noBookings": "Aún no hay reservas"
       },
       "deleteDialog": {
         "title": "¿Eliminar clase?",
-        "description": "Esto saca la sesión del horario y del sitio público. Sus reservas se conservan en Reservas. Esta acción no se puede deshacer.",
-        "confirm": "Eliminar clase"
+        "description": "Esto saca la sesión del horario y del sitio público. Esta acción no se puede deshacer.",
+        "confirm": "Eliminar clase",
+        "withBookings": "Esto saca la sesión del horario y del sitio público. {count, plural, =1 {Su reserva se cancelará y la persona recibirá un correo} other {Sus # reservas se cancelarán y cada persona recibirá un correo}} con nuestro WhatsApp, para reprogramar o pedir el reembolso. Esta acción no se puede deshacer.",
+        "confirmAndNotify": "Eliminar y avisar",
+        "notified": "Clase eliminada. {count, plural, =1 {La reserva se canceló y la persona recibió un correo.} other {Se cancelaron # reservas y cada persona recibió un correo.}}",
+        "emailsFailed": "Clase eliminada, pero no se pudo avisar a {count, plural, =1 {1 persona} other {# personas}}. Revisa sus reservas en Reservas y escríbeles."
       },
       "addErrors": {
         "noSpots": "No quedan cupos suficientes en esta clase.",
@@ -2140,12 +2184,13 @@
         "durationMin": "Duración (min)",
         "priceUsd": "Precio (USD)",
         "statusHelper": "Las clases inactivas no aparecen en el sitio público.",
-        "toggleActive": "Cambiar estado activo"
+        "toggleActive": "Cambiar estado activo",
+        "priceHint": "Precio estándar del drop-in: ${amount} (se cambia en Packs). Un precio distinto aquí queda solo para esta clase."
       },
       "participantModal": {
-        "title": "Agregar participante",
-        "subtitle": "Registra manualmente a un/a alumno/a en {className}. {count, plural, =1 {Queda 1 cupo} other {Quedan # cupos}}.",
-        "submit": "Agregar participante",
+        "title": "Agregar reserva",
+        "subtitle": "Registra a un/a alumno/a en {className}. {count, plural, =1 {Queda 1 cupo} other {Quedan # cupos}}.",
+        "submit": "Agregar reserva",
         "firstNamePlaceholder": "Ada",
         "lastNamePlaceholder": "Lovelace",
         "emailPlaceholder": "alumno@correo.com",
@@ -2229,7 +2274,7 @@
     },
     "packs": {
       "heading": "Packs de clases",
-      "summary": "{total} compras · {pending} pendientes de pago",
+      "summary": "{total, plural, =1 {1 compra} other {# compras}} · {pending, plural, =1 {1 pendiente de pago} other {# pendientes de pago}}",
       "copyCode": "Copiar código",
       "empty": {
         "heading": "Todavía no hay compras de packs",
@@ -2257,7 +2302,31 @@
         "linkedIntro": "Este pack se compró junto con una reserva de clase que sigue pendiente:",
         "linkedHint": "Confírmala aquí para canjear el primer crédito, o revísala en Reservas.",
         "openCustomer": "Abrir este cliente en Reservas"
-      }
+      },
+      "prices": {
+        "heading": "Precios",
+        "description": "Lo que cobra el sitio por una clase y por cada pack.",
+        "edit": "Editar precios",
+        "dropIn": "Drop-in",
+        "dropInHint": "Una clase",
+        "pack": "Pack de {count}",
+        "perClass": "${price} por clase",
+        "saves": "ahorra ${amount}",
+        "noSaving": "no sale más barato que {count} drop-ins",
+        "invalid": "Escribe un precio mayor que 0.",
+        "specialClasses": "Estas clases mantienen su propio precio: {list}. Para cambiarlo, edita la clase en Horario.",
+        "saved": "Precios actualizados. El sitio ya los muestra.",
+        "savedWithSessions": "Precios actualizados. {count, plural, =1 {1 clase próxima cobra} other {# clases próximas cobran}} el nuevo drop-in.",
+        "modal": {
+          "title": "Editar precios",
+          "subtitle": "Se aplican de inmediato en el sitio.",
+          "priceOf": "{name} (USD)",
+          "dropInHint": "Se aplica a todas las clases que hoy tienen el precio del drop-in.",
+          "note": "Las reservas y los packs ya vendidos mantienen el precio al que se vendieron. Una clase con un precio distinto al del drop-in mantiene el suyo.",
+          "save": "Guardar precios"
+        }
+      },
+      "purchasesHeading": "Compras"
     },
     "promo": {
       "heading": "Códigos promo",
@@ -2295,7 +2364,8 @@
         "activate": "Activar código",
         "deactivate": "Desactivar código",
         "edit": "Editar código",
-        "delete": "Eliminar código"
+        "delete": "Eliminar código",
+        "validity": "Vigencia"
       },
       "dates": {
         "short": "d MMM yyyy",
@@ -2511,7 +2581,7 @@
         "title": "¿Eliminar la clase?",
         "description": "Esto elimina la clase recurrente y sus próximas sesiones. Las sesiones pasadas y sus reservas se conservan. Esta acción no se puede deshacer.",
         "confirm": "Eliminar clase",
-        "withBookings": "{sessions, plural, =1 {Una sesión próxima tiene} other {# sesiones próximas tienen}} reservas ({persons, plural, =1 {1 persona} other {# personas}}). {sessions, plural, =1 {Saldrá} other {Saldrán}} del horario; las reservas quedan en Reservas para que puedas avisarles."
+        "withBookings": "{sessions, plural, =1 {Una sesión próxima tiene} other {# sesiones próximas tienen}} reservas ({persons, plural, =1 {1 persona} other {# personas}}). Se cancelarán y cada persona recibirá un correo con nuestro WhatsApp, para reprogramar o pedir el reembolso."
       },
       "form": {
         "editTitle": "Editar clase recurrente",
@@ -2539,7 +2609,8 @@
           "sat": "Sábado",
           "sun": "Domingo"
         },
-        "chooseDay": "Elige un día"
+        "chooseDay": "Elige un día",
+        "priceHint": "Precio estándar del drop-in: ${amount} (se cambia en Packs). Un precio distinto aquí queda solo para esta clase."
       },
       "instructors": {
         "title": "Instructores",
@@ -2558,7 +2629,8 @@
         "deleteDescription": "Se eliminará permanentemente a {name}. Esta acción no se puede deshacer.",
         "thisInstructor": "este/a instructor/a"
       },
-      "deletedKept": "Clase eliminada. {count, plural, =1 {Una sesión próxima tenía reservas y salió del horario; sus reservas quedan} other {# sesiones próximas tenían reservas y salieron del horario; sus reservas quedan}} en Reservas."
+      "deletedNotified": "Clase eliminada. {count, plural, =1 {Se canceló una reserva y la persona recibió un correo.} other {Se cancelaron # reservas y cada persona recibió un correo.}}",
+      "deletedEmailsFailed": "Clase eliminada, pero no se pudo avisar a {count, plural, =1 {1 persona} other {# personas}}. Revisa sus reservas en Reservas y escríbeles."
     },
     "shared": {
       "imageUpload": {
@@ -2676,5 +2748,42 @@
       "linkExpired": "Este enlace venció o ya se usó. Pide uno nuevo desde la página de inicio de sesión.",
       "updateFailed": "No se pudo guardar la contraseña. Inténtalo de nuevo."
     }
+  },
+  "shalaPolicy": {
+    "meta": {
+      "title": "Política de cancelación y asistencia",
+      "description": "Cómo funcionan las cancelaciones, la reprogramación, la puntualidad y las reservas de las clases y actividades en la shala de yoga de House of Shakti, en Santa Teresa, Costa Rica."
+    },
+    "title": "Política de cancelación y asistencia",
+    "subtitle": "Actividades de la shala – House of Shakti",
+    "items": {
+      "cancellations": {
+        "term": "Cancelaciones",
+        "text": "Las cancelaciones realizadas con menos de 12 horas de anticipación a la actividad programada no son reembolsables y no se pueden reprogramar."
+      },
+      "rescheduling": {
+        "term": "Reprogramación",
+        "text": "Las cancelaciones realizadas con más de 12 horas de anticipación se pueden reprogramar, sujeto a disponibilidad. No se realizan reembolsos."
+      },
+      "punctuality": {
+        "term": "Puntualidad",
+        "text": "Se espera que las personas participantes lleguen a tiempo. Recomendamos llegar entre 5 y 10 minutos antes para instalarse y prepararse para la actividad."
+      },
+      "lateArrivals": {
+        "term": "Llegadas tarde",
+        "text": "En caso de llegar tarde, la actividad no se extenderá. La participación puede quedar a criterio de quien facilita, en especial en las actividades que requieren preparación o una apertura grupal."
+      },
+      "facilitator": {
+        "term": "Cancelaciones por parte de quien facilita",
+        "text": "Si House of Shakti o quien facilita cancela una actividad, se ofrecerá a las personas participantes la opción de reprogramarla o de recibir un reembolso completo."
+      },
+      "reservations": {
+        "term": "Reservas",
+        "text": "Una reserva queda confirmada una vez que se completa el pago correspondiente."
+      }
+    },
+    "contact": "Para reprogramar, responde a tu correo de confirmación o escríbenos por WhatsApp.",
+    "whatsapp": "Escríbenos por WhatsApp",
+    "schedule": "Ver el horario de clases"
   }
 }

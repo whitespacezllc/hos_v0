@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion, Variants, useInView } from 'framer-motion';
 
-// The three sizes are presented as figures, not as price cards. Prices are
+// The sizes are presented as figures, not as price cards. Prices are
 // deliberately absent: they are read from Supabase and rendered on /paquetes,
 // so repeating them here would guarantee a stale number on the landing the
 // first time the studio adjusts them.
@@ -26,9 +26,9 @@ import { motion, Variants, useInView } from 'framer-motion';
 // neighbours with the same padding, so the seam is 160-224px of combined air:
 // still the largest gap in play, which keeps the block from bleeding into the
 // section above it.
-// The three sizes; their cadence and note live in the catalogue under
+// The sizes on sale; their cadence and note live in the catalogue under
 // yoga.packs.sizes, keyed by the count.
-const PACK_SIZES = ['5', '10', '20'] as const;
+const PACK_SIZES = ['5', '10'] as const;
 
 // Stagger constants live here rather than inline so the closing block's delay
 // can be derived from them: with no rule to mark where the strip ends, the

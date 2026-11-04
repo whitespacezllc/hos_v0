@@ -31,8 +31,13 @@ per-component class changes.
 | Page heading | `font-body text-2xl lg:text-3xl font-normal text-ink` |
 | Section heading | `font-body text-lg font-medium text-ink` |
 | Body text | `font-body text-sm text-ink/80` |
-| Labels / table headers | `font-body text-[10px] tracking-[0.15em] uppercase text-ink/50` |
-| Small helper text | `font-body text-xs text-ink/60` |
+| Table headers | `font-body text-xs font-medium text-ink/70` |
+| Field labels | `font-body text-sm text-ink/80` |
+| Small helper text | `font-body text-xs text-ink/70` |
+
+**No small spaced capitals and no eyebrows.** Labels are sentence case at a size
+that can be read; extra information goes below a title, never above it. Only
+acronyms stay in capitals (ES/EN, USD).
 
 Line height: `leading-tight` for headings, `leading-normal` for body. Avoid
 `leading-relaxed` — too much vertical space for an admin tool.
@@ -63,13 +68,13 @@ Line height: `leading-tight` for headings, `leading-normal` for body. Avoid
 
 On **light surfaces** (warm-white / white):
 - Primary: `text-ink` (#313131)
-- Secondary: `text-ink/60` → `text-ink/70`
-- Muted / labels: `text-ink/40` → `text-ink/50`
+- Secondary and labels: `text-ink/70` (the floor for text you need to read: about 5:1 on white)
+- Placeholders and decorative icons only: `text-ink/50` → `text-ink/60`
 
 On **sidebar (dark surface)**:
 - Primary: `text-cream`
-- Secondary: `text-cream/70`
-- Muted: `text-cream/40`
+- Secondary: `text-cream/85`
+- Muted: `text-cream/70`
 
 ### Accent palette (refined earth tones)
 
@@ -93,11 +98,9 @@ Admin uses tighter spacing than the public site.
 
 | Use case | Classes |
 |---|---|
-| Section vertical padding | `py-8 lg:py-10` (NOT `py-32`) |
-| Card padding | `p-6` (NOT `p-8` or `p-12`) |
+| Page frame | `<PageContainer>`: one width and one gutter for every page |
+| Card padding | `p-4 sm:p-6` (NOT `p-8` or `p-12`) |
 | Stack spacing | `space-y-4` → `space-y-6` (NOT `space-y-10`) |
-| Page horizontal padding (main content) | `px-6 lg:px-10` |
-| Sidebar internal padding | `px-6 py-8` |
 
 ---
 
@@ -107,10 +110,15 @@ Located in `/components/admin/`.
 
 | Component | Purpose |
 |---|---|
-| `Sidebar.tsx` | Fixed left navigation chrome. Desktop visible, mobile off-canvas drawer. |
-| `PageHeader.tsx` | Consistent header for every admin page (eyebrow + heading + description + actions). |
+| `Sidebar.tsx` | Fixed left navigation from `lg`; below that, a top bar that opens it as a drawer. |
+| `PageContainer.tsx` | The frame every page sits in. |
+| `PageHeader.tsx` | Consistent header for every admin page (heading + description + actions). |
+| `Modal.tsx` | Forms. Title and actions stay put and the form scrolls between them, so Save is always in sight. A sheet from the bottom on a phone. |
+| `Drawer.tsx` | A record's details, on the right. Full screen on a phone. Escape closes it. |
+| `RowIconButton.tsx` | A row's icon action: 40px for a finger, 32px and a tooltip for a mouse. |
+| `DateFilter.tsx` | A date filter that says "Any date" when empty (Safari paints today's date in an empty date input). |
 | `Button.tsx` | 4 variants: `primary`, `secondary`, `tertiary`, `destructive`. Supports `icon`, `loading`, `disabled`. No border-radius. |
-| `Badge.tsx` | Status / category pills. 5 variants: `active`, `inactive`, `warning`, `destructive`, `neutral`. |
+| `Badge.tsx` | Status / category labels with a faint fill. 5 variants: `active`, `inactive`, `warning`, `destructive`, `neutral`. |
 | `Card.tsx` | Base container (`bg-white`, 1px border, no radius, no shadow). Three padding modes. |
 | `EmptyState.tsx` | Replaces weak "no data" patterns. Icon + heading + description + optional action. |
 | `DeleteConfirmation.tsx` | Reusable destructive-action modal with ESC + backdrop close. |
@@ -134,16 +142,43 @@ The admin is a tool. Tools open quickly and don't perform.
 ## 6. Layout shell
 
 ```tsx
-<div className="admin-scope min-h-screen flex bg-neutral-50 text-ink">
-  <Sidebar />
-  <main className="flex-1 md:ml-[260px]">
-    {children}
+<div className="admin-scope min-h-dvh bg-neutral-50 text-ink">
+  <Sidebar />                               {/* fixed from lg, top bar below */}
+  <main className="min-w-0 lg:ml-[260px]">
+    <PageContainer>{/* the page */}</PageContainer>
   </main>
 </div>
 ```
 
-Sidebar width is `260px` on `md+`, collapsing to an off-canvas drawer below.
-Main content area scrolls naturally; the sidebar stays fixed.
+The sidebar is `260px` from `lg` up. Below `lg` the same navigation is a drawer
+behind a sticky top bar, which is in the flow and so never covers a title. The
+sidebar body is `w-full min-w-0`: nothing inside it, however long (the signed-in
+email), can widen it past the space `main` reserves.
+
+### Every width
+
+Nothing may scroll the page sideways, at any width. What doesn't fit folds:
+
+| Width | What there is |
+|---|---|
+| `< md` (phones) | Lists are cards; the calendar is a day selector plus that day's classes. |
+| `md` → `lg` (tablets) | Tables and the week grid, full width, no sidebar. |
+| `lg` → `xl` (small laptops) | Sidebar. Tables show only the columns that fit (Packs stays in cards). |
+| `xl`+ | All the columns. |
+
+A column that doesn't fit is hidden (its data is one click away in the drawer) or
+folded into the cell next to it; a table never makes the reader scroll sideways
+to find its actions. A filter or a search field is `text-base` below `md`: iOS
+zooms the page on focus for anything smaller.
+
+## 7. Prices
+
+Packs → Prices is where the studio sets the drop-in and the packs
+(`class_packs`, `app/actions/prices.ts`). The row with one class is the standard
+price of a class: saving it moves every recurring class and upcoming session
+still at the old standard. A class priced apart (a free meditation, a workshop)
+keeps its own price, and the section lists them. What has been sold never
+changes: a booking and a pack purchase each store the amount they were sold at.
 
 ## Language
 

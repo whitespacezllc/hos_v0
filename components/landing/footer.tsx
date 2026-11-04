@@ -16,6 +16,7 @@ const sitemapLinks = [
   { id: 'host', href: '/host-your-retreat' },
   { id: 'about', href: '/about' },
   { id: 'contact', href: '/contact' },
+  { id: 'policy', href: '/cancellation-policy' },
 ] as const;
 
 // Address, map link and social handle all come from lib/business.ts — the same

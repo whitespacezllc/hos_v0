@@ -7,6 +7,8 @@ import { Footer } from '@/components/landing/footer';
 import { startPackCheckout } from '@/app/actions/packs';
 import type { ClassPack } from '@/lib/queries/packs';
 import { Check } from 'lucide-react';
+import { Link } from '@/i18n/navigation';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 
 type Status = 'idle' | 'submitting' | 'error';
 
@@ -76,7 +78,8 @@ export default function PaquetesClient({ packs }: { packs: ClassPack[] }) {
                 </h2>
                 <div className="space-y-3">
                   {packs.map((p) => {
-                    const perClass = (p.priceUsd / p.classesCount).toFixed(0);
+                    // Up to two decimals, so a price the studio sets never rounds into a lie.
+                    const perClass = Math.round((p.priceUsd / p.classesCount) * 100) / 100;
                     const active = p.id === selected;
                     return (
                       <button
@@ -167,6 +170,13 @@ export default function PaquetesClient({ packs }: { packs: ClassPack[] }) {
                 <p className="font-body text-xs text-ink/40 mt-4 leading-relaxed">
                   {t('note')}
                 </p>
+                <Link
+                  href={SHALA_POLICY_PATH}
+                  target="_blank"
+                  className="inline-block font-body text-xs text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300 mt-3"
+                >
+                  {t('policyLink')}
+                </Link>
               </form>
             </div>
           )}

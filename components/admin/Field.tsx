@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-// Editorial form field wrapper — label + input + helper/error text.
+// Form field wrapper — label + input + helper/error text.
 // Used by Input, Textarea, NativeSelect, and any custom input element.
 type FieldProps = {
   label?: string;
@@ -19,16 +19,16 @@ export function Field({ label, helper, error, htmlFor, children, className = '' 
       {label && (
         <label
           htmlFor={htmlFor}
-          className="block font-body text-[10px] tracking-[0.3em] uppercase text-ink/60 mb-2"
+          className="block font-body text-sm text-ink/80 mb-1.5"
         >
           {label}
         </label>
       )}
       {children}
       {error ? (
-        <p className="font-body text-xs italic text-burgundy mt-2">{error}</p>
+        <p className="font-body text-xs text-burgundy mt-1.5">{error}</p>
       ) : helper ? (
-        <p className="font-body text-xs text-ink/50 mt-2">{helper}</p>
+        <p className="font-body text-xs text-ink/70 mt-1.5">{helper}</p>
       ) : null}
     </div>
   );

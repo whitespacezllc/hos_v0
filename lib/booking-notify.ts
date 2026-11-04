@@ -49,10 +49,12 @@ function localeOf(row: BookingRow): AppLocale {
   return hasLocale(routing.locales, row.locale) ? row.locale : routing.defaultLocale;
 }
 
+type EmailExtra = Pick<BookingEmailData, 'creditReturned' | 'cancelledBy' | 'wasPaid'>;
+
 export async function loadBookingEmailData(
   bookingId: string,
   event: BookingEvent,
-  extra: { creditReturned?: boolean } = {},
+  extra: EmailExtra = {},
 ): Promise<BookingEmailData | null> {
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase
@@ -124,20 +126,26 @@ export async function loadBookingEmailData(
     code,
     packName,
     creditReturned: extra.creditReturned,
+    cancelledBy: extra.cancelledBy,
+    wasPaid: extra.wasPaid,
     locale: localeOf(row),
   };
 }
 
-/** Emails the customer about their booking, and the studio when configured. */
+/**
+ * Emails the customer about their booking, and the studio when configured.
+ * Answers whether the customer's email went out.
+ */
 export async function notifyBooking(
   bookingId: string,
   event: BookingEvent,
-  extra: { creditReturned?: boolean } = {},
-): Promise<void> {
+  extra: EmailExtra = {},
+): Promise<boolean> {
+  let sent = false;
   try {
     const d = await loadBookingEmailData(bookingId, event, extra);
-    if (!d) return;
-    await sendBookingEmail(d);
+    if (!d) return false;
+    sent = (await sendBookingEmail(d)).sent;
 
     if (event === 'confirmed' || event === 'pending') {
       const when = format(inCostaRica(d.startsAt), 'EEE MMM d · HH:mm');
@@ -161,4 +169,5 @@ export async function notifyBooking(
   } catch (err) {
     console.error('[booking-notify]', event, bookingId, err);
   }
+  return sent;
 }

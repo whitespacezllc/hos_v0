@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { useScrollLock } from '@/hooks/use-scroll-lock';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -80,19 +81,20 @@ function SidebarBody({
   };
 
   return (
-    <div className="flex flex-col h-full bg-burgundy text-cream">
+    // `w-full min-w-0`: as a flex item of the aside this body would otherwise
+    // size to its content, and the email below doesn't wrap: a long address
+    // pushed the burgundy past 260px and over the page, and a short one left a
+    // gap. It takes the aside's width, and the email truncates inside it.
+    <div className="flex flex-col h-full w-full min-w-0 bg-burgundy text-cream">
       {/* TOP — brand block. Not a link: admin is its own context. */}
-      <div className="px-6 pt-10 pb-12">
-        <p className="font-body text-[10px] tracking-[0.3em] uppercase text-cream/40">
-          {t('eyebrow')}
-        </p>
-        <h1 className="font-display text-xl font-light text-cream leading-tight mt-2">
+      <div className="flex-none px-6 pt-8 pb-6">
+        <p className="font-display text-xl font-light text-cream leading-tight pr-8 lg:pr-0">
           {t('brand')}
-        </h1>
+        </p>
       </div>
 
       {/* MIDDLE — navigation */}
-      <nav className="flex-1 px-3 overflow-y-auto" aria-label={t('navigation')}>
+      <nav className="flex-1 min-h-0 px-3 overflow-y-auto" aria-label={t('navigation')}>
         <ul className="space-y-1">
           {navItems.map((item) => {
             const active = isActive(item);
@@ -106,7 +108,7 @@ function SidebarBody({
                   onClick={onNavigate}
                   aria-current={active ? 'page' : undefined}
                   className={`
-                    flex items-center gap-3 px-4 py-3
+                    flex items-center gap-3 px-4 py-2.5
                     font-body text-sm
                     transition-all duration-200 ease-out
                     border-l-2
@@ -115,21 +117,21 @@ function SidebarBody({
                         ? 'bg-black/20 text-cream border-cream'
                         : hasPending
                           ? 'text-cream border-transparent bg-black/10 hover:bg-black/15'
-                          : 'text-cream/70 border-transparent hover:bg-black/10 hover:text-cream'
+                          : 'text-cream/85 border-transparent hover:bg-black/10 hover:text-cream'
                     }
                   `}
                 >
                   <Icon
-                    className={active || hasPending ? 'text-cream' : 'text-cream/70'}
+                    className={`flex-shrink-0 ${active || hasPending ? 'text-cream' : 'text-cream/85'}`}
                     width={18}
                     height={18}
                     strokeWidth={1.5}
                   />
-                  <span>{tNav(item.key)}</span>
+                  <span className="min-w-0 truncate">{tNav(item.key)}</span>
                   {hasPending && (
                     <span
                       aria-label={t('pending', { count })}
-                      className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-cream text-burgundy font-body text-xs font-semibold rounded-full leading-none"
+                      className="ml-auto flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-cream text-burgundy font-body text-xs font-semibold rounded-full leading-none"
                     >
                       {count > 99 ? '99+' : count}
                     </span>
@@ -142,14 +144,14 @@ function SidebarBody({
       </nav>
 
       {/* BOTTOM — user block + language toggle */}
-      <div className="border-t border-cream/15 px-6 py-6 space-y-4">
+      <div className="flex-none border-t border-cream/15 px-6 py-4 space-y-3">
         {/* User block — who is signed in, and the way out. Sign-out is a
             server action: the cookies are cleared where they were set, and
             the redirect to /login already arrives without a session. */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div
             aria-hidden
-            className="w-10 h-10 bg-black/25 flex items-center justify-center font-body text-sm font-medium text-cream rounded-full flex-shrink-0"
+            className="w-9 h-9 bg-black/25 flex items-center justify-center font-body text-sm font-medium text-cream rounded-full flex-shrink-0"
           >
             {initial}
           </div>
@@ -157,7 +159,7 @@ function SidebarBody({
             <p className="font-body text-sm text-cream leading-tight truncate" title={adminEmail}>
               {adminEmail ?? t('admin')}
             </p>
-            <p className="font-body text-[10px] text-cream/50 mt-0.5 truncate">{t('roleLine')}</p>
+            <p className="font-body text-xs text-cream/70 mt-0.5 truncate">{t('roleLine')}</p>
           </div>
           <button
             type="button"
@@ -165,7 +167,7 @@ function SidebarBody({
             disabled={signingOut}
             aria-label={t('signOut')}
             title={t('signOut')}
-            className="text-cream/50 hover:text-cream transition-colors duration-200 cursor-pointer flex-shrink-0 disabled:opacity-60"
+            className="w-9 h-9 -mr-2 inline-flex items-center justify-center text-cream/80 hover:text-cream transition-colors duration-200 cursor-pointer flex-shrink-0 disabled:opacity-60"
           >
             {signingOut ? (
               <Loader2 width={16} height={16} strokeWidth={1.5} className="animate-spin" />
@@ -176,13 +178,7 @@ function SidebarBody({
         </div>
 
         {/* Language toggle — the panel's language, remembered in a cookie. */}
-        <div className="flex items-center gap-2" role="group" aria-label={t('language')}>
-          <div
-            aria-hidden
-            className="w-8 h-8 bg-cream/10 text-cream font-body text-xs flex items-center justify-center rounded-full flex-shrink-0"
-          >
-            {switching ? <Loader2 width={12} height={12} strokeWidth={1.5} className="animate-spin" /> : locale.toUpperCase()[0]}
-          </div>
+        <div className="flex items-center gap-3 h-7" role="group" aria-label={t('language')}>
           {routing.locales.map((code) => {
             const current = code === locale;
             return (
@@ -195,14 +191,15 @@ function SidebarBody({
                 aria-label={t(`languageName.${code}`)}
                 className={
                   current
-                    ? 'font-body text-xs text-cream tracking-[0.1em] underline underline-offset-4 decoration-[0.5px] cursor-default'
-                    : 'font-body text-xs text-cream/40 hover:text-cream/70 transition-colors duration-200 cursor-pointer disabled:opacity-60'
+                    ? 'font-body text-xs text-cream underline underline-offset-4 decoration-[0.5px] cursor-default'
+                    : 'font-body text-xs text-cream/70 hover:text-cream transition-colors duration-200 cursor-pointer disabled:opacity-60'
                 }
               >
                 {code.toUpperCase()}
               </button>
             );
           })}
+          {switching && <Loader2 width={12} height={12} strokeWidth={1.5} className="animate-spin text-cream/80" />}
         </div>
       </div>
     </div>
@@ -210,54 +207,69 @@ function SidebarBody({
 }
 
 // ─── Sidebar component ──────────────────────────────────────────────────────
-// Renders all three modes from a single component:
-//  - md+: fixed desktop sidebar
-//  - <md: fixed hamburger button (top-left of viewport) + slide-in drawer
+// Renders both modes from a single component:
+//  - lg+: fixed sidebar
+//  - <lg: sticky top bar (menu button + brand) + slide-in drawer
 export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: PendingCounts; adminEmail?: string }) {
   const t = useTranslations('admin.sidebar');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const totalPending = Object.values(pendingCounts ?? {}).reduce<number>((acc, n) => acc + (n ?? 0), 0);
 
-  // Close drawer on Escape.
+  // While open: Escape closes it, and so does growing past the drawer's
+  // breakpoint (rotating a tablet), which would otherwise leave the page locked.
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setDrawerOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [drawerOpen]);
-
-  // Body scroll lock while drawer is open.
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const wide = window.matchMedia('(min-width: 64rem)');
+    const onWide = () => {
+      if (wide.matches) setDrawerOpen(false);
+    };
+    wide.addEventListener('change', onWide);
     return () => {
-      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+      wide.removeEventListener('change', onWide);
     };
   }, [drawerOpen]);
 
+  useScrollLock(drawerOpen);
+
   return (
     <>
-      {/* Desktop fixed sidebar (md+) */}
+      {/* Fixed sidebar (lg+). `overflow-hidden` so nothing inside can ever
+          paint over the page. */}
       <aside
-        className="hidden md:flex fixed left-0 top-0 h-screen w-[260px] z-30"
+        className="hidden lg:flex fixed left-0 top-0 h-dvh w-[260px] z-30 overflow-hidden"
         aria-label={t('sidebar')}
       >
         <SidebarBody pendingCounts={pendingCounts} adminEmail={adminEmail} />
       </aside>
 
-      {/* Mobile hamburger button (<md) — fixed top-left of viewport */}
-      <button
-        type="button"
-        onClick={() => setDrawerOpen(true)}
-        aria-label={t('openMenu')}
-        aria-controls="admin-mobile-drawer"
-        aria-expanded={drawerOpen}
-        className="md:hidden fixed top-4 left-4 z-40 w-10 h-10 flex items-center justify-center bg-white border border-ink/15 text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
-      >
-        <Menu width={20} height={20} strokeWidth={1.5} />
-      </button>
+      {/* Top bar (<lg). In the flow, so it pushes the page down and never sits
+          on top of a title. */}
+      <header className="lg:hidden sticky top-0 z-30 flex items-center gap-2 h-14 pl-2 pr-4 bg-burgundy text-cream">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-label={t('openMenu')}
+          aria-controls="admin-mobile-drawer"
+          aria-expanded={drawerOpen}
+          className="w-10 h-10 flex items-center justify-center text-cream hover:bg-black/15 transition-colors duration-200 cursor-pointer"
+        >
+          <Menu width={20} height={20} strokeWidth={1.5} />
+        </button>
+        <p className="font-display text-lg font-light leading-none truncate">{t('brand')}</p>
+        {totalPending > 0 && (
+          <span
+            aria-label={t('pending', { count: totalPending })}
+            className="ml-auto flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-cream text-burgundy font-body text-xs font-semibold rounded-full leading-none"
+          >
+            {totalPending > 99 ? '99+' : totalPending}
+          </span>
+        )}
+      </header>
 
       {/* Mobile drawer */}
       <AnimatePresence>
@@ -271,7 +283,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={() => setDrawerOpen(false)}
-              className="md:hidden fixed inset-0 z-40 bg-ink/40"
+              className="lg:hidden fixed inset-0 z-40 bg-ink/40"
             />
 
             {/* Drawer panel */}
@@ -284,7 +296,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-[260px]"
+              className="lg:hidden fixed top-0 left-0 bottom-0 z-50 w-[280px] max-w-[85vw]"
             >
               <div className="relative h-full">
                 <SidebarBody onNavigate={() => setDrawerOpen(false)} pendingCounts={pendingCounts} adminEmail={adminEmail} />
@@ -294,7 +306,7 @@ export function Sidebar({ pendingCounts, adminEmail }: { pendingCounts?: Pending
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   aria-label={t('closeMenu')}
-                  className="absolute top-4 right-4 text-cream/70 hover:text-cream transition-colors duration-200 cursor-pointer"
+                  className="absolute top-4 right-2 w-10 h-10 flex items-center justify-center text-cream/80 hover:text-cream transition-colors duration-200 cursor-pointer"
                 >
                   <X width={20} height={20} strokeWidth={1.5} />
                 </button>

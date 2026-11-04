@@ -7,7 +7,9 @@ import { dateFnsLocale } from '@/lib/dates';
 import { inCostaRica } from '@/lib/costa-rica-time';
 import { generateICS } from '@/lib/ics';
 import { VENMO_HANDLE } from '@/lib/payment-methods';
+import { whatsappUrl } from '@/lib/whatsapp';
 import { localizedPath } from '@/lib/seo';
+import { SHALA_POLICY_ITEMS, SHALA_POLICY_PATH } from '@/lib/shala-policy';
 import en from '@/messages/en.json';
 import es from '@/messages/es.json';
 
@@ -20,7 +22,7 @@ import es from '@/messages/es.json';
 // The catalogues are statically imported: this runs in server actions and
 // route handlers, outside any request next-intl could configure, so each
 // translator is built by hand from the `email` namespace.
-const MESSAGES: Record<AppLocale, { email: typeof en.email }> = { en, es };
+const MESSAGES: Record<AppLocale, { email: typeof en.email; shalaPolicy: typeof en.shalaPolicy }> = { en, es };
 
 function translator(locale: AppLocale, namespace: 'email.common' | 'email.booking' | 'email.packCode') {
   return createTranslator({ locale, messages: MESSAGES[locale], namespace });
@@ -215,6 +217,23 @@ function closing(locale: AppLocale): string {
   );
 }
 
+// The cancellation & attendance policy, in full. Comes with every email that
+// holds or confirms a place, so the customer has it before the class does.
+function policyBlock(locale: AppLocale): string {
+  const p = createTranslator({ locale, messages: MESSAGES[locale], namespace: 'shalaPolicy' });
+  const b = translator(locale, 'email.booking');
+  const items = SHALA_POLICY_ITEMS.map(
+    (key) =>
+      `<p style="margin:0 0 10px;font-size:13px;line-height:1.55;color:${INK};"><strong>${escapeHtml(p(`items.${key}.term`))}:</strong> ${escapeHtml(p(`items.${key}.text`))}</p>`,
+  ).join('');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td style="padding:20px 0 4px;border-top:${HAIRLINE};border-bottom:${HAIRLINE};${FONT}">
+    <p style="margin:0 0 12px;font-size:14px;font-weight:bold;line-height:1.4;color:${INK};">${escapeHtml(p('title'))}</p>
+    ${items}
+    <p style="margin:14px 0 6px;font-size:13px;line-height:1.55;color:${INK};">${escapeHtml(b('reschedule'))}</p>
+    <p style="margin:0 0 16px;font-size:13px;line-height:1.55;"><a href="${BUSINESS.url}${localizedPath(SHALA_POLICY_PATH, locale)}" style="color:#8D0000;text-decoration:underline;">${escapeHtml(b('policyLink'))}</a></p>
+  </td></tr></table>`;
+}
+
 // ─── Class booking ───────────────────────────────────────────────────────────
 /**
  *   confirmed — paid now (card approved, or nothing to pay)
@@ -250,12 +269,39 @@ export type BookingEmailData = {
   packName: string | null;
   /** cancelled only: a pack credit was given back. */
   creditReturned?: boolean;
+  /** cancelled only: who cancelled, which decides what the email offers. */
+  cancelledBy?: 'studio' | 'customer';
+  /** cancelled only: the booking had been paid, so a refund is on the table. */
+  wasPaid?: boolean;
   locale: AppLocale;
 };
 
 export function bookingEmailSubject(d: BookingEmailData): string {
   const t = translator(d.locale, 'email.booking');
   return t(`subject.${d.event}`, { className: d.className, date: formatShortDate(d.startsAt, d.locale) });
+}
+
+function cancelledIntro(d: BookingEmailData) {
+  if (d.cancelledBy === 'studio') return 'intro.cancelledByStudio' as const;
+  if (d.cancelledBy === 'customer') return 'intro.cancelledAtRequest' as const;
+  return 'intro.cancelled' as const;
+}
+
+// What a cancellation by the studio offers. A pack's class: nothing to say, the
+// credit is back and the code books another (extras paid with it are settled over
+// WhatsApp, like any question). A paid booking: to move it or to get the money
+// back. An unpaid one: only to move it.
+function cancellationOffer(d: BookingEmailData): 'refundOffer' | 'rescheduleOffer' | null {
+  if (d.creditReturned) return null;
+  return d.wasPaid && Number(d.totalUsd) > 0 ? 'refundOffer' : 'rescheduleOffer';
+}
+
+// Opens WhatsApp with the message written and the booking's reference in it, so
+// whoever answers knows which booking it is about.
+function cancellationWhatsappUrl(d: BookingEmailData): string {
+  const t = translator(d.locale, 'email.booking');
+  const draft = cancellationOffer(d) === 'refundOffer' ? 'draftRefund' : 'draftReschedule';
+  return whatsappUrl(t(`studioCancel.${draft}`, { reference: d.reference }));
 }
 
 export function bookingEmailHtml(d: BookingEmailData): string {
@@ -271,12 +317,31 @@ export function bookingEmailHtml(d: BookingEmailData): string {
   parts.push(paragraph(escapeHtml(t('hello', { firstName: d.firstName }))));
 
   if (isCancelled) {
-    parts.push(
-      paragraph(t.markup('intro.cancelled', { reference: escapeHtml(d.reference), className, date: formatEmailDate(d.startsAt, d.locale, true), time, strong })),
-    );
+    const when = { reference: escapeHtml(d.reference), className, date: formatEmailDate(d.startsAt, d.locale, true), time, strong };
+    parts.push(paragraph(t.markup(cancelledIntro(d), when)));
     if (d.creditReturned) parts.push(paragraph(escapeHtml(t('creditReturned'))));
-    parts.push(paragraph(escapeHtml(t('cancelledPayment')), { muted: true, size: 13 }));
-    parts.push(button(t('schedule'), `${BUSINESS.url}${localizedPath('/yoga', d.locale)}`));
+
+    if (d.cancelledBy === 'studio') {
+      // The policy's promise: reschedule or a full refund, through WhatsApp. A
+      // refund is only offered when there is something to give back.
+      const offer = cancellationOffer(d);
+      if (offer) parts.push(paragraph(escapeHtml(t(`studioCancel.${offer}`))));
+      parts.push(button(t('studioCancel.whatsapp'), cancellationWhatsappUrl(d)));
+      parts.push(paragraph(escapeHtml(t('studioCancel.number', { phone: BUSINESS.phoneDisplay })), { muted: true, size: 13 }));
+      parts.push(
+        paragraph(
+          `<a href="${BUSINESS.url}${localizedPath('/yoga', d.locale)}" style="color:#8D0000;text-decoration:underline;">${escapeHtml(t('schedule'))}</a>`,
+          { size: 13 },
+        ),
+      );
+    } else {
+      // With the credit back there's nothing left to explain.
+      if (d.cancelledBy === 'customer' && !d.creditReturned) {
+        parts.push(paragraph(escapeHtml(t('customerCancel', { phone: BUSINESS.phoneDisplay }))));
+      }
+      parts.push(paragraph(escapeHtml(t('cancelledPayment')), { muted: true, size: 13 }));
+      parts.push(button(t('schedule'), `${BUSINESS.url}${localizedPath('/yoga', d.locale)}`));
+    }
     parts.push(closing(d.locale));
     return shell({
       locale: d.locale,
@@ -352,7 +417,7 @@ export function bookingEmailHtml(d: BookingEmailData): string {
 
   parts.push(paragraph(escapeHtml(t('arrive'))));
   parts.push(paragraph(escapeHtml(t('calendar')), { muted: true, size: 13 }));
-  parts.push(paragraph(escapeHtml(t('cancellation')), { muted: true, size: 13 }));
+  parts.push(policyBlock(d.locale));
   parts.push(closing(d.locale));
 
   return shell({
@@ -367,9 +432,44 @@ export function bookingEmailHtml(d: BookingEmailData): string {
 function bookingEmailText(d: BookingEmailData): string {
   const t = translator(d.locale, 'email.booking');
   const c = translator(d.locale, 'email.common');
+  const p = createTranslator({ locale: d.locale, messages: MESSAGES[d.locale], namespace: 'shalaPolicy' });
+  // Everything but a cancellation notice carries the policy, as the HTML does.
+  const policy =
+    d.event === 'cancelled'
+      ? []
+      : [
+          '',
+          p('title'),
+          ...SHALA_POLICY_ITEMS.map((key) => `- ${p(`items.${key}.term`)}: ${p(`items.${key}.text`)}`),
+          t('reschedule'),
+          `${BUSINESS.url}${localizedPath(SHALA_POLICY_PATH, d.locale)}`,
+        ];
+  // A cancellation says so first, and says what to do next, as the HTML does.
+  const opening: string[] = [];
+  if (d.event === 'cancelled') {
+    opening.push(
+      t.markup(cancelledIntro(d), {
+        reference: d.reference,
+        className: d.className,
+        date: formatEmailDate(d.startsAt, d.locale, true),
+        time: formatEmailTime(d.startsAt, d.durationMinutes),
+        strong: (chunks: string) => chunks,
+      }),
+    );
+    if (d.creditReturned) opening.push(t('creditReturned'));
+    if (d.cancelledBy === 'studio') {
+      const offer = cancellationOffer(d);
+      if (offer) opening.push(t(`studioCancel.${offer}`));
+      opening.push(`${t('studioCancel.number', { phone: BUSINESS.phoneDisplay })} — ${cancellationWhatsappUrl(d)}`);
+    } else if (d.cancelledBy === 'customer' && !d.creditReturned) {
+      opening.push(t('customerCancel', { phone: BUSINESS.phoneDisplay }));
+    }
+    opening.push('');
+  }
   const lines = [
     t('hello', { firstName: d.firstName }),
     '',
+    ...opening,
     `${t('labels.reference')}: ${d.reference}`,
     `${t('labels.class')}: ${d.className}`,
     d.instructor ? `${t('labels.instructor')}: ${d.instructor}` : '',
@@ -377,6 +477,7 @@ function bookingEmailText(d: BookingEmailData): string {
     `${t('labels.time')}: ${formatEmailTime(d.startsAt, d.durationMinutes)} (${c('timezone')})`,
     `${t('labels.location')}: ${d.location}`,
     `${t(d.event === 'pending' ? 'labels.amountDue' : 'labels.total')}: ${Number(d.totalUsd) === 0 ? t('free') : formatUsd(Number(d.totalUsd))}`,
+    ...policy,
     '',
     c('questions'),
     `${BUSINESS.phoneDisplay} · ${BUSINESS.email.yogaStudio}`,

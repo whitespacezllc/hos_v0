@@ -2,12 +2,16 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { useScrollLock } from '@/hooks/use-scroll-lock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-// Editorial admin modal. Generic wrapper used by Create/Edit forms across
-// /clases, /upsells, /refers. DeleteConfirmation is a separate component
-// because its layout is opinionated.
+// Generic admin modal, used by the Create/Edit forms across the panel.
+// DeleteConfirmation is a separate component because its layout is opinionated.
+//
+// The title and the actions stay put and only the form between them scrolls, so
+// Save is always in sight however long the form or short the screen. On a phone
+// it opens as a sheet from the bottom, the full width of the screen.
 type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -38,20 +42,12 @@ export function Modal({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  // Body scroll lock while open.
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6">
           {/* Backdrop */}
           <motion.div
             aria-hidden
@@ -68,41 +64,43 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-modal-title"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`relative w-full ${maxWidth} mx-6 max-h-[90vh] overflow-y-auto bg-white border border-ink/10 p-8`}
+            className={`relative flex flex-col w-full ${maxWidth} max-h-[92dvh] sm:max-h-full bg-white border border-ink/10`}
           >
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={tc('actions.close')}
-              className="absolute top-6 right-6 text-ink/60 hover:text-ink transition-colors duration-200 cursor-pointer"
-            >
-              <X width={20} height={20} strokeWidth={1.5} />
-            </button>
-
             {/* Header */}
-            <header className="pr-10">
-              <h2
-                id="admin-modal-title"
-                className="font-body text-lg font-medium text-ink leading-tight"
+            <header className="flex-none flex items-start justify-between gap-4 px-5 sm:px-8 pt-5 sm:pt-6 pb-4 border-b border-ink/10">
+              <div className="min-w-0">
+                <h2
+                  id="admin-modal-title"
+                  className="font-body text-lg font-medium text-ink leading-tight"
+                >
+                  {title}
+                </h2>
+                {subtitle && (
+                  <p className="font-body text-sm text-ink/70 mt-1">{subtitle}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={tc('actions.close')}
+                className="flex-none -mr-2 -mt-1 w-10 h-10 inline-flex items-center justify-center text-ink/70 hover:text-ink transition-colors duration-200 cursor-pointer"
               >
-                {title}
-              </h2>
-              {subtitle && (
-                <p className="font-body text-xs text-ink/50 mt-1">{subtitle}</p>
-              )}
+                <X width={20} height={20} strokeWidth={1.5} />
+              </button>
             </header>
 
-            {/* Body */}
-            <div className="mt-6">{children}</div>
+            {/* Body — the only part that scrolls */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-8 py-5 sm:py-6">
+              {children}
+            </div>
 
             {/* Footer */}
             {footer && (
-              <footer className="flex justify-end gap-3 mt-10 pt-6 border-t border-ink/10">
+              <footer className="flex-none flex flex-wrap justify-end gap-3 px-5 sm:px-8 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-ink/10">
                 {footer}
               </footer>
             )}

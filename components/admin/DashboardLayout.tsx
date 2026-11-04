@@ -15,9 +15,10 @@ export const ADMIN_SAGE = '#6B7355'; // olive / sage
 export const ADMIN_TERRA = '#8B6F47'; // terracotta
 
 // ─── Admin shell ────────────────────────────────────────────────────────────
-// Fixed sidebar on md+ (260px). On mobile the sidebar collapses to an
-// off-canvas drawer; a hamburger button (rendered inside <Sidebar />) toggles
-// it. `md:ml-[260px]` reserves space on md+ for the fixed sidebar.
+// Fixed 260px sidebar from `lg` up; below that a sticky top bar opens the same
+// navigation as a drawer, so a tablet gets the whole width for the work rather
+// than losing a third of it. `lg:ml-[260px]` is the one place that reserves the
+// sidebar's space: it must stay equal to the sidebar's width.
 export default function DashboardLayout({
   children,
   pendingCounts,
@@ -29,9 +30,9 @@ export default function DashboardLayout({
   adminEmail?: string;
 }) {
   return (
-    <div className="admin-scope min-h-screen flex bg-neutral-50 text-ink">
+    <div className="admin-scope min-h-dvh bg-neutral-50 text-ink">
       <Sidebar pendingCounts={pendingCounts} adminEmail={adminEmail} />
-      <main className="flex-1 min-w-0 md:ml-[260px]">
+      <main className="min-w-0 lg:ml-[260px]">
         {children}
       </main>
     </div>

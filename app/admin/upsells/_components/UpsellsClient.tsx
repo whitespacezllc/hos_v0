@@ -8,7 +8,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
 import type { Upsell } from '@/types';
+import { PageContainer } from '@/components/admin/PageContainer';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { RowIconButton } from '@/components/admin/RowIconButton';
 import { Card } from '@/components/admin/Card';
 import { Button } from '@/components/admin/Button';
 import { Badge } from '@/components/admin/Badge';
@@ -138,7 +140,7 @@ export default function UpsellsClient({
   }
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-5xl mx-auto">
+    <PageContainer>
       <PageHeader
         heading={t('heading')}
         description={t('description')}
@@ -171,7 +173,7 @@ export default function UpsellsClient({
       )}
 
       {initialUpsells.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 xl:gap-6">
           {initialUpsells.map((u) => (
             <Card key={u.id}>
               <div className="flex justify-between items-start gap-3">
@@ -194,7 +196,7 @@ export default function UpsellsClient({
                 {u.description}
               </p>
 
-              <div className="mt-6 pt-4 border-t border-ink/10 flex justify-between items-center">
+              <div className="mt-4 pt-3 border-t border-ink/10 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Toggle
                     checked={u.isActive}
@@ -207,22 +209,12 @@ export default function UpsellsClient({
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(u)}
-                    aria-label={t('edit')}
-                    className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer"
-                  >
+                  <RowIconButton onClick={() => openEdit(u)} ariaLabel={t('edit')}>
                     <Pencil width={16} height={16} strokeWidth={1.5} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(u)}
-                    aria-label={t('delete')}
-                    className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-burgundy transition-colors duration-200 cursor-pointer"
-                  >
+                  </RowIconButton>
+                  <RowIconButton onClick={() => setDeleting(u)} ariaLabel={t('delete')} hoverDestructive>
                     <Trash2 width={16} height={16} strokeWidth={1.5} />
-                  </button>
+                  </RowIconButton>
                 </div>
               </div>
             </Card>
@@ -232,7 +224,7 @@ export default function UpsellsClient({
           <button
             type="button"
             onClick={openCreate}
-            className="border-2 border-dashed border-ink/15 p-6 flex flex-col items-center justify-center min-h-[180px] hover:border-ink/30 transition-colors duration-200 cursor-pointer text-ink/40 hover:text-ink/60"
+            className="border-2 border-dashed border-ink/15 p-6 flex flex-col items-center justify-center min-h-[180px] hover:border-ink/30 transition-colors duration-200 cursor-pointer text-ink/60 hover:text-ink/60"
           >
             <Plus width={24} height={24} strokeWidth={1} />
             <span className="font-body text-sm mt-3">{t('add')}</span>
@@ -315,6 +307,6 @@ export default function UpsellsClient({
         cancelLabel={tc('actions.cancel')}
         loading={isDeleting}
       />
-    </div>
+    </PageContainer>
   );
 }

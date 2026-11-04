@@ -31,6 +31,7 @@ import {
   CalendarPlus,
   type LucideIcon,
 } from 'lucide-react';
+import { PageContainer } from '@/components/admin/PageContainer';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { Card } from '@/components/admin/Card';
 import { Badge } from '@/components/admin/Badge';
@@ -117,7 +118,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
     [instructors, t],
   );
 
-  const todayEyebrow = capitalize(format(now, t('dates.today'), { locale: dfLocale }));
+  const today = capitalize(format(now, t('dates.today'), { locale: dfLocale }));
 
   const instructorColumns = [
     tc('labels.instructor'),
@@ -129,12 +130,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
   ];
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
-      <PageHeader eyebrow={todayEyebrow} heading={t('title')} />
+    <PageContainer>
+      <PageHeader heading={t('title')} description={today} />
 
       {/* ─── Stats row ────────────────────────────────────────────────── */}
       <section
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10 lg:mb-12"
+        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 xl:gap-4 mb-6 lg:mb-8"
         aria-label={t('stats.ariaLabel')}
       >
         <StatCard icon={Users} color={COLORS.sage} value={metrics.bookingsToday} label={t('stats.bookingsToday')} />
@@ -154,10 +155,10 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
       {/* ─── Charts row — bar (2/3) + donut (1/3) ──────────────────────── */}
       <section
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 lg:mb-12"
+        className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6 mb-6 lg:mb-8"
         aria-label={t('charts.ariaLabel')}
       >
-        <Card className="lg:col-span-2">
+        <Card className="xl:col-span-2">
           <ChartHeading title={t('charts.bookingsPerDay')} subtitle={t('charts.last30Days')} />
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={220}>
@@ -175,7 +176,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         <Card>
           <ChartHeading title={t('charts.mostPopular')} />
           {pieDataView.length === 0 ? (
-            <p className="font-body text-sm text-ink/50 mt-6">{t('charts.noBookings')}</p>
+            <p className="font-body text-sm text-ink/70 mt-6">{t('charts.noBookings')}</p>
           ) : (
             <>
               <div className="mt-4">
@@ -216,7 +217,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       </section>
 
       {/* ─── Revenue per week (full width) ──────────────────────────────── */}
-      <section className="mb-10 lg:mb-12" aria-label={t('charts.revenueAriaLabel')}>
+      <section className="mb-6 lg:mb-8" aria-label={t('charts.revenueAriaLabel')}>
         <Card>
           <ChartHeading title={t('charts.revenuePerWeek')} subtitle={t('charts.last8Weeks')} />
           <div className="mt-4">
@@ -241,10 +242,10 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       </section>
 
       {/* ─── Instructor performance ─────────────────────────────────────── */}
-      <section className="mb-10 lg:mb-12" aria-label={t('instructors.ariaLabel')}>
-        <header className="mb-6">
+      <section className="mb-8 lg:mb-10" aria-label={t('instructors.ariaLabel')}>
+        <header className="mb-4">
           <h2 className="font-body text-base font-medium text-ink">{t('instructors.heading')}</h2>
-          <p className="font-body text-xs text-ink/50 mt-1">
+          <p className="font-body text-xs text-ink/70 mt-1">
             {t('instructors.subtitle')}
           </p>
         </header>
@@ -261,9 +262,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
             {/* Revenue bar chart */}
-            <Card className="lg:col-span-1">
+            <Card className="xl:col-span-1">
               <ChartHeading title={t('instructors.revenueThisMonth')} subtitle={t('instructors.byInstructor')} />
               <div className="mt-4">
                 <ResponsiveContainer width="100%" height={Math.max(160, instructorsView.length * 44)}>
@@ -278,8 +279,30 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               </div>
             </Card>
 
-            {/* Metrics table */}
-            <Card className="lg:col-span-2" padding="tight">
+            {/* Metrics — one block per instructor on a phone, a table from `md` */}
+            <ul className="md:hidden space-y-3">
+              {instructorsView.map((m) => (
+                <li key={m.id} className="bg-white border border-ink/10 p-4">
+                  <p className="font-body text-sm font-medium text-ink">{m.name}</p>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                    {[
+                      [t('instructors.columns.classesPerWeek'), m.classesPerWeek],
+                      [t('instructors.columns.hoursPerWeek'), m.hoursPerWeek],
+                      [t('instructors.columns.avgAttendees'), m.avgParticipants],
+                      [t('instructors.columns.revenuePerWeek'), `$${m.revenueThisWeek}`],
+                      [t('instructors.columns.revenuePerMonth'), `$${m.revenueThisMonth}`],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="min-w-0">
+                        <dt className="font-body text-xs text-ink/70">{label}</dt>
+                        <dd className="font-body text-sm text-ink mt-0.5">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </li>
+              ))}
+            </ul>
+
+            <Card className="hidden md:block xl:col-span-2" padding="tight">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -288,7 +311,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                         (h, i) => (
                           <th
                             key={h}
-                            className={`px-3 py-2.5 font-body text-[10px] tracking-[0.15em] uppercase font-medium text-ink/50 ${i === 0 ? 'text-left' : 'text-right'}`}
+                            className={`px-3 py-2.5 font-body text-xs font-medium text-ink/70 ${i === 0 ? 'text-left' : 'text-right'}`}
                           >
                             {h}
                           </th>
@@ -317,7 +340,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
       {/* ─── Upcoming classes ───────────────────────────────────────────── */}
       <section aria-label={t('upcoming.heading')}>
-        <header className="flex justify-between items-end mb-6">
+        <header className="flex justify-between items-end gap-3 mb-4">
           <h2 className="font-body text-base font-medium text-ink">{t('upcoming.heading')}</h2>
           <Link
             href="/admin/calendario"
@@ -339,14 +362,14 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             }
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {upcoming.map((c) => (
               <UpcomingClassRow key={c.id} clase={c} />
             ))}
           </div>
         )}
       </section>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -363,15 +386,15 @@ type StatCardProps = {
 function StatCard({ icon: Icon, color, value, label, delta, deltaLabel }: StatCardProps) {
   const deltaSign = delta === undefined ? null : delta > 0 ? '+' : delta < 0 ? '' : '+';
   const deltaColorClass =
-    delta === undefined ? '' : delta > 0 ? 'text-[#6B7355]' : delta < 0 ? 'text-[#8B6F47]' : 'text-ink/40';
+    delta === undefined ? '' : delta > 0 ? 'text-[#6B7355]' : delta < 0 ? 'text-[#8B6F47]' : 'text-ink/60';
 
   return (
     <Card padding="tight" className="hover:border-ink/20 transition-colors duration-200">
       <div aria-hidden className="w-8 h-8 flex items-center justify-center" style={{ background: `${color}1A` }}>
         <Icon width={16} height={16} strokeWidth={1.5} style={{ color }} />
       </div>
-      <p className="font-body text-3xl font-light text-ink leading-none mt-4">{value}</p>
-      <p className="font-body text-xs text-ink/60 mt-1">{label}</p>
+      <p className="font-body text-2xl xl:text-3xl font-light text-ink leading-none mt-3 xl:mt-4 break-words">{value}</p>
+      <p className="font-body text-xs text-ink/70 mt-1">{label}</p>
       {delta !== undefined && deltaLabel && (
         <p className={`font-body text-xs font-medium mt-2 ${deltaColorClass}`}>
           {deltaSign}
@@ -387,7 +410,7 @@ function ChartHeading({ title, subtitle }: { title: string; subtitle?: string })
   return (
     <div>
       <h2 className="font-body text-base font-medium text-ink leading-tight">{title}</h2>
-      {subtitle && <p className="font-body text-xs text-ink/50 mt-1">{subtitle}</p>}
+      {subtitle && <p className="font-body text-xs text-ink/70 mt-1">{subtitle}</p>}
     </div>
   );
 }
@@ -410,26 +433,26 @@ function UpcomingClassRow({ clase }: { clase: UpcomingClass }) {
 
   return (
     <Card padding="tight" className="hover:border-ink/20 transition-colors duration-200">
-      <div className="grid grid-cols-12 gap-4 items-center">
-        <div className="col-span-3 md:col-span-1">
-          <p className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">
+      <div className="grid grid-cols-12 gap-x-3 gap-y-2 md:gap-4 items-center">
+        <div className="col-span-2 md:col-span-1">
+          <p className="font-body text-xs text-ink/70">
             {capitalize(format(startsAt, 'EEE', { locale: dfLocale }))}
           </p>
           <p className="font-body text-xl font-light text-ink leading-none mt-0.5">
             {format(startsAt, 'd', { locale: dfLocale })}
           </p>
         </div>
-        <div className="col-span-3 md:col-span-1">
+        <div className="col-span-2 md:col-span-1">
           <p className="font-body text-sm text-ink">{format(startsAt, 'HH:mm')}</p>
         </div>
-        <div className="col-span-6 md:col-span-4 min-w-0">
+        <div className="col-span-8 md:col-span-4 min-w-0">
           <p className="font-body text-sm font-medium text-ink truncate">{clase.name}</p>
         </div>
         <div className="col-span-6 md:col-span-2 min-w-0">
           {clase.instructor ? (
             <p className="font-body text-sm text-ink/70 truncate">{clase.instructor}</p>
           ) : (
-            <p className="font-body text-sm text-ink/30">—</p>
+            <p className="font-body text-sm text-ink/70">—</p>
           )}
         </div>
         <div className="col-span-3 md:col-span-2">

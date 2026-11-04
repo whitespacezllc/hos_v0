@@ -22,6 +22,7 @@ const PAGES: [string, string][] = [
   ['/host-your-retreat', 'private hire of the property for groups, and a quote form'],
   ['/about', 'the house and its founder, Nancy Goodfellow'],
   ['/contact', 'how to reach the team'],
+  ['/cancellation-policy', 'the cancellation and attendance policy for classes and activities at the shala'],
 ];
 
 export function GET() {
