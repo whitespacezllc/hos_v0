@@ -13,7 +13,7 @@ type CardProps = {
 };
 
 const PADDING_CLASSES: Record<Padding, string> = {
-  default: 'p-6',
+  default: 'p-4 sm:p-6',
   tight: 'p-4',
   none: '',
 };
@@ -22,7 +22,7 @@ export function Card({ children, padding = 'default', className = '' }: CardProp
   return (
     <div
       className={`
-        bg-white border border-ink/10
+        min-w-0 bg-white border border-ink/10
         ${PADDING_CLASSES[padding]}
         ${className}
       `}

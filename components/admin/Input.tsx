@@ -3,7 +3,7 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
 import { Field } from './Field';
 
-// Editorial input — bordered on the bottom only, no box, no radius.
+// Input — a plain box with square corners: its edges say where to type.
 // Wraps a Field by default so most call sites just pass label + register.
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -21,11 +21,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       ref={ref}
       {...props}
       className={`
-        w-full pb-2 bg-transparent
-        border-b ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
+        block w-full min-w-0 h-11 px-3 bg-white appearance-none
+        border ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
         font-body text-base text-ink
         outline-none transition-colors duration-200
-        placeholder:text-ink/30 placeholder:italic
+        placeholder:text-ink/50
         ${className}
       `}
     />

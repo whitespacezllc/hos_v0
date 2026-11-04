@@ -71,6 +71,8 @@ type Props = {
   loading?: boolean;
   /** Why the last save failed; shown inside the form. */
   error?: string | null;
+  /** The standard drop-in price: where a new class's price starts. */
+  standardPriceUsd: number;
 };
 
 // The form's date and time are Santa Teresa's — the class happens there, and
@@ -103,6 +105,7 @@ export default function CalendarClassModal({
   prefill,
   loading,
   error,
+  standardPriceUsd,
 }: Props) {
   const isEditing = mode === 'edit';
   const t = useTranslations('admin.calendar.classModal');
@@ -159,11 +162,12 @@ export default function CalendarClassModal({
     } else {
       reset({
         ...BASE_DEFAULTS,
+        priceUsd: standardPriceUsd,
         date: prefill?.date ?? costaRicaDateString(new Date()),
         time: prefill?.time ?? BASE_DEFAULTS.time,
       });
     }
-  }, [open, isEditing, instance, prefill, reset]);
+  }, [open, isEditing, instance, prefill, reset, standardPriceUsd]);
 
   function onSubmit(values: FormValues) {
     // Compose the absolute instant from the Costa Rica date + time.
@@ -222,7 +226,7 @@ export default function CalendarClassModal({
 
         <ImageUpload value={imageUrl} onChange={setImageUrl} />
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <NativeSelect
             label={tc('labels.instructor')}
             options={instructorOptions}
@@ -237,7 +241,7 @@ export default function CalendarClassModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <Input
             type="date"
             label={tc('labels.date')}
@@ -252,7 +256,7 @@ export default function CalendarClassModal({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
           <Input
             type="number"
             label={t('durationMin')}
@@ -272,11 +276,14 @@ export default function CalendarClassModal({
             type="number"
             label={t('priceUsd')}
             min={0}
-            step={5}
+            step="any"
             error={errors.priceUsd?.message}
             {...register('priceUsd')}
           />
         </div>
+        <p className="font-body text-xs text-ink/70 -mt-3">
+          {t('priceHint', { amount: standardPriceUsd })}
+        </p>
 
         <Field label={tc('labels.status')} helper={t('statusHelper')}>
           <div className="flex items-center justify-between mt-2">

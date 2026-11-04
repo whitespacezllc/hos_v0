@@ -7,13 +7,12 @@ import { isOnSchedule } from '@/types';
 import {
   confirmBookingPaid,
   confirmPackPurchase,
-  isPackCode,
   newBookingReference,
   releaseSpot,
   reserveSpot,
-  returnPackCredit,
   service,
 } from '@/lib/checkout/core';
+import { cancelBooking, type CancelledBy } from '@/lib/checkout/cancel';
 
 function refreshAdmin() {
   revalidatePath('/admin/reservas');
@@ -140,50 +139,16 @@ export async function markNoShow(id: string) {
   refreshAdmin();
 }
 
-// Cancels a booking from the admin: its spots go back, a pending pack bought
-// with it is cancelled so no code is ever generated, the pack credit it had
-// spent is returned, and the customer is told. Only the caller whose update
-// lands does the bookkeeping, so two admins cancelling at once free one seat.
-export async function cancelBookingAdmin(id: string) {
+// Cancels a booking from the admin (see lib/checkout/cancel.ts). Who cancels
+// decides what the customer's email offers, so anything but a clear "studio"
+// reads as "customer": never promise a refund by accident.
+export async function cancelBookingAdmin(
+  id: string,
+  cancelledBy: CancelledBy,
+): Promise<{ emailSent: boolean }> {
   await requireAdmin();
-  const supabase = service();
-
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('class_id, persons, payment_status, pack_purchase_id, referral_code')
-    .eq('id', id)
-    .maybeSingle();
-  if (!booking) throw new Error('booking_not_found');
-  if (booking.payment_status === 'cancelled') return;
-
-  const { data: flipped } = await supabase
-    .from('bookings')
-    .update({ payment_status: 'cancelled', updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('payment_status', booking.payment_status)
-    .select('id');
-  if (!flipped || flipped.length === 0) return;
-  await releaseSpot(supabase, booking.class_id, booking.persons ?? 1);
-
-  let creditReturned = false;
-  if (booking.pack_purchase_id) {
-    // Never paid: the pack dies with the booking. Paid: this class had spent
-    // its first credit — give it back.
-    const { data: purchase } = await supabase
-      .from('pack_purchases')
-      .select('status, code')
-      .eq('id', booking.pack_purchase_id)
-      .maybeSingle();
-    if (purchase?.status === 'pending') {
-      await supabase.from('pack_purchases').update({ status: 'cancelled' }).eq('id', booking.pack_purchase_id);
-    } else if (purchase?.status === 'paid' && purchase.code && booking.payment_status === 'confirmed') {
-      creditReturned = await returnPackCredit(supabase, purchase.code);
-    }
-  } else if (isPackCode(booking.referral_code) && booking.payment_status !== 'no-show') {
-    // The credit was spent when the booking was made, paid or not.
-    creditReturned = await returnPackCredit(supabase, booking.referral_code);
-  }
-
-  await notifyBooking(id, 'cancelled', { creditReturned });
+  const res = await cancelBooking(id, cancelledBy === 'studio' ? 'studio' : 'customer');
   refreshAdmin();
+  // Nothing happened (it was already cancelled), so there is nothing to report.
+  return { emailSent: res.emailSent || !res.cancelled };
 }

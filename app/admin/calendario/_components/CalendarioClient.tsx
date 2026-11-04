@@ -7,7 +7,6 @@ import { format, isSameDay } from 'date-fns';
 import { costaRicaWeekDays, inCostaRica, nowInCostaRica } from '@/lib/costa-rica-time';
 import { dateFnsLocale } from '@/lib/dates';
 import type { AppLocale } from '@/i18n/routing';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,6 +30,8 @@ import {
 } from '@/app/actions/classes';
 import { createAdminBooking } from '@/app/actions/bookings';
 import { Button } from '@/components/admin/Button';
+import { PageContainer } from '@/components/admin/PageContainer';
+import { Drawer } from '@/components/admin/Drawer';
 import { Badge } from '@/components/admin/Badge';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { DeleteConfirmation } from '@/components/admin/DeleteConfirmation';
@@ -97,6 +98,34 @@ function localDateStr(day: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+// Classes that overlap in a day share its width, side by side, instead of being
+// drawn on top of each other. A short class counts for the height its card takes.
+type PlacedClass = { clase: SerializedClass; column: number; columns: number };
+
+function placeOverlaps(classes: SerializedClass[]): PlacedClass[] {
+  const minutes = (c: SerializedClass) => new Date(c.startsAt).getTime() / 60_000;
+  const end = (c: SerializedClass) => minutes(c) + Math.max(c.durationMinutes ?? 60, 45);
+  const sorted = [...classes].sort((a, b) => minutes(a) - minutes(b));
+
+  const placed: PlacedClass[] = [];
+  let group: { clase: SerializedClass; column: number }[] = [];
+  let columnEnds: number[] = [];
+  const flush = () => {
+    group.forEach((g) => placed.push({ ...g, columns: columnEnds.length }));
+    group = [];
+    columnEnds = [];
+  };
+  for (const clase of sorted) {
+    if (columnEnds.length > 0 && minutes(clase) >= Math.max(...columnEnds)) flush();
+    let column = columnEnds.findIndex((e) => e <= minutes(clase));
+    if (column === -1) column = columnEnds.length;
+    columnEnds[column] = end(clase);
+    group.push({ clase, column });
+  }
+  flush();
+  return placed;
+}
+
 // Converts a vertical click offset in a day column into a HH:mm start time,
 // snapped to 30-minute increments and clamped to the visible grid range.
 function timeFromOffsetY(offsetY: number): string {
@@ -144,11 +173,14 @@ export default function CalendarioClient({
   initialBookings,
   instructors,
   upsells,
+  standardPriceUsd,
 }: {
   initialClasses: SerializedClass[];
   initialBookings: SerializedBooking[];
   instructors: { id: string; name: string }[];
   upsells: UpsellOption[];
+  /** The standard drop-in price, a new class's starting point. */
+  standardPriceUsd: number;
 }) {
   const router = useRouter();
   const t = useTranslations('admin.calendar');
@@ -173,6 +205,9 @@ export default function CalendarioClient({
   const [addError, setAddError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteAudience, setDeleteAudience] = useState(0);
+  // What a delete leaves to say: who was told, or who couldn't be.
+  const [notice, setNotice] = useState<{ tone: 'info' | 'error'; text: string } | null>(null);
 
   // Mobile: which day index (0–6) is currently visible. Defaults to today if
   // today is within the displayed week, otherwise 0 (Monday).
@@ -236,7 +271,13 @@ export default function CalendarioClient({
 
   function openDelete() {
     setDeleteError(null);
-    openDelete();
+    // Who it would reach: live bookings, if the class is still to come.
+    setDeleteAudience(
+      selectedClass && new Date(selectedClass.startsAt).getTime() > Date.now()
+        ? classBookings.filter((b) => b.paymentStatus !== 'cancelled' && b.paymentStatus !== 'no-show').length
+        : 0,
+    );
+    setDeleteOpen(true);
   }
 
   async function handleConfirmDelete() {
@@ -251,6 +292,13 @@ export default function CalendarioClient({
         );
         return;
       }
+      setNotice(
+        res.emailsFailed > 0
+          ? { tone: 'error', text: t('deleteDialog.emailsFailed', { count: res.emailsFailed }) }
+          : res.cancelled > 0
+          ? { tone: 'info', text: t('deleteDialog.notified', { count: res.cancelled }) }
+          : null,
+      );
       setDeleteOpen(false);
       setDrawerOpen(false);
       setSelectedClass(null);
@@ -360,24 +408,24 @@ export default function CalendarioClient({
   }
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10">
+    <PageContainer>
       {/* ─── Header row ─────────────────────────────────────────────────── */}
-      <div className="mb-10 lg:mb-12 flex flex-col md:flex-row md:justify-between md:items-end gap-4 md:gap-6">
+      <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 sm:gap-4">
         {/* Week navigation */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => setWeekOffset((o) => o - 1)}
               aria-label={t('header.previousWeek')}
-              className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
+              className="w-10 h-10 -ml-2 inline-flex items-center justify-center text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
             >
               <ChevronLeft width={18} height={18} strokeWidth={1.5} />
             </button>
             <button
               type="button"
               onClick={() => setWeekOffset(0)}
-              className="px-3 py-2 font-body text-sm text-ink hover:bg-neutral-50 transition-colors duration-200 cursor-pointer"
+              className="px-3 h-10 border border-ink/20 font-body text-sm text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
             >
               {tc('labels.today')}
             </button>
@@ -385,16 +433,16 @@ export default function CalendarioClient({
               type="button"
               onClick={() => setWeekOffset((o) => o + 1)}
               aria-label={t('header.nextWeek')}
-              className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
+              className="w-10 h-10 inline-flex items-center justify-center text-ink hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
             >
               <ChevronRight width={18} height={18} strokeWidth={1.5} />
             </button>
           </div>
-          <h2 className="font-body text-base font-medium text-ink">{weekLabel}</h2>
+          <h1 className="font-body text-base lg:text-lg font-medium text-ink truncate">{weekLabel}</h1>
         </div>
 
         {/* Manage the recurring schedule / add a one-off class */}
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <Button
             variant="secondary"
             onClick={() => router.push('/admin/clases')}
@@ -410,6 +458,19 @@ export default function CalendarioClient({
           </Button>
         </div>
       </div>
+
+      {notice && (
+        <p
+          role={notice.tone === 'error' ? 'alert' : 'status'}
+          className={`mb-5 font-body text-sm px-4 py-3 border ${
+            notice.tone === 'error'
+              ? 'text-burgundy border-burgundy/30 bg-burgundy/5'
+              : 'text-ink/80 border-ink/20 bg-white'
+          }`}
+        >
+          {notice.text}
+        </p>
+      )}
 
       {/* ─── Grid OR empty state ────────────────────────────────────────── */}
       {totalClassesInWeek === 0 ? (
@@ -445,8 +506,10 @@ export default function CalendarioClient({
             />
           </div>
 
-          {/* Desktop / tablet: full 7-day grid */}
-          <div className="hidden md:block overflow-x-auto">
+          {/* Desktop / tablet: full 7-day grid. It scrolls inside its own frame
+              so the days stay on top and the hours on the left, however far
+              down the day has gone. */}
+          <div className="hidden md:block overflow-auto overscroll-contain max-h-[calc(100dvh-11.5rem)] lg:max-h-[calc(100dvh-9.5rem)] xl:max-h-[calc(100dvh-10.5rem)] border border-ink/10 bg-white">
             <DesktopWeekGrid
               days={weekDays}
               classMap={classMap}
@@ -460,45 +523,24 @@ export default function CalendarioClient({
       )}
 
       {/* ─── Drawer ─────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {drawerOpen && selectedClass && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              aria-hidden
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 z-40 bg-ink/30"
-            />
-
-            {/* Panel — full screen on mobile, side drawer on md+ */}
-            <motion.aside
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('drawer.ariaLabel')}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-full md:w-[420px] lg:w-[480px] bg-white border-l border-ink/10 overflow-y-auto"
-            >
-              <DrawerContent
-                clase={selectedClass}
-                bookings={classBookings}
-                occupied={occupied}
-                occupancyPct={occupancyPct}
-                onClose={() => setDrawerOpen(false)}
-                onEdit={openEditFromDrawer}
-                onDelete={() => openDelete()}
-                onAddParticipant={openAddParticipant}
-              />
-            </motion.aside>
-          </>
+      <Drawer
+        isOpen={drawerOpen && !!selectedClass}
+        onClose={() => setDrawerOpen(false)}
+        ariaLabel={t('drawer.ariaLabel')}
+      >
+        {selectedClass && (
+          <DrawerContent
+            clase={selectedClass}
+            bookings={classBookings}
+            occupied={occupied}
+            occupancyPct={occupancyPct}
+            onClose={() => setDrawerOpen(false)}
+            onEdit={openEditFromDrawer}
+            onDelete={() => openDelete()}
+            onAddParticipant={openAddParticipant}
+          />
         )}
-      </AnimatePresence>
+      </Drawer>
 
       {/* ─── Delete confirmation ────────────────────────────────────────── */}
       <DeleteConfirmation
@@ -506,8 +548,12 @@ export default function CalendarioClient({
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
         title={t('deleteDialog.title')}
-        description={t('deleteDialog.description')}
-        confirmLabel={t('deleteDialog.confirm')}
+        description={
+          deleteAudience > 0
+            ? t('deleteDialog.withBookings', { count: deleteAudience })
+            : t('deleteDialog.description')
+        }
+        confirmLabel={deleteAudience > 0 ? t('deleteDialog.confirmAndNotify') : t('deleteDialog.confirm')}
         loading={isDeleting}
         error={deleteError}
       />
@@ -523,6 +569,7 @@ export default function CalendarioClient({
         prefill={createPrefill}
         loading={isSaving}
         error={saveError}
+        standardPriceUsd={standardPriceUsd}
       />
 
       {/* ─── Add participant modal ──────────────────────────────────────── */}
@@ -542,7 +589,7 @@ export default function CalendarioClient({
           error={addError}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -562,21 +609,21 @@ function DesktopWeekGrid({
 }) {
   const t = useTranslations('admin.calendar');
   return (
-    <div className="grid grid-cols-[60px_repeat(7,minmax(120px,1fr))] gap-2 lg:gap-3 min-w-[800px]">
+    <div className="grid grid-cols-[44px_repeat(7,minmax(80px,1fr))] gap-x-1 xl:gap-x-2 pr-1 xl:pr-2 min-w-[660px]">
       {/* Top-left empty cell */}
-      <div />
+      <div className="sticky left-0 top-0 z-20 bg-white" />
       {/* Day headers */}
       {days.map((day) => (
         <DayHeader key={day.toISOString()} day={day} />
       ))}
 
       {/* Time column */}
-      <div className="relative" style={{ height: GRID_HEIGHT }}>
+      <div className="sticky left-0 z-10 bg-white relative" style={{ height: GRID_HEIGHT }}>
         {timeLabels.slice(0, -1).map((label, i) => (
           <div
             key={label}
-            className="absolute right-2 font-body text-[10px] tracking-[0.1em] text-ink/40"
-            style={{ top: i * HOUR_PX - 6 }}
+            className="absolute right-1.5 font-body text-[11px] text-ink/60"
+            style={{ top: i === 0 ? 0 : i * HOUR_PX - 7 }}
           >
             {label}
           </div>
@@ -604,10 +651,12 @@ function DesktopWeekGrid({
               style={{ top: i * HOUR_PX }}
             />
           ))}
-          {(classMap.get(dayIdx) ?? []).map((clase) => (
+          {placeOverlaps(classMap.get(dayIdx) ?? []).map(({ clase, column, columns }) => (
             <CalendarClassCard
               key={clase.id}
               clase={clase}
+              column={column}
+              columns={columns}
               onClick={() => onSelect(clase)}
             />
           ))}
@@ -622,16 +671,16 @@ function DayHeader({ day }: { day: Date }) {
   const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const today = isSameDay(day, nowInCostaRica());
   return (
-    <div className="text-center pb-4 mb-2 border-b border-ink/10">
-      <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
+    <div className="sticky top-0 z-10 bg-white text-center py-2 border-b border-ink/10">
+      <p className="font-body text-xs text-ink/70 capitalize">
         {format(day, t('dayFormats.weekday'), { locale: dfLocale })}
       </p>
       {today ? (
-        <span className="mt-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-burgundy text-cream font-body text-base font-medium">
+        <span className="mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-full bg-burgundy text-cream font-body text-sm font-medium">
           {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
         </span>
       ) : (
-        <p className="font-body text-xl font-light text-ink leading-none mt-1">
+        <p className="font-body text-lg font-light text-ink leading-8 mt-0.5">
           {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
         </p>
       )}
@@ -641,15 +690,22 @@ function DayHeader({ day }: { day: Date }) {
 
 function CalendarClassCard({
   clase,
+  column,
+  columns,
   onClick,
 }: {
   clase: SerializedClass;
+  column: number;
+  columns: number;
   onClick: () => void;
 }) {
   const top = classTopPx(clase.startsAt);
   const height = Math.max(((clase.durationMinutes ?? 60) / 60) * HOUR_PX, 48);
   const filled = clase.capacity - clase.spotsRemaining;
   const cat = categoryFor(clase.name);
+  const time = format(inCostaRica(clase.startsAt), 'HH:mm');
+  // The tint sits on white, so the hour lines don't show through the card.
+  const tint = (alpha: string) => `linear-gradient(${cat.stripe}${alpha}, ${cat.stripe}${alpha})`;
 
   return (
     <button
@@ -658,32 +714,37 @@ function CalendarClassCard({
         e.stopPropagation(); // don't trigger the column's "add class" handler
         onClick();
       }}
-      className="absolute left-0.5 right-0.5 p-3 text-left overflow-hidden border-l-[3px] transition-colors duration-200 cursor-pointer"
+      title={`${clase.name} · ${time} · ${filled}/${clase.capacity}`}
+      className="absolute flex flex-col justify-start px-1.5 py-1 xl:px-2 xl:py-1.5 text-left overflow-hidden border-l-[3px] transition-colors duration-200 cursor-pointer"
       style={{
         top,
         height,
+        left: `${(column / columns) * 100}%`,
+        width: `${100 / columns}%`,
         borderLeftColor: cat.stripe,
-        // tint backgrounds: 8% on rest, 15% on hover. Hex + alpha-suffix.
-        backgroundColor: `${cat.stripe}14`, // 0x14 ≈ 8%
+        backgroundColor: '#ffffff',
+        backgroundImage: tint('1F'), // 0x1F ≈ 12%
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${cat.stripe}26`; // 0x26 ≈ 15%
+        (e.currentTarget as HTMLButtonElement).style.backgroundImage = tint('33'); // 0x33 = 20%
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${cat.stripe}14`;
+        (e.currentTarget as HTMLButtonElement).style.backgroundImage = tint('1F');
       }}
     >
-      <p className="font-body text-sm font-medium text-ink leading-tight truncate">
+      {/* A short card has room for one line of name; anything more would be
+          cut through the middle of a word. */}
+      <span
+        className={`block w-full font-body text-xs xl:text-sm font-medium text-ink leading-tight ${
+          height >= 64 ? 'line-clamp-2' : 'truncate'
+        }`}
+      >
         {clase.name}
-      </p>
-      <p className="font-body text-xs text-ink/60 mt-1">
-        {format(inCostaRica(clase.startsAt), 'HH:mm')}
-      </p>
-      {height >= 64 && (
-        <p className="font-body text-xs text-ink/50 mt-2">
-          {filled}/{clase.capacity}
-        </p>
-      )}
+      </span>
+      <span className="block w-full font-body text-xs text-ink/70 mt-0.5 truncate">
+        {time}
+        {height >= 64 && ` · ${filled}/${clase.capacity}`}
+      </span>
     </button>
   );
 }
@@ -703,43 +764,42 @@ function MobileDaySelector({
   const t = useTranslations('admin.calendar');
   const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   return (
-    <div className="mb-6 -mx-6 px-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex gap-2 min-w-max pb-1">
-        {days.map((day, i) => {
-          const today = isSameDay(day, nowInCostaRica());
-          const active = i === selected;
-          return (
-            <button
-              key={day.toISOString()}
-              type="button"
-              onClick={() => onSelect(i)}
-              className={`
-                flex flex-col items-center w-14 py-3 border transition-colors duration-200 cursor-pointer
-                ${
-                  active
-                    ? 'border-burgundy bg-burgundy text-cream'
-                    : 'border-ink/10 text-ink hover:bg-neutral-50'
-                }
-              `}
+    <div className="mb-5 grid grid-cols-7 gap-1">
+      {days.map((day, i) => {
+        const today = isSameDay(day, nowInCostaRica());
+        const active = i === selected;
+        return (
+          <button
+            key={day.toISOString()}
+            type="button"
+            onClick={() => onSelect(i)}
+            aria-pressed={active}
+            className={`
+              flex flex-col items-center py-2 border transition-colors duration-200 cursor-pointer
+              ${
+                active
+                  ? 'border-burgundy bg-burgundy text-cream'
+                  : 'border-ink/15 bg-white text-ink'
+              }
+            `}
+          >
+            <span
+              className={`font-body text-[11px] capitalize ${
+                active ? 'text-cream/90' : 'text-ink/70'
+              }`}
             >
-              <span
-                className={`font-body text-[10px] tracking-[0.2em] uppercase ${
-                  active ? 'text-cream/80' : 'text-ink/50'
-                }`}
-              >
-                {format(day, t('dayFormats.weekday'), { locale: dfLocale })}
-              </span>
-              <span
-                className={`font-body text-lg font-light leading-none mt-1 ${
-                  today && !active ? 'text-burgundy' : ''
-                }`}
-              >
-                {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              {format(day, t('dayFormats.weekday'), { locale: dfLocale })}
+            </span>
+            <span
+              className={`font-body text-base leading-none mt-1 ${
+                today && !active ? 'text-burgundy font-medium' : ''
+              }`}
+            >
+              {format(day, t('dayFormats.dayOfMonth'), { locale: dfLocale })}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -768,7 +828,7 @@ function MobileDayList({
   if (classes.length === 0) {
     return (
       <div className="space-y-4">
-        <p className="font-body text-sm text-ink/40 italic py-8 text-center">
+        <p className="font-body text-sm text-ink/70 py-8 text-center">
           {t('mobile.noClassesThisDay')}
         </p>
         {addButton}
@@ -845,14 +905,14 @@ function DrawerContent({
   return (
     <div className="flex flex-col h-full">
       {/* Top bar — category dot + close */}
-      <div className="flex justify-between items-center px-6 py-4 border-b border-ink/10">
+      <div className="sticky top-0 z-10 bg-white flex justify-between items-center px-5 sm:px-6 py-3 border-b border-ink/10">
         <div className="flex items-center gap-2 min-w-0">
           <span
             aria-hidden
             className="w-2 h-2 rounded-full flex-shrink-0"
             style={{ background: cat.stripe }}
           />
-          <span className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/60 truncate">
+          <span className="font-body text-sm text-ink/70 truncate">
             {t(`category.${cat.label}`)}
           </span>
         </div>
@@ -860,14 +920,14 @@ function DrawerContent({
           type="button"
           onClick={onClose}
           aria-label={t('drawer.close')}
-          className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
+          className="w-10 h-10 -mr-2 inline-flex items-center justify-center text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
         >
           <X width={20} height={20} strokeWidth={1.5} />
         </button>
       </div>
 
       {/* Body */}
-      <div className="px-6 py-6">
+      <div className="px-5 sm:px-6 py-6">
         {/* Class title */}
         <h2 className="font-body text-xl font-medium text-ink leading-tight">
           {clase.name}
@@ -876,7 +936,7 @@ function DrawerContent({
         {/* Occupancy */}
         <div className="mt-6">
           <div className="flex justify-between items-center">
-            <span className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
+            <span className="font-body text-sm text-ink/70">
               {t('drawer.occupancy')}
             </span>
             <span className="font-body text-sm text-ink">
@@ -889,7 +949,7 @@ function DrawerContent({
               style={{ width: `${occupancyPct}%`, background: cat.stripe }}
             />
           </div>
-          <p className="font-body text-xs text-ink/50 mt-2">{remainingLabel}</p>
+          <p className="font-body text-xs text-ink/70 mt-2">{remainingLabel}</p>
         </div>
 
         {/* Metadata */}
@@ -927,7 +987,7 @@ function DrawerContent({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-8">
+        <div className="flex flex-wrap gap-3 mt-8">
           <Button
             variant="secondary"
             icon={<Pencil width={16} height={16} strokeWidth={1.5} />}
@@ -947,27 +1007,26 @@ function DrawerContent({
 
         {/* Bookings */}
         <div className="mt-10">
-          <div className="flex items-center justify-between gap-3">
-            <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-body text-base font-medium text-ink">
               {t('drawer.bookingsHeading', { count: bookings.length })}
-            </p>
-            <button
-              type="button"
+            </h3>
+            <Button
+              variant="primary"
+              icon={<UserPlus width={16} height={16} strokeWidth={1.5} />}
               onClick={onAddParticipant}
               disabled={remaining === 0}
-              className="inline-flex items-center gap-1.5 font-body text-xs text-burgundy hover:opacity-70 transition-opacity duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <UserPlus width={14} height={14} strokeWidth={1.5} />
-              <span>{t('drawer.addParticipant')}</span>
-            </button>
+              {t('drawer.addParticipant')}
+            </Button>
           </div>
           {remaining === 0 && (
-            <p className="font-body text-[11px] text-ink/40 mt-1">
+            <p className="font-body text-xs text-ink/70 mt-2">
               {t('drawer.classFull')}
             </p>
           )}
           {bookings.length === 0 ? (
-            <p className="font-body text-sm text-ink/40 italic py-8 text-center">
+            <p className="font-body text-sm text-ink/70 py-8 text-center">
               {t('drawer.noBookings')}
             </p>
           ) : (
@@ -985,7 +1044,7 @@ function DrawerContent({
                       <p className="font-body text-sm text-ink truncate">
                         {b.firstName} {b.lastName}
                       </p>
-                      <p className="font-body text-xs text-ink/50 mt-0.5 truncate">
+                      <p className="font-body text-xs text-ink/70 mt-0.5 truncate">
                         {b.email}
                       </p>
                     </div>
@@ -1020,12 +1079,12 @@ function MetaRow({
         isLast ? '' : 'border-b border-ink/10'
       }`}
     >
-      <span className="text-ink/40 flex-shrink-0 mt-0.5">{icon}</span>
+      <span className="text-ink/60 flex-shrink-0 mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
+        <p className="font-body text-xs text-ink/70">
           {label}
         </p>
-        <p className="font-body text-sm text-ink mt-1">{value}</p>
+        <p className="font-body text-sm text-ink mt-0.5 break-words">{value}</p>
       </div>
     </div>
   );

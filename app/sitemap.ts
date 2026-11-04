@@ -43,6 +43,7 @@ const ROUTES: Entry[] = [
   { path: '/about', changeFrequency: 'yearly', priority: 0.6 },
   { path: '/contact', changeFrequency: 'yearly', priority: 0.6 },
   { path: '/paquetes', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/cancellation-policy', changeFrequency: 'yearly', priority: 0.3 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

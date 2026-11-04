@@ -52,7 +52,7 @@ export function Button({
       aria-label={ariaLabel}
       aria-busy={loading || undefined}
       className={`
-        font-body inline-flex items-center justify-center gap-2 cursor-pointer
+        font-body inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap
         ${VARIANT_CLASSES[variant]}
         ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}
         ${className}

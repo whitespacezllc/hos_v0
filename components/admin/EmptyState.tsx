@@ -13,9 +13,9 @@ type EmptyStateProps = {
 
 export function EmptyState({ icon, heading, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 lg:py-20 text-center">
+    <div className="flex flex-col items-center justify-center py-12 lg:py-20 text-center">
       {icon && (
-        <div className="text-ink/30 [&>svg]:w-8 [&>svg]:h-8" aria-hidden>
+        <div className="text-ink/70 [&>svg]:w-8 [&>svg]:h-8" aria-hidden>
           {icon}
         </div>
       )}
@@ -23,7 +23,7 @@ export function EmptyState({ icon, heading, description, action }: EmptyStatePro
         {heading}
       </h3>
       {description && (
-        <p className="font-body text-sm text-ink/50 max-w-sm mt-2 leading-normal">
+        <p className="font-body text-sm text-ink/70 max-w-sm mt-2 leading-normal">
           {description}
         </p>
       )}

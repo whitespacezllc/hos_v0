@@ -1,19 +1,24 @@
 import { getAllClasses, getInstructors } from '@/lib/queries/classes';
 import { getAllBookings } from '@/lib/queries/bookings';
 import { getActiveUpsells } from '@/lib/queries/upsells';
+import { getDropInPriceUsd } from '@/lib/queries/packs';
 import { ensureUpcomingWeeks } from '@/app/actions/classes';
 import CalendarioClient from './_components/CalendarioClient';
 import type { YogaClass, Booking } from '@/types';
+
+// Its actions can email everyone in a class, paced for the mail provider's limit.
+export const maxDuration = 60;
 
 export default async function AdminCalendarioPage() {
   // Materialize the recurring schedule for the next ~3 months.
   await ensureUpcomingWeeks();
 
-  const [classes, bookings, instructors, upsells] = await Promise.all([
+  const [classes, bookings, instructors, upsells, standardPriceUsd] = await Promise.all([
     getAllClasses(),
     getAllBookings(),
     getInstructors(),
     getActiveUpsells(),
+    getDropInPriceUsd(),
   ]);
 
   const serializedClasses = classes.map(c => ({
@@ -38,6 +43,7 @@ export default async function AdminCalendarioPage() {
       initialBookings={serializedBookings}
       instructors={instructors}
       upsells={upsellOptions}
+      standardPriceUsd={standardPriceUsd}
     />
   );
 }

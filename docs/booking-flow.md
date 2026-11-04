@@ -109,6 +109,14 @@ el SQL Editor de Supabase antes del deploy o inmediatamente después:
 Si el deploy sale antes que la migración, nada se rompe: las inserciones
 reintentan sin `locale` y los correos posteriores salen en inglés.
 
+
+Migración **010** (`supabase/migrations/010_season_prices.sql`), a correr en el
+SQL Editor de Supabase apenas se despliegue: deja los precios de noviembre de
+2026 (drop-in 25, x5 85, x10 130) y saca de venta el x20. Se puede correr más de
+una vez. Desde ahí los precios los cambia el estudio en Panel → Packs → Editar
+precios (`app/actions/prices.ts`); las clases con precio propio no se tocan y lo
+ya vendido conserva su monto.
+
 ## Probar en local
 
 `TILOPAY_API_BASE` y `RESEND_BASE_URL` apuntan los clientes a un servidor

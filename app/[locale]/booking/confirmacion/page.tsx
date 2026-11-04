@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Calendar, MessageCircle } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 import { localeFromParams, type LocaleParams } from '@/i18n/routing';
 import { PageMessages } from '@/i18n/PageMessages';
 import { BUSINESS } from '@/lib/business';
@@ -143,6 +144,16 @@ export default async function ConfirmacionPage({
               {t('whatsapp')}
             </a>
           </div>
+          {view !== 'declined' && (
+            <p className="text-center mt-8">
+              <Link
+                href={SHALA_POLICY_PATH}
+                className="font-body text-xs text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+              >
+                {t('policyLink')}
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </PageMessages>

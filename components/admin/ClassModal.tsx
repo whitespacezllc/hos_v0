@@ -83,6 +83,8 @@ type Props = {
   loading?: boolean;
   /** Why the last save failed; shown inside the form. */
   error?: string | null;
+  /** The standard drop-in price: where a new class's price starts. */
+  standardPriceUsd: number;
 };
 
 const DEFAULTS: TemplateFormValues = {
@@ -106,6 +108,7 @@ export default function ClassModal({
   instructors,
   loading,
   error,
+  standardPriceUsd,
 }: Props) {
   const isEditing = !!template;
   const t = useTranslations('admin.schedule');
@@ -160,9 +163,9 @@ export default function ClassModal({
         isActive: template.is_active,
       });
     } else {
-      reset(DEFAULTS);
+      reset({ ...DEFAULTS, priceUsd: standardPriceUsd });
     }
-  }, [template, open, reset]);
+  }, [template, open, reset, standardPriceUsd]);
 
   function onSubmit(values: TemplateFormValues) {
     onSave({
@@ -237,7 +240,7 @@ export default function ClassModal({
           previewAlt={tc('labels.class')}
         />
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <NativeSelect
             label={tc('labels.instructor')}
             options={instructorOptions}
@@ -252,7 +255,7 @@ export default function ClassModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <NativeSelect
             label={t('form.dayOfWeek')}
             options={dayOptions}
@@ -267,7 +270,7 @@ export default function ClassModal({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
           <Input
             type="number"
             label={t('form.durationMin')}
@@ -287,11 +290,14 @@ export default function ClassModal({
             type="number"
             label={t('form.priceUsd')}
             min={0}
-            step={5}
+            step="any"
             error={errors.priceUsd?.message}
             {...register('priceUsd')}
           />
         </div>
+        <p className="font-body text-xs text-ink/70 -mt-3">
+          {t('form.priceHint', { amount: standardPriceUsd })}
+        </p>
 
         <Field label={tc('labels.status')} helper={t('form.statusHelper')}>
           <div className="flex items-center justify-between mt-2">

@@ -3,7 +3,7 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react';
 import { Field } from './Field';
 
-// Editorial native <select> with a custom chevron. Used inside admin forms
+// Native <select> with a custom chevron. Used inside admin forms
 // and as a lightweight filter dropdown in table toolbars.
 type Option = { value: string; label: string };
 type NativeSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> & {
@@ -30,16 +30,16 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
         ref={ref}
         {...props}
         className={`
-          appearance-none bg-transparent bg-no-repeat
-          ${filter ? 'pl-0 pr-6 py-2 text-sm' : 'w-full pb-2 pr-7 text-base'}
-          border-b ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
+          appearance-none bg-white bg-no-repeat min-w-0 max-w-full pl-3 pr-9
+          ${filter ? 'h-10 text-base md:text-sm' : 'block w-full h-11 text-base'}
+          border ${error ? 'border-burgundy' : 'border-ink/20 focus:border-ink'}
           font-body text-ink
           outline-none cursor-pointer transition-colors duration-200
           ${className}
         `}
         style={{
           backgroundImage: CHEVRON_BG,
-          backgroundPosition: 'right 0 center',
+          backgroundPosition: 'right 10px center',
           backgroundSize: '18px 18px',
         }}
       >

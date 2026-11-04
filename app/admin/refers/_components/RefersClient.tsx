@@ -25,7 +25,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Upsell } from '@/types';
+import { PageContainer } from '@/components/admin/PageContainer';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { RowIconButton } from '@/components/admin/RowIconButton';
 import { Card } from '@/components/admin/Card';
 import { Button } from '@/components/admin/Button';
 import { Badge } from '@/components/admin/Badge';
@@ -176,7 +178,7 @@ export default function RefersClient({
   }
 
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-6xl mx-auto">
+    <PageContainer>
       <PageHeader
         heading={t('heading')}
         description={t('description')}
@@ -192,7 +194,7 @@ export default function RefersClient({
       />
 
       {/* Stats — 3 cards (the legacy 'Socios' / Partners stat was dropped) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 lg:mb-8">
         <StatCard icon={Ticket} color={COLORS.sage} value={totalCodes} label={t('stats.total')} />
         <StatCard icon={CheckCircle} color={COLORS.sage} value={activeCodes} label={t('stats.active')} />
         <StatCard icon={TrendingUp} color={COLORS.terracotta} value={totalUses} label={t('stats.uses')} />
@@ -252,7 +254,7 @@ export default function RefersClient({
         confirmLabel={t('delete.confirm')}
         loading={isDeleting}
       />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -279,8 +281,8 @@ function StatCard({
       >
         <Icon width={16} height={16} strokeWidth={1.5} style={{ color }} />
       </div>
-      <p className="font-body text-3xl font-light text-ink leading-none mt-4">{value}</p>
-      <p className="font-body text-xs text-ink/60 mt-1">{label}</p>
+      <p className="font-body text-2xl sm:text-3xl font-light text-ink leading-none mt-3 sm:mt-4">{value}</p>
+      <p className="font-body text-xs text-ink/70 mt-1">{label}</p>
     </Card>
   );
 }
@@ -329,92 +331,73 @@ function CodeRow({
     benefitLabel = upsell ? t('benefit.freeNamed', { name: upsell.name }) : t('benefit.free');
   }
 
+  const rowActions = (
+    <>
+      <RowIconButton
+        onClick={onToggle}
+        disabled={isPending}
+        ariaLabel={code.isActive ? t('row.deactivate') : t('row.activate')}
+      >
+        {code.isActive ? (
+          <Eye width={16} height={16} strokeWidth={1.5} />
+        ) : (
+          <EyeOff width={16} height={16} strokeWidth={1.5} />
+        )}
+      </RowIconButton>
+      <RowIconButton onClick={onEdit} ariaLabel={t('row.edit')}>
+        <Pencil width={16} height={16} strokeWidth={1.5} />
+      </RowIconButton>
+      <RowIconButton onClick={onDelete} ariaLabel={t('row.delete')} hoverDestructive>
+        <Trash2 width={16} height={16} strokeWidth={1.5} />
+      </RowIconButton>
+    </>
+  );
+
   return (
-    <Card>
-      <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-        {/* Icon */}
-        <div className="w-12 h-12 bg-neutral-50 flex items-center justify-center flex-shrink-0">
-          <Icon width={18} height={18} strokeWidth={1.5} className="text-ink/60" />
-        </div>
-
-        {/* Identifier */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-sm font-medium text-ink bg-neutral-50 px-2 py-1">
-              {code.code}
-            </span>
-            {!code.isActive && <Badge variant="inactive">{t('row.inactive')}</Badge>}
-            {isExpired && <Badge variant="destructive">{t('row.expired')}</Badge>}
+    <Card padding="tight">
+      {/* Below `xl` the row folds: who and what on top, with the actions beside
+          them; the three facts on a line of their own. */}
+      <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-6">
+        <div className="flex items-start xl:items-center gap-3 xl:gap-4 min-w-0 xl:flex-1">
+          <div className="hidden sm:flex w-10 h-10 bg-neutral-50 items-center justify-center flex-shrink-0">
+            <Icon width={18} height={18} strokeWidth={1.5} className="text-ink/70" />
           </div>
-          <p className="font-body text-xs text-ink/50 mt-1 truncate">
-            {code.description}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-sm font-medium text-ink bg-neutral-50 px-2 py-0.5 break-all">
+                {code.code}
+              </span>
+              {!code.isActive && <Badge variant="inactive">{t('row.inactive')}</Badge>}
+              {isExpired && <Badge variant="destructive">{t('row.expired')}</Badge>}
+            </div>
+            <p className="font-body text-xs text-ink/70 mt-1 line-clamp-2">
+              {code.description}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0 -mr-2 xl:hidden">{rowActions}</div>
         </div>
 
-        {/* Benefit */}
-        <div className="lg:w-40">
-          <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-            {t('row.benefit')}
-          </p>
-          <p className="font-body text-sm font-medium text-ink mt-1">
-            {benefitLabel}
-          </p>
-        </div>
+        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 xl:flex xl:gap-6 xl:flex-shrink-0">
+          <div className="min-w-0 xl:w-36">
+            <dt className="font-body text-xs text-ink/70">{t('row.benefit')}</dt>
+            <dd className="font-body text-sm font-medium text-ink mt-0.5">{benefitLabel}</dd>
+          </div>
+          <div className="min-w-0 xl:w-16">
+            <dt className="font-body text-xs text-ink/70">{t('row.uses')}</dt>
+            <dd className="font-body text-sm font-medium text-ink mt-0.5">
+              {code.usageCount}
+              {code.usageLimit ? ` / ${code.usageLimit}` : ''}
+            </dd>
+          </div>
+          <div className="min-w-0 col-span-2 sm:col-span-1 xl:w-40">
+            <dt className="font-body text-xs text-ink/70">{t('row.validity')}</dt>
+            <dd className={`font-body text-sm mt-0.5 ${isExpired ? 'text-ink/60' : 'text-ink/80'}`}>
+              {validityLabel}
+            </dd>
+          </div>
+        </dl>
 
-        {/* Uses */}
-        <div className="lg:w-24">
-          <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
-            {t('row.uses')}
-          </p>
-          <p className="font-body text-sm font-medium text-ink mt-1">
-            {code.usageCount}
-            {code.usageLimit ? ` / ${code.usageLimit}` : ''}
-          </p>
-        </div>
-
-        {/* Validity */}
-        <div className="lg:w-40">
-          <p
-            className={`font-body text-sm ${
-              isExpired ? 'text-ink/40 italic' : 'text-ink/70'
-            }`}
-          >
-            {validityLabel}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 lg:ml-auto">
-          <button
-            type="button"
-            onClick={onToggle}
-            disabled={isPending}
-            aria-label={code.isActive ? t('row.deactivate') : t('row.activate')}
-            className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {code.isActive ? (
-              <Eye width={16} height={16} strokeWidth={1.5} />
-            ) : (
-              <EyeOff width={16} height={16} strokeWidth={1.5} />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={t('row.edit')}
-            className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-ink transition-colors duration-200 cursor-pointer"
-          >
-            <Pencil width={16} height={16} strokeWidth={1.5} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label={t('row.delete')}
-            className="w-8 h-8 p-1.5 inline-flex items-center justify-center text-ink/60 hover:bg-neutral-50 hover:text-burgundy transition-colors duration-200 cursor-pointer"
-          >
-            <Trash2 width={16} height={16} strokeWidth={1.5} />
-          </button>
-        </div>
+        <div className="hidden xl:flex items-center gap-1 flex-shrink-0">{rowActions}</div>
       </div>
     </Card>
   );
@@ -568,7 +551,7 @@ function CodeModal({
 
         {/* Benefit type — segmented buttons */}
         <Field label={t('fields.benefitType')}>
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div className="grid grid-cols-3 gap-2">
             {(
               [
                 { value: 'percentage', icon: Percent, label: t('fields.typePercent') },
@@ -639,7 +622,7 @@ function CodeModal({
         )}
 
         {/* Limits */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <Input
             type="number"
             label={t('fields.minPurchase')}
@@ -660,7 +643,7 @@ function CodeModal({
         </div>
 
         {/* Validity */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Input type="date" label={t('fields.validFrom')} {...register('validFrom')} />
           <Input type="date" label={t('fields.validUntil')} {...register('validUntil')} />
         </div>

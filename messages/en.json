@@ -828,7 +828,8 @@
       "retreats": "Retreats",
       "host": "Host your retreat",
       "about": "About",
-      "contact": "Contact"
+      "contact": "Contact",
+      "policy": "Cancellation policy"
     }
   },
   "whatsapp": {
@@ -1237,7 +1238,8 @@
         "eyebrow": "A note from the studio",
         "line1": "House of Shakti is taking a moment to rest and renew.",
         "line2": "We look forward to welcoming you back from November 1st."
-      }
+      },
+      "policyLink": "Cancellation policy"
     },
     "categories": {
       "vinyasa": "Vinyasa",
@@ -1250,7 +1252,7 @@
     "packs": {
       "eyebrow": "Class packs",
       "heading": "Buy once, come back one class at a time",
-      "body": "Five, ten or twenty classes bought together, each one costing less than booking it on its own. A pack is paid for once and spent slowly, whenever the week allows, with nothing to schedule ahead.",
+      "body": "Five or ten classes bought together, each one costing less than booking it on its own. A pack is paid for once and spent slowly, whenever the week allows, with nothing to schedule ahead.",
       "classes": "Classes",
       "sizes": {
         "5": {
@@ -1260,10 +1262,6 @@
         "10": {
           "cadence": "Two or three a week",
           "note": "A month of steady practice, without deciding anything in advance."
-        },
-        "20": {
-          "cadence": "A daily practice",
-          "note": "For a long stay, and the lowest we go per class."
         }
       },
       "cta": "Buy a class pack",
@@ -1432,10 +1430,15 @@
         {
           "question": "How do I book an experience?",
           "answer": "Simply reach out to us with the experience you're interested in, your preferred date, and number of people, and our team will help you organize it."
+        },
+        {
+          "question": "What is your cancellation policy for classes?",
+          "answer": "Cancellations made more than 12 hours in advance may be rescheduled, subject to availability. Cancellations made less than 12 hours before the activity are non-refundable and cannot be rescheduled. Refunds are not provided, unless the activity is canceled by House of Shakti or the facilitator."
         }
       ],
       "outro": "Reach out — we'll help you find the right class or arrange a private session.",
-      "cta": "Get in touch"
+      "cta": "Get in touch",
+      "policyLink": "Read the full cancellation & attendance policy"
     },
     "galleryAria": "Yoga gallery"
   },
@@ -1579,7 +1582,7 @@
       },
       "venmoNote": "We'll show the Venmo details to complete your payment. Your spot stays pending until we verify it.",
       "cashNote": "We'll hold your spot — just pay in cash at the studio reception before your class.",
-      "cancellation": "✓ Free cancellation up to 2 hours before class.",
+      "cancellation": "With more than 12 hours' notice you can reschedule, subject to availability. With less, the class is non-refundable and can't be rescheduled.",
       "errors": {
         "noSpots": "Sorry, this class is now fully booked.",
         "tooLate": "Bookings close 1 hour before class.",
@@ -1592,7 +1595,8 @@
         "venmo": "Pay with Venmo",
         "cash": "Reserve"
       },
-      "packOf": "Pack of {count}"
+      "packOf": "Pack of {count}",
+      "cancellationLink": "Read the full policy"
     },
     "navigation": {
       "back": "Back",
@@ -1643,7 +1647,8 @@
       "dateFormat": "EEEE, MMMM d yyyy",
       "icsDescription": "Yoga class with {instructor} at House of Shakti. Ref: {ref}",
       "icsLocation": "{location}, House of Shakti, Costa Rica",
-      "timezone": "Costa Rica time"
+      "timezone": "Costa Rica time",
+      "policyLink": "Cancellation policy"
     },
     "venmo": {
       "title": "Pay with Venmo",
@@ -1696,7 +1701,8 @@
       "bookAgain": "Book again",
       "backToClasses": "Back to classes",
       "whatsapp": "Write to us on WhatsApp",
-      "dateFormat": "EEEE, MMMM d yyyy"
+      "dateFormat": "EEEE, MMMM d yyyy",
+      "policyLink": "Cancellation policy"
     }
   },
   "packs": {
@@ -1752,7 +1758,8 @@
         "title": "We're confirming your payment",
         "body": "Tilopay reported your payment as approved and we're verifying it. Your class code will arrive by email as soon as it's confirmed."
       }
-    }
+    },
+    "policyLink": "Classes follow our cancellation policy"
   },
   "email": {
     "common": {
@@ -1789,7 +1796,9 @@
         "confirmed": "Your place in <strong>{className}</strong> is confirmed. Everything you need is below.",
         "paid": "We've received your payment. Your place in <strong>{className}</strong> is confirmed.",
         "pending": "We're holding your place in <strong>{className}</strong>. It becomes a confirmed booking as soon as we receive your payment.",
-        "cancelled": "Your booking <strong>{reference}</strong> for <strong>{className}</strong> on {date} at {time} has been cancelled."
+        "cancelled": "Your booking <strong>{reference}</strong> for <strong>{className}</strong> on {date} at {time} has been cancelled.",
+        "cancelledByStudio": "We're sorry: we had to cancel your booking <strong>{reference}</strong> for <strong>{className}</strong> on {date} at {time}.",
+        "cancelledAtRequest": "As you asked, your booking <strong>{reference}</strong> for <strong>{className}</strong> on {date} at {time} has been cancelled."
       },
       "pack": {
         "confirmed": "This class is covered by your <strong>{packName}</strong>. Your personal code for the remaining classes arrives in a separate email.",
@@ -1825,11 +1834,21 @@
         "venmo": "Send <strong>{amount}</strong> on Venmo to <strong>{handle}</strong> and add your booking reference <strong>{reference}</strong> in the note. We'll confirm your spot as soon as it arrives.",
         "cash": "Pay <strong>{amount}</strong> in cash at the studio reception before your class. Your spot is held until then."
       },
-      "arrive": "Please arrive a few minutes early to settle in.",
-      "cancellation": "Free cancellation up to 2 hours before class — just reply to this email or write to us on WhatsApp.",
+      "arrive": "Please arrive 5–10 minutes early to get settled.",
       "calendar": "A calendar invitation is attached, so the class can go straight into your calendar.",
       "cancelledPayment": "If you have any question about a payment, reply to this email and we'll sort it out.",
-      "schedule": "See the schedule"
+      "schedule": "See the schedule",
+      "reschedule": "To reschedule, just reply to this email or write to us on WhatsApp.",
+      "policyLink": "Read the policy on our website",
+      "studioCancel": {
+        "refundOffer": "You can move it to another class or ask for a full refund, whichever you prefer. Write to us on WhatsApp and we'll take care of it.",
+        "rescheduleOffer": "You can move it to another class: write to us on WhatsApp and we'll take care of it.",
+        "whatsapp": "Write to us on WhatsApp",
+        "number": "WhatsApp: {phone}",
+        "draftRefund": "Hi! My booking {reference} was cancelled. I'd like to reschedule or request a refund.",
+        "draftReschedule": "Hi! My booking {reference} was cancelled. I'd like to reschedule."
+      },
+      "customerCancel": "If you cancelled more than 12 hours before the class, you can reschedule, subject to availability: write to us on WhatsApp at {phone}. With less notice, the class is non-refundable and can't be rescheduled."
     },
     "packCode": {
       "subject": "Your {packName} is ready — House of Shakti",
@@ -1987,12 +2006,11 @@
       "retreats": "Retreats"
     },
     "sidebar": {
-      "eyebrow": "Admin panel",
       "brand": "House of Shakti",
       "navigation": "Admin navigation",
       "sidebar": "Admin sidebar",
       "pending": "{count} pending",
-      "roleLine": "Admin · House of Shakti",
+      "roleLine": "Admin",
       "admin": "Admin",
       "signOut": "Sign out",
       "language": "Language",
@@ -2128,7 +2146,7 @@
       "heading": "Bookings",
       "empty": {
         "heading": "No bookings yet",
-        "description": "Bookings made through the public site will appear here."
+        "description": "Bookings made on the website appear here. You can also add one yourself."
       },
       "noMatch": {
         "heading": "No bookings match your filters",
@@ -2144,10 +2162,15 @@
         "to": "To",
         "fromDate": "From date",
         "toDate": "To date",
-        "clear": "Clear"
+        "clear": "Clear",
+        "anyDate": "Any date",
+        "dateField": "Filter dates by",
+        "classDate": "Class date",
+        "bookedDate": "Booking date"
       },
       "table": {
-        "viewBooking": "View booking"
+        "viewBooking": "View booking",
+        "people": "{count} people"
       },
       "actions": {
         "cancelBooking": "Cancel booking"
@@ -2177,13 +2200,30 @@
       },
       "cancelDialog": {
         "title": "Cancel booking?",
-        "description": "This will mark the booking as cancelled. The student will be notified.",
-        "keep": "Keep booking"
+        "description": "The booking will be marked as cancelled and the student will get an email.",
+        "keep": "Keep booking",
+        "who": "Who is cancelling?",
+        "studio": "The studio",
+        "studioHint": "The email apologises and offers, through WhatsApp, to reschedule or, if it was paid, a full refund.",
+        "customer": "The student asked to",
+        "customerHint": "The email confirms it and reminds them of the 12-hour policy.",
+        "emailFailed": "The booking was cancelled, but the email couldn't be sent. Please write to {email}."
       },
       "dates": {
         "classShort": "MMM d · HH:mm",
         "dateShort": "MMM d, yyyy",
         "dateTime": "MMM d, yyyy · HH:mm"
+      },
+      "addBooking": "Add booking",
+      "picker": {
+        "title": "Add booking",
+        "subtitle": "Choose the class.",
+        "date": "Date",
+        "previousDay": "Previous day",
+        "nextDay": "Next day",
+        "noClasses": "No classes on this day.",
+        "spots": "{count, plural, =1 {1 spot left} other {# spots left}}",
+        "full": "Full"
       }
     },
     "calendar": {
@@ -2231,14 +2271,18 @@
         "dateTimeValue": "{date} · Costa Rica",
         "openAirShala": "Open-air shala",
         "bookingsHeading": "Bookings ({count})",
-        "addParticipant": "Add participant",
+        "addParticipant": "Add booking",
         "classFull": "Class is full — free a spot to add a walk-in.",
         "noBookings": "No bookings yet"
       },
       "deleteDialog": {
         "title": "Delete class?",
-        "description": "This takes the session off the schedule and the public site. Its bookings are kept in Bookings. This action cannot be undone.",
-        "confirm": "Delete class"
+        "description": "This takes the session off the schedule and the public site. This action cannot be undone.",
+        "confirm": "Delete class",
+        "withBookings": "This takes the session off the schedule and the public site. {count, plural, =1 {Its booking will be cancelled and the person will get an email} other {Its # bookings will be cancelled and each person will get an email}} with our WhatsApp, to reschedule or request a refund. This action cannot be undone.",
+        "confirmAndNotify": "Delete and notify",
+        "notified": "Class deleted. {count, plural, =1 {The booking was cancelled and the person got an email.} other {# bookings were cancelled and each person got an email.}}",
+        "emailsFailed": "Class deleted, but {count, plural, =1 {1 person} other {# people}} couldn't be told. Check its bookings in Bookings and write to them."
       },
       "addErrors": {
         "noSpots": "Not enough spots left for this class.",
@@ -2261,12 +2305,13 @@
         "durationMin": "Duration (min)",
         "priceUsd": "Price (USD)",
         "statusHelper": "Inactive classes don't appear on the public site.",
-        "toggleActive": "Toggle active status"
+        "toggleActive": "Toggle active status",
+        "priceHint": "Standard drop-in price: ${amount} (set in Packs). A different price here stays with this class."
       },
       "participantModal": {
-        "title": "Add participant",
-        "subtitle": "Manually register a student on {className}. {count, plural, =1 {1 spot} other {# spots}} left.",
-        "submit": "Add participant",
+        "title": "Add booking",
+        "subtitle": "Register a student on {className}. {count, plural, =1 {1 spot} other {# spots}} left.",
+        "submit": "Add booking",
         "firstNamePlaceholder": "Ada",
         "lastNamePlaceholder": "Lovelace",
         "emailPlaceholder": "student@email.com",
@@ -2350,7 +2395,7 @@
     },
     "packs": {
       "heading": "Class packs",
-      "summary": "{total} purchases · {pending} awaiting payment",
+      "summary": "{total, plural, =1 {1 purchase} other {# purchases}} · {pending} awaiting payment",
       "copyCode": "Copy code",
       "empty": {
         "heading": "No pack purchases yet",
@@ -2378,7 +2423,31 @@
         "linkedIntro": "This pack was bought with a class booking that's still pending:",
         "linkedHint": "Confirm it here to redeem the first credit, or review it in Bookings.",
         "openCustomer": "Open this customer in Bookings"
-      }
+      },
+      "prices": {
+        "heading": "Prices",
+        "description": "What the website charges for a class and for each pack.",
+        "edit": "Edit prices",
+        "dropIn": "Drop-in",
+        "dropInHint": "One class",
+        "pack": "Pack of {count}",
+        "perClass": "${price} per class",
+        "saves": "saves ${amount}",
+        "noSaving": "no cheaper than {count} drop-ins",
+        "invalid": "Enter a price greater than 0.",
+        "specialClasses": "These classes keep their own price: {list}. To change it, edit the class in Schedule.",
+        "saved": "Prices updated. The website already shows them.",
+        "savedWithSessions": "Prices updated. {count, plural, =1 {1 upcoming class} other {# upcoming classes}} now charge the new drop-in.",
+        "modal": {
+          "title": "Edit prices",
+          "subtitle": "They apply right away on the website.",
+          "priceOf": "{name} (USD)",
+          "dropInHint": "Applies to every class at the current drop-in price.",
+          "note": "Bookings and packs already sold keep the price they were sold at. A class priced differently from the drop-in keeps its own price.",
+          "save": "Save prices"
+        }
+      },
+      "purchasesHeading": "Purchases"
     },
     "promo": {
       "heading": "Promo codes",
@@ -2416,7 +2485,8 @@
         "activate": "Activate code",
         "deactivate": "Deactivate code",
         "edit": "Edit code",
-        "delete": "Delete code"
+        "delete": "Delete code",
+        "validity": "Valid"
       },
       "dates": {
         "short": "MMM d, yyyy",
@@ -2511,7 +2581,7 @@
         "title": "Delete class?",
         "description": "This removes the recurring class and its upcoming sessions. Past sessions and their bookings are kept. This action cannot be undone.",
         "confirm": "Delete class",
-        "withBookings": "{sessions, plural, =1 {One upcoming session has} other {# upcoming sessions have}} bookings ({persons, plural, =1 {1 person} other {# people}}). {sessions, plural, =1 {It} other {They}} will be taken off the schedule; the bookings stay in Bookings so you can reach out."
+        "withBookings": "{sessions, plural, =1 {One upcoming session has} other {# upcoming sessions have}} bookings ({persons, plural, =1 {1 person} other {# people}}). They will be cancelled and each person will get an email with our WhatsApp, to reschedule or request a refund."
       },
       "form": {
         "editTitle": "Edit recurring class",
@@ -2539,7 +2609,8 @@
           "sat": "Saturday",
           "sun": "Sunday"
         },
-        "chooseDay": "Choose a day"
+        "chooseDay": "Choose a day",
+        "priceHint": "Standard drop-in price: ${amount} (set in Packs). A different price here stays with this class."
       },
       "instructors": {
         "title": "Instructors",
@@ -2558,7 +2629,8 @@
         "deleteDescription": "This will permanently delete {name}. This action cannot be undone.",
         "thisInstructor": "this instructor"
       },
-      "deletedKept": "Class deleted. {count, plural, =1 {One upcoming session had bookings and was taken off the schedule; its bookings are} other {# upcoming sessions had bookings and were taken off the schedule; their bookings are}} in Bookings."
+      "deletedNotified": "Class deleted. {count, plural, =1 {One booking was cancelled and the person got an email.} other {# bookings were cancelled and each person got an email.}}",
+      "deletedEmailsFailed": "Class deleted, but {count, plural, =1 {1 person} other {# people}} couldn't be told. Check its bookings in Bookings and write to them."
     },
     "shared": {
       "imageUpload": {
@@ -2676,5 +2748,42 @@
       "linkExpired": "This link has expired or was already used. Ask for a new one from the sign-in page.",
       "updateFailed": "Couldn’t save the password. Please try again."
     }
+  },
+  "shalaPolicy": {
+    "meta": {
+      "title": "Cancellation & Attendance Policy",
+      "description": "How cancellations, rescheduling, punctuality and reservations work for classes and activities at the House of Shakti yoga shala in Santa Teresa, Costa Rica."
+    },
+    "title": "Cancellation & Attendance Policy",
+    "subtitle": "Shala Activities – House of Shakti",
+    "items": {
+      "cancellations": {
+        "term": "Cancellations",
+        "text": "Cancellations made less than 12 hours before the scheduled activity are non-refundable and cannot be rescheduled."
+      },
+      "rescheduling": {
+        "term": "Rescheduling",
+        "text": "Cancellations made more than 12 hours in advance may be rescheduled, subject to availability. Refunds will not be provided."
+      },
+      "punctuality": {
+        "term": "Punctuality",
+        "text": "Participants are expected to arrive on time. We recommend arriving 5–10 minutes early to get settled and prepare for the activity."
+      },
+      "lateArrivals": {
+        "term": "Late Arrivals",
+        "text": "In case of late arrival, the activity will not be extended. Participation may be subject to the facilitator’s discretion, especially for activities that require preparation or a group opening."
+      },
+      "facilitator": {
+        "term": "Cancellations by the Facilitator",
+        "text": "If an activity is canceled by House of Shakti or the facilitator, participants will be offered the option to reschedule or receive a full refund."
+      },
+      "reservations": {
+        "term": "Reservations",
+        "text": "A reservation is confirmed once the corresponding payment has been completed."
+      }
+    },
+    "contact": "To reschedule, reply to your confirmation email or write to us on WhatsApp.",
+    "whatsapp": "Write to us on WhatsApp",
+    "schedule": "See the class schedule"
   }
 }

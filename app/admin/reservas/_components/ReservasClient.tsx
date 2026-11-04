@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   X,
@@ -20,18 +19,25 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
 import type { Booking } from '@/types';
 import type { AppLocale } from '@/i18n/routing';
 import { dateFnsLocale } from '@/lib/dates';
+import { PageContainer } from '@/components/admin/PageContainer';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { Button } from '@/components/admin/Button';
 import { Badge } from '@/components/admin/Badge';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { DeleteConfirmation } from '@/components/admin/DeleteConfirmation';
 import { NativeSelect } from '@/components/admin/NativeSelect';
-import { RowIconButton } from '@/app/admin/clases/_components/ClasesClient';
+import { RowIconButton } from '@/components/admin/RowIconButton';
+import { DateFilter } from '@/components/admin/DateFilter';
+import { Drawer } from '@/components/admin/Drawer';
+import AddBookingFlow, { type PickableClass } from './AddBookingFlow';
+import type { UpsellOption } from '@/components/admin/AddParticipantModal';
 import { confirmBooking, cancelBookingAdmin } from '@/app/actions/bookings';
+import type { CancelledBy } from '@/lib/checkout/cancel';
 import type { PaymentMethod } from '@/lib/payment-methods';
 import { costaRicaDateString, inCostaRica } from '@/lib/costa-rica-time';
 
@@ -85,17 +91,22 @@ function paymentMethodKey(method: PaymentMethod | null | undefined): PaymentMeth
 
 // How many bookings show per page. Keeps the list scannable instead of an
 // endless scroll; pending ones are highlighted so they don't get lost.
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 20;
 
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ReservasClient({
   initialBookings,
   classMap,
   upsellMap,
+  pickableClasses,
+  upsellOptions,
 }: {
   initialBookings: SerializedBooking[];
   classMap: Record<string, ClassInfo>;
   upsellMap: Record<string, UpsellInfo>;
+  /** The classes a booking can be added to from here. */
+  pickableClasses: PickableClass[];
+  upsellOptions: UpsellOption[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,17 +119,24 @@ export default function ReservasClient({
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
   const [statusFilter, setStatusFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
-  const [fromDate, setFromDate] = useState(''); // YYYY-MM-DD, filters on booking date
+  // The date range reads the class's date or the day it was booked. By class
+  // is the everyday question: who is coming on Friday?
+  const [dateField, setDateField] = useState<'class' | 'booked'>('class');
+  const [fromDate, setFromDate] = useState(''); // YYYY-MM-DD, in Costa Rica
   const [toDate, setToDate] = useState('');
 
-  // Pagination — 6 per page.
+  // Pagination.
   const [page, setPage] = useState(1);
 
   // Drawer + delete
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<SerializedBooking | null>(null);
+  const [cancelledBy, setCancelledBy] = useState<CancelledBy | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   // Status filter options — the values are the database's, the labels the
   // admin's language.
@@ -149,8 +167,18 @@ export default function ReservasClient({
       .filter((b) => {
         if (statusFilter !== 'all' && b.paymentStatus !== statusFilter) return false;
         if (classFilter !== 'all' && b.className !== classFilter) return false;
-        if (fromDate && costaRicaDateString(b.createdAt) < fromDate) return false;
-        if (toDate && costaRicaDateString(b.createdAt) > toDate) return false;
+        if (fromDate || toDate) {
+          const clase = classMap[b.classId];
+          const day =
+            dateField === 'booked'
+              ? costaRicaDateString(b.createdAt)
+              : clase
+              ? costaRicaDateString(clase.startsAt)
+              : null;
+          if (!day) return false;
+          if (fromDate && day < fromDate) return false;
+          if (toDate && day > toDate) return false;
+        }
         if (search) {
           const q = search.toLowerCase();
           if (
@@ -163,16 +191,23 @@ export default function ReservasClient({
         }
         return true;
       })
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-  }, [initialBookings, search, statusFilter, classFilter, fromDate, toDate]);
+      .sort((a, b) => {
+        // Looking at a span of class dates, the list reads like the schedule:
+        // first class first. Otherwise, the latest booking on top.
+        if (dateField === 'class' && (fromDate || toDate)) {
+          const byClass =
+            new Date(classMap[a.classId]?.startsAt ?? 0).getTime() -
+            new Date(classMap[b.classId]?.startsAt ?? 0).getTime();
+          if (byClass !== 0) return byClass;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [initialBookings, classMap, search, statusFilter, classFilter, dateField, fromDate, toDate]);
 
   // Reset to the first page whenever the result set changes (filters/search).
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, classFilter, fromDate, toDate]);
+  }, [search, statusFilter, classFilter, dateField, fromDate, toDate]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   // Guard against a stale page index (e.g. after a booking is cancelled).
@@ -193,6 +228,7 @@ export default function ReservasClient({
     setSearch('');
     setStatusFilter('all');
     setClassFilter('all');
+    setDateField('class');
     setFromDate('');
     setToDate('');
   }
@@ -214,14 +250,24 @@ export default function ReservasClient({
     });
   }
 
+  function askToCancel(b: SerializedBooking) {
+    setCancelledBy(null);
+    setCancelError(null);
+    setCancelTarget(b);
+  }
+
   async function handleConfirmCancel() {
-    if (!cancelTarget) return;
+    if (!cancelTarget || !cancelledBy) return;
     setIsCancelling(true);
+    setCancelError(null);
     try {
-      await cancelBookingAdmin(cancelTarget.id);
+      const res = await cancelBookingAdmin(cancelTarget.id, cancelledBy);
+      setNotice(res.emailSent ? null : t('cancelDialog.emailFailed', { email: cancelTarget.email }));
       setCancelTarget(null);
       setDrawerOpen(false);
       router.refresh();
+    } catch {
+      setCancelError(tc('feedback.somethingWentWrong'));
     } finally {
       setIsCancelling(false);
     }
@@ -237,27 +283,45 @@ export default function ReservasClient({
   // a pack, the pack itself.
   const selectedTotal = selectedBooking ? bookingTotal(selectedBooking) : 0;
 
+  const addButton = (
+    <Button
+      variant="primary"
+      icon={<Plus width={16} height={16} strokeWidth={1.5} />}
+      onClick={() => setAddOpen(true)}
+    >
+      {t('addBooking')}
+    </Button>
+  );
+
   return (
-    <div className="px-6 lg:px-10 py-8 lg:py-10 max-w-7xl mx-auto">
+    <PageContainer>
       <PageHeader
         heading={t('heading')}
         description={tc('units.bookings', { count: initialBookings.length })}
+        actions={addButton}
       />
+
+      {notice && (
+        <p role="alert" className="mb-6 font-body text-sm px-4 py-3 border text-burgundy border-burgundy/30 bg-burgundy/5">
+          {notice}
+        </p>
+      )}
 
       {initialBookings.length === 0 ? (
         <EmptyState
           icon={<UsersIcon strokeWidth={1} />}
           heading={t('empty.heading')}
           description={t('empty.description')}
+          action={addButton}
         />
       ) : (
         <>
           {/* Filters */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
-            <div className="relative md:w-72">
+          <div className="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end md:gap-4">
+            <div className="relative col-span-2 md:flex-1 md:min-w-[240px] md:max-w-sm">
               <Search
                 aria-hidden
-                className="absolute left-0 top-1/2 -translate-y-1/2 text-ink/40"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 pointer-events-none"
                 width={16}
                 height={16}
                 strokeWidth={1.5}
@@ -267,7 +331,8 @@ export default function ReservasClient({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('filters.searchPlaceholder')}
-                className="w-full pl-7 pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200 placeholder:text-ink/30 placeholder:italic"
+                aria-label={t('filters.searchPlaceholder')}
+                className="block w-full h-10 pl-9 pr-3 bg-white border border-ink/20 font-body text-base md:text-sm text-ink outline-none focus:border-ink transition-colors duration-200 placeholder:text-ink/50"
               />
             </div>
             <NativeSelect
@@ -276,6 +341,7 @@ export default function ReservasClient({
               onChange={(e) => setClassFilter(e.target.value)}
               options={classOptions}
               aria-label={t('filters.byClass')}
+              className="w-full md:w-auto md:max-w-[14rem]"
             />
             <NativeSelect
               filter
@@ -283,33 +349,39 @@ export default function ReservasClient({
               onChange={(e) => setStatusFilter(e.target.value)}
               options={statusOptions}
               aria-label={t('filters.byStatus')}
+              className="w-full md:w-auto"
             />
-            <div className="flex items-end gap-2">
-              <label className="flex flex-col gap-1">
-                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">{t('filters.from')}</span>
-                <input
-                  type="date"
-                  value={fromDate}
-                  max={toDate || undefined}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  aria-label={t('filters.fromDate')}
-                  className="pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">{t('filters.to')}</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  min={fromDate || undefined}
-                  onChange={(e) => setToDate(e.target.value)}
-                  aria-label={t('filters.toDate')}
-                  className="pb-2 border-b border-ink/20 bg-transparent font-body text-sm text-ink outline-none focus:border-ink transition-colors duration-200"
-                />
-              </label>
-            </div>
+            <label className="col-span-2 md:col-auto flex flex-col gap-1.5 min-w-0">
+              <span className="font-body text-xs text-ink/70">{t('filters.dateField')}</span>
+              <NativeSelect
+                filter
+                value={dateField}
+                onChange={(e) => setDateField(e.target.value as 'class' | 'booked')}
+                options={[
+                  { value: 'class', label: t('filters.classDate') },
+                  { value: 'booked', label: t('filters.bookedDate') },
+                ]}
+                className="w-full md:w-auto"
+              />
+            </label>
+            <DateFilter
+              label={t('filters.from')}
+              ariaLabel={t('filters.fromDate')}
+              emptyLabel={t('filters.anyDate')}
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={setFromDate}
+            />
+            <DateFilter
+              label={t('filters.to')}
+              ariaLabel={t('filters.toDate')}
+              emptyLabel={t('filters.anyDate')}
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={setToDate}
+            />
             {filtersActive && (
-              <Button variant="tertiary" onClick={clearFilters} className="md:ml-auto">
+              <Button variant="tertiary" onClick={clearFilters} className="col-span-2 md:ml-auto">
                 {t('filters.clear')}
               </Button>
             )}
@@ -330,12 +402,16 @@ export default function ReservasClient({
             />
           ) : (
             <>
+              <BookingCards
+                bookings={paginated}
+                classMap={classMap}
+                onView={openDetail}
+              />
               <BookingsTable
                 bookings={paginated}
                 classMap={classMap}
-                upsellMap={upsellMap}
                 onView={openDetail}
-                onCancel={(b) => setCancelTarget(b)}
+                onCancel={askToCancel}
               />
               <Pagination
                 page={safePage}
@@ -350,42 +426,24 @@ export default function ReservasClient({
       )}
 
       {/* ─── Drawer ─────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {drawerOpen && selectedBooking && (
-          <>
-            <motion.div
-              aria-hidden
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 z-40 bg-ink/30"
-            />
-            <motion.aside
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('drawer.title')}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-full md:w-[420px] lg:w-[480px] bg-white border-l border-ink/10 overflow-y-auto"
-            >
-              <BookingDrawerContent
-                booking={selectedBooking}
-                bookingClass={selectedClass}
-                upsells={selectedUpsells}
-                total={selectedTotal}
-                isPending={isPending}
-                onClose={() => setDrawerOpen(false)}
-                onConfirmPayment={() => handleConfirmPayment(selectedBooking.id)}
-                onCancel={() => setCancelTarget(selectedBooking)}
-              />
-            </motion.aside>
-          </>
+      <Drawer
+        isOpen={drawerOpen && !!selectedBooking}
+        onClose={() => setDrawerOpen(false)}
+        ariaLabel={t('drawer.title')}
+      >
+        {selectedBooking && (
+          <BookingDrawerContent
+            booking={selectedBooking}
+            bookingClass={selectedClass}
+            upsells={selectedUpsells}
+            total={selectedTotal}
+            isPending={isPending}
+            onClose={() => setDrawerOpen(false)}
+            onConfirmPayment={() => handleConfirmPayment(selectedBooking.id)}
+            onCancel={() => askToCancel(selectedBooking)}
+          />
         )}
-      </AnimatePresence>
+      </Drawer>
 
       <DeleteConfirmation
         isOpen={!!cancelTarget}
@@ -396,8 +454,120 @@ export default function ReservasClient({
         confirmLabel={t('actions.cancelBooking')}
         cancelLabel={t('cancelDialog.keep')}
         loading={isCancelling}
+        error={cancelError}
+        confirmDisabled={!cancelledBy}
+      >
+        {/* Which email goes out depends on this, and it can't be taken back, so
+            there's no default: the answer has to be given. */}
+        <fieldset className="mt-5">
+          <legend className="font-body text-sm font-medium text-ink mb-2">{t('cancelDialog.who')}</legend>
+          <div className="space-y-2">
+            {(['studio', 'customer'] as const).map((who) => (
+              <label
+                key={who}
+                className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors duration-200 ${
+                  cancelledBy === who ? 'border-burgundy bg-burgundy/5' : 'border-ink/20 hover:border-ink/40'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="cancelled-by"
+                  value={who}
+                  checked={cancelledBy === who}
+                  onChange={() => setCancelledBy(who)}
+                  className="mt-0.5 accent-[#8D0000] flex-shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="block font-body text-sm text-ink">{t(`cancelDialog.${who}`)}</span>
+                  <span className="block font-body text-xs text-ink/70 mt-0.5">{t(`cancelDialog.${who}Hint`)}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </DeleteConfirmation>
+
+      <AddBookingFlow
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        classes={pickableClasses}
+        upsells={upsellOptions}
+        onAdded={() => {
+          // The new booking goes to the top of the list: make sure no filter
+          // hides it.
+          clearFilters();
+          setPage(1);
+        }}
       />
-    </div>
+    </PageContainer>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Phone — one card per booking (the table takes over from `md`)
+// ═══════════════════════════════════════════════════════════════════════════
+function BookingCards({
+  bookings,
+  classMap,
+  onView,
+}: {
+  bookings: SerializedBooking[];
+  classMap: Record<string, ClassInfo>;
+  onView: (b: SerializedBooking) => void;
+}) {
+  const t = useTranslations('admin.bookings');
+  const tc = useTranslations('admin.common');
+  const dfLocale = dateFnsLocale(useLocale() as AppLocale);
+  const paymentBadge = usePaymentBadge();
+
+  return (
+    <ul className="md:hidden space-y-3">
+      {bookings.map((b) => {
+        const clase = classMap[b.classId];
+        const badge = paymentBadge(b.paymentStatus);
+        const isPending = b.paymentStatus === 'pending';
+        return (
+          <li key={b.id}>
+            <button
+              type="button"
+              onClick={() => onView(b)}
+              className={`w-full text-left p-4 border cursor-pointer transition-colors duration-200 ${
+                isPending
+                  ? 'bg-amber-50/70 border-amber-500/60 border-l-2 border-l-amber-500'
+                  : 'bg-white border-ink/10 active:bg-neutral-50'
+              }`}
+            >
+              <span className="flex items-start justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block font-body text-sm font-medium text-ink truncate">
+                    {b.firstName} {b.lastName}
+                  </span>
+                  <span className="block font-body text-xs text-ink/70 mt-0.5 truncate">{b.email}</span>
+                </span>
+                <Badge variant={badge.variant} className="flex-shrink-0">{badge.label}</Badge>
+              </span>
+              <span className="mt-3 flex items-baseline justify-between gap-3">
+                <span className="min-w-0 font-body text-sm text-ink truncate">{b.className}</span>
+                {clase && (
+                  <span className="flex-shrink-0 font-body text-xs text-ink/70">
+                    {format(inCostaRica(clase.startsAt), t('dates.classShort'), { locale: dfLocale })}
+                  </span>
+                )}
+              </span>
+              <span className="mt-2 flex items-baseline justify-between gap-3 font-body text-xs text-ink/70">
+                <span>
+                  {tc(`paymentMethod.${paymentMethodKey(b.paymentMethod)}`)}
+                  {b.persons > 1 && ` · ${t('table.people', { count: b.persons })}`}
+                </span>
+                <span className="font-body text-sm font-medium text-ink">
+                  {tc('units.priceUsd', { amount: bookingTotal(b) })}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -407,13 +577,11 @@ export default function ReservasClient({
 function BookingsTable({
   bookings,
   classMap,
-  upsellMap,
   onView,
   onCancel,
 }: {
   bookings: SerializedBooking[];
   classMap: Record<string, ClassInfo>;
-  upsellMap: Record<string, UpsellInfo>;
   onView: (b: SerializedBooking) => void;
   onCancel: (b: SerializedBooking) => void;
 }) {
@@ -422,19 +590,22 @@ function BookingsTable({
   const dfLocale = dateFnsLocale(useLocale() as AppLocale);
   const paymentBadge = usePaymentBadge();
 
+  // What fits decides what shows: the code and the booking date join from
+  // `xl`, the head count from `2xl`. All of it is always one click away in the
+  // drawer, and more than one person is noted under the total meanwhile.
   const headers = [
-    { label: tc('labels.code'), className: '' },
+    { label: tc('labels.code'), className: 'hidden xl:table-cell' },
     { label: tc('labels.student'), className: '' },
     { label: tc('labels.class'), className: '' },
-    { label: tc('labels.date'), className: 'hidden md:table-cell' },
-    { label: tc('labels.people'), className: 'hidden lg:table-cell' },
-    { label: tc('labels.total'), className: 'hidden lg:table-cell' },
+    { label: t('drawer.bookedOn'), className: 'hidden xl:table-cell' },
+    { label: tc('labels.people'), className: 'hidden 2xl:table-cell' },
+    { label: tc('labels.total'), className: '' },
     { label: tc('labels.status'), className: '' },
     { label: '', className: '' },
   ];
 
   return (
-    <div className="bg-white border border-ink/10 overflow-hidden">
+    <div className="hidden md:block bg-white border border-ink/10 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -442,7 +613,7 @@ function BookingsTable({
               {headers.map((h, i) => (
                 <th
                   key={i}
-                  className={`text-left px-4 py-3 font-body text-[10px] tracking-[0.2em] uppercase font-medium text-ink/50 ${h.className}`}
+                  className={`text-left px-3 py-3 font-body text-xs font-medium text-ink/70 whitespace-nowrap ${h.className}`}
                 >
                   {h.label}
                 </th>
@@ -452,7 +623,6 @@ function BookingsTable({
           <tbody>
             {bookings.map((b) => {
               const clase = classMap[b.classId];
-              const upsells = (b.upsells ?? []).map((id) => upsellMap[id]).filter(Boolean);
               const total = bookingTotal(b);
               const badge = paymentBadge(b.paymentStatus);
               // Pending bookings are the ones surfaced in the sidebar badge —
@@ -466,53 +636,58 @@ function BookingsTable({
                   onClick={() => onView(b)}
                   className={`border-b border-ink/[0.08] last:border-0 transition-colors duration-200 cursor-pointer ${
                     isPending
-                      ? 'bg-amber-50/70 hover:bg-amber-100/70 border-l-2 border-l-amber-500'
+                      ? 'bg-amber-50/70 hover:bg-amber-100/70'
                       : 'hover:bg-neutral-50'
                   }`}
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3 hidden xl:table-cell">
                     <span
-                      className={`font-mono text-xs px-2 py-0.5 ${
-                        isPending ? 'text-amber-900 bg-amber-100/60' : 'text-ink/70 bg-neutral-50'
+                      className={`font-mono text-xs px-2 py-0.5 whitespace-nowrap ${
+                        isPending ? 'text-amber-900 bg-amber-100/60' : 'text-ink/80 bg-neutral-50'
                       }`}
                     >
                       {b.bookingReference}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3 max-w-[14rem] 2xl:max-w-[18rem]">
                     <p className="font-body text-sm font-medium text-ink truncate">
                       {b.firstName} {b.lastName}
                     </p>
-                    <p className="font-body text-xs text-ink/50 mt-0.5 truncate">
+                    <p className="font-body text-xs text-ink/70 mt-0.5 truncate">
                       {b.email}
                     </p>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3 max-w-[12rem] 2xl:max-w-[16rem]">
                     <p className="font-body text-sm text-ink truncate">{b.className}</p>
                     {clase && (
-                      <p className="font-body text-xs text-ink/50 mt-0.5">
+                      <p className="font-body text-xs text-ink/70 mt-0.5 whitespace-nowrap">
                         {format(inCostaRica(clase.startsAt), t('dates.classShort'), { locale: dfLocale })}
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-4 hidden md:table-cell">
-                    <span className="font-body text-sm text-ink/80">
+                  <td className="px-3 py-3 hidden xl:table-cell">
+                    <span className="font-body text-sm text-ink/80 whitespace-nowrap">
                       {format(inCostaRica(b.createdAt), t('dates.dateShort'), { locale: dfLocale })}
                     </span>
                   </td>
-                  <td className="px-4 py-4 hidden lg:table-cell">
+                  <td className="px-3 py-3 hidden 2xl:table-cell">
                     <span className="font-body text-sm text-ink">{b.persons}</span>
                   </td>
-                  <td className="px-4 py-4 hidden lg:table-cell">
-                    <span className="font-body text-sm font-medium text-ink">{tc('units.priceUsd', { amount: total })}</span>
+                  <td className="px-3 py-3">
+                    <span className="font-body text-sm font-medium text-ink whitespace-nowrap">{tc('units.priceUsd', { amount: total })}</span>
+                    {b.persons > 1 && (
+                      <p className="font-body text-xs text-ink/70 mt-0.5 whitespace-nowrap 2xl:hidden">
+                        {t('table.people', { count: b.persons })}
+                      </p>
+                    )}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
-                    <p className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/40 mt-1.5">
+                    <p className="font-body text-xs text-ink/70 mt-1">
                       {tc(`paymentMethod.${paymentMethodKey(b.paymentMethod)}`)}
                     </p>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3">
                     <div
                       className="flex items-center justify-end gap-1"
                       onClick={(e) => e.stopPropagation()}
@@ -578,7 +753,7 @@ function Pagination({
 
   return (
     <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <p className="font-body text-xs text-ink/50">
+      <p className="font-body text-xs text-ink/70">
         {t.rich('pagination.showing', {
           first,
           last,
@@ -600,7 +775,7 @@ function Pagination({
           p === 'gap' ? (
             <span
               key={`gap-${i}`}
-              className="px-2 font-body text-sm text-ink/30 select-none"
+              className="px-2 font-body text-sm text-ink/70 select-none"
             >
               …
             </span>
@@ -680,34 +855,34 @@ function BookingDrawerContent({
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex justify-between items-center px-6 py-4 border-b border-ink/10">
-        <span className="font-mono text-xs text-ink/70 bg-neutral-50 px-2 py-0.5">
+      <div className="sticky top-0 z-10 bg-white flex justify-between items-center px-5 sm:px-6 py-3 border-b border-ink/10">
+        <span className="font-mono text-xs text-ink/80 bg-neutral-50 px-2 py-0.5">
           {booking.bookingReference}
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label={t('drawer.close')}
-          className="p-2 text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
+          className="w-10 h-10 -mr-2 inline-flex items-center justify-center text-ink hover:opacity-70 transition-opacity duration-200 cursor-pointer"
         >
           <X width={20} height={20} strokeWidth={1.5} />
         </button>
       </div>
 
       {/* Body */}
-      <div className="px-6 py-6">
-        <h2 className="font-body text-xl font-medium text-ink leading-tight">
+      <div className="px-5 sm:px-6 py-6">
+        <h2 className="font-body text-xl font-medium text-ink leading-tight break-words">
           {booking.firstName} {booking.lastName}
         </h2>
         <div className="mt-3 flex items-center gap-3">
           <Badge variant={badge.variant}>{badge.label}</Badge>
-          <span className="font-body text-[10px] tracking-[0.15em] uppercase text-ink/50">
+          <span className="font-body text-sm text-ink/70">
             {tc(`paymentMethod.${paymentMethodKey(booking.paymentMethod)}`)}
           </span>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-wrap gap-3 mt-6">
           {booking.paymentStatus === 'pending' && (
             <Button
               variant="primary"
@@ -782,7 +957,7 @@ function BookingDrawerContent({
               {upsells.map((u) => (
                 <li key={u.id} className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2 font-body text-sm text-ink/70">
-                    <DollarSign width={14} height={14} strokeWidth={1.5} className="text-ink/40" />
+                    <DollarSign width={14} height={14} strokeWidth={1.5} className="text-ink/60" />
                     {u.name}
                   </span>
                   <span className="font-body text-sm font-medium text-ink">{tc('units.priceUsd', { amount: u.priceUsd })}</span>
@@ -805,7 +980,7 @@ function BookingDrawerContent({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-8 pt-6 border-t border-ink/10">
-      <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50 mb-4">
+      <p className="font-body text-sm font-medium text-ink mb-4">
         {title}
       </p>
       <div className="space-y-3">{children}</div>
@@ -824,12 +999,12 @@ function DrawerRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-ink/40 flex-shrink-0 mt-0.5">{icon}</span>
+      <span className="text-ink/60 flex-shrink-0 mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-[10px] tracking-[0.2em] uppercase text-ink/50">
+        <p className="font-body text-xs text-ink/70">
           {label}
         </p>
-        <p className="font-body text-sm text-ink mt-0.5 truncate">{value}</p>
+        <p className="font-body text-sm text-ink mt-0.5 break-words">{value}</p>
       </div>
     </div>
   );

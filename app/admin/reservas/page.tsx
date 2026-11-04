@@ -1,14 +1,15 @@
 import { getAllBookings } from '@/lib/queries/bookings';
 import { getAllClasses } from '@/lib/queries/classes';
-import { getAllUpsells } from '@/lib/queries/upsells';
+import { getActiveUpsells, getAllUpsells } from '@/lib/queries/upsells';
 import ReservasClient from './_components/ReservasClient';
 import type { Booking, YogaClass } from '@/types';
 
 export default async function AdminReservasPage() {
-  const [bookings, classes, upsells] = await Promise.all([
+  const [bookings, classes, upsells, activeUpsells] = await Promise.all([
     getAllBookings(),
     getAllClasses(),
     getAllUpsells(),
+    getActiveUpsells(),
   ]);
 
   const serializedBookings = bookings.map(b => ({
@@ -35,6 +36,17 @@ export default async function AdminReservasPage() {
       initialBookings={serializedBookings}
       classMap={classMap}
       upsellMap={upsellMap}
+      pickableClasses={classes
+        .filter((c) => c.isActive)
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          startsAt: c.startsAt.toISOString(),
+          instructor: c.instructor,
+          spotsRemaining: c.spotsRemaining,
+          priceUsd: c.priceUsd,
+        }))}
+      upsellOptions={activeUpsells.map((u) => ({ id: u.id, name: u.name, priceUsd: u.priceUsd }))}
     />
   );
 }

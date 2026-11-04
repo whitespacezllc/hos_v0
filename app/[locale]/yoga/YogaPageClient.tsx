@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 import { useRouter } from '@/i18n/navigation';
 import { motion, Variants, useInView } from 'framer-motion';
 import { format, isSameDay } from 'date-fns';
@@ -397,7 +398,15 @@ function WeeklyCalendar({ initialClasses }: { initialClasses: SerializedClass[] 
           </div>
         </motion.div>
 
-        <p className="font-body text-xs text-ink/60 mt-6">{t('timezone')}</p>
+        <p className="font-body text-xs text-ink/60 mt-6">
+          {t('timezone')}{' '}
+          <Link
+            href={SHALA_POLICY_PATH}
+            className="underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+          >
+            {t('policyLink')}
+          </Link>
+        </p>
 
         {/* DESKTOP — 7 column day grid */}
         <div className="hidden lg:grid grid-cols-7 gap-x-2 lg:gap-x-4 mt-12 lg:mt-16">

@@ -15,6 +15,8 @@ import { startBookingCheckout, type CheckoutError } from '@/app/actions/checkout
 import type { PaymentMethod } from '@/lib/payment-methods';
 import type { ClassPack } from '@/lib/queries/packs';
 import type { AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/navigation';
+import { SHALA_POLICY_PATH } from '@/lib/shala-policy';
 import { dateFnsLocale } from '@/lib/dates';
 import { inCostaRica } from '@/lib/costa-rica-time';
 import { downloadICS } from '@/lib/ics';
@@ -946,8 +948,16 @@ export default function BookingFlow({
                         </div>
 
                         {/* Cancellation note */}
-                        <p className="font-body text-xs text-ink mt-6">
-                          {t('step4.cancellation')}
+                        <p className="font-body text-xs text-ink leading-relaxed mt-6">
+                          {t('step4.cancellation')}{' '}
+                          {/* In a new tab: leaving the page would lose the booking in progress. */}
+                          <Link
+                            href={SHALA_POLICY_PATH}
+                            target="_blank"
+                            className="underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300"
+                          >
+                            {t('step4.cancellationLink')}
+                          </Link>
                         </p>
 
                         {/* Error message */}
