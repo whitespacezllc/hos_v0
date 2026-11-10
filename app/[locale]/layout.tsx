@@ -6,6 +6,7 @@ import { SHARED_NAMESPACES, pickMessages } from '@/i18n/messages'
 import { Analytics } from '@vercel/analytics/next'
 import { routing, localeFromParams, type LocaleParams } from '@/i18n/routing'
 import { FONT_VARIABLES } from '@/lib/fonts'
+import { GoogleTagManager } from '@/components/seo/GoogleTagManager'
 import { SplashScreen } from '@/components/landing/SplashScreen'
 import { WhatsAppButton } from '@/components/landing/WhatsAppButton'
 import { BUSINESS } from '@/lib/business'
@@ -111,6 +112,11 @@ export default async function RootLayout({ children, params }: LocaleParams & { 
 
   return (
     <html lang={locale} className={FONT_VARIABLES}>
+      <head>
+        {/* Google Tag Manager, once per page — see the component. Next still
+            puts charset, viewport and its own preloads ahead of it. */}
+        <GoogleTagManager />
+      </head>
       <body className="font-body antialiased">
         {/* Pre-paint splash decision. An inline synchronous script blocks the
             parser for microseconds and runs BEFORE anything below it paints —
