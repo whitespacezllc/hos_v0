@@ -80,15 +80,6 @@ export function YTTIncluded() {
               </motion.li>
             ))}
           </motion.ul>
-
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-            transition={{ duration: 1.0, ease: 'easeOut', delay: 0.3 }}
-            className="font-body text-xs text-ink/60 leading-[1.7] mt-8 italic"
-          >
-            {t.included.note}
-          </motion.p>
         </div>
       </div>
     </section>

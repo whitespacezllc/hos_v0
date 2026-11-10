@@ -210,7 +210,7 @@ export async function GET() {
     '',
     H(3, ytt.included.heading),
     bullets(ytt.included.items),
-    `${ytt.included.notHeading}: ${ytt.included.notItems.join('; ')}. ${ytt.included.note}`,
+    `${ytt.included.notHeading}: ${ytt.included.notItems.join('; ')}.`,
     '',
     H(3, ytt.pricing.heading),
     bullets(ytt.pricing.tiers.map((t) => `${t.name}: ${t.price} USD — ${t.detail}`)),
