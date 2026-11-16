@@ -30,11 +30,45 @@ El script (1,3 MB) se carga **solo** en `/book`, no en el `<head>` global: ningu
 
 Nada de esto vive en el código: cambia el dominio → hay que actualizar la lista en Cloudbeds.
 
-**Estado al 2026-09-10 (verificado con `curl` contra la API de Cloudbeds):** `houseofshakticr.com` ya está en la lista; `www.houseofshakticr.com` y `localhost` no. Y el sitio en producción redirige `houseofshakticr.com` → `www.houseofshakticr.com` (308, configurado en Vercel), así que el navegador siempre está en `www` y el motor queda bloqueado por CORS hasta que se agregue `www.houseofshakticr.com`. Cómo comprobarlo desde la terminal (si la respuesta trae `access-control-allow-origin`, el dominio está autorizado):
+**Estado al 2026-11-16 (verificado con `curl` contra la API de Cloudbeds):** `houseofshakticr.com` y `www.houseofshakticr.com` están en la lista; `localhost` no. Los dos hosts sirven el sitio (200, sin redirigir uno al otro) y en los dos el motor carga. Cómo comprobarlo desde la terminal (si la respuesta trae `access-control-allow-origin`, el dominio está autorizado). Tiene que ser un GET: a un `curl -I` (HEAD) Cloudbeds ya no le contesta el encabezado CORS aunque el dominio esté autorizado, y parece que no lo está:
 
 ```bash
-curl -sI -H "Origin: https://www.houseofshakticr.com" "https://api.cloudbeds.com/mapping/v1.0/mfd/property?hash=zE6Wy8" | grep -i access-control-allow-origin
+curl -s -D - -o /dev/null -H "Origin: https://www.houseofshakticr.com" "https://api.cloudbeds.com/mapping/v1.0/mfd/property?hash=zE6Wy8" | grep -i access-control-allow-origin
 ```
+
+## Medición: la conversión de reservas en Google Ads
+
+El sitio carga Google Tag Manager (`GTM-5VWZBWCM`, solo en producción) desde `components/seo/GoogleTagManager.tsx`. Ahí viven el GA4 (`G-L8LPX1HHQH`) y el tag de Google Ads (`AW-18552728484`) que maneja quien lleva la publicidad. **La reserva no la mide GTM: la dispara Cloudbeds**, desde el motor embebido, con `window.gtag(...)` sobre el `dataLayer` de nuestra página:
+
+| Evento | Cuándo | Llega a |
+|---|---|---|
+| `cb_booking_engine_load` | al cargar el motor | GA4 y Ads, vía los tags de GTM |
+| `add_to_cart`, `begin_checkout`… | durante el flujo | ídem |
+| `purchase` | al crearse la reserva, si la propiedad tiene `amplify_allow_ga4_purchase_event` | ídem |
+| `conversion` (con `send_to: '<id>/<etiqueta>'`, `value`, `transaction_id`) | al crearse la reserva, **solo si se cumplen las cuatro condiciones de abajo** | la acción de conversión de Google Ads |
+
+Las cuatro condiciones del evento `conversion`, sacadas del propio bundle de Cloudbeds (`index13.chunk.js`, noviembre de 2026):
+
+1. `amplify_allow_ga4_purchase_event` en `true` para la propiedad. Lo está.
+2. El flag `feature.booking-engine.trigger-ga-conversion-event` prendido en el LaunchDarkly de Cloudbeds para `property:152169755963593`. Lo está.
+3. **ID y etiqueta de conversión cargados en Cloudbeds** → Settings → Booking Engine → Analytics → conexión GA4: ID `AW-18552728484` (con el `AW-`) y etiqueta `tpnlCOS60LUdEKTX0I5F`.
+4. **Que el `dataLayer` de la página tenga un `gtag('config', '<el mismo ID>')`.** El tag de Ads dentro de GTM no deja esa entrada, así que la pone `GoogleTagManager.tsx` (con `send_page_view: false`, para no contar dos veces la visita). El ID tiene que coincidir carácter por carácter con el que está en Cloudbeds.
+
+Si falta una sola, la reserva se crea igual pero la conversión no sale y no hay ningún error en consola.
+
+El ID de medición de GA4 y el dominio que se cargan en esa misma pantalla **no los usa el motor embebido** (solo carga el GA4 interno de Cloudbeds, en su propio `beDataLayer`); sirven para el motor alojado en `hotels.cloudbeds.com`, que aparece solo si nuestro script no llega. Cargarlos no duplica nada en el sitio. Cloudbeds deja elegir conexión GA4 **o** GTM, no las dos: tiene que ser GA4.
+
+**Cómo ver qué está cargado sin entrar al panel:** la configuración pública que recibe el motor (`POST https://us2.cloudbeds.com/booking/property_info`) trae esos campos. Desde la terminal Cloudbeds le devuelve 403 a `curl`; desde el navegador sí contesta. En `houseofshakticr.com/book`, consola de DevTools:
+
+```js
+const r = await fetch('https://us2.cloudbeds.com/booking/property_info', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'property_code=zE6Wy8&lang=en&booking_engine_source=immersive-experience&iframe=false' });
+const d = (await r.json()).data;
+['google_conversion_id', 'google_conversion_label', 'ga_client_id', 'ga_primary_domain', 'amplify_allow_ga4_purchase_event'].map((k) => `${k} = ${JSON.stringify(d[k])}`).join('\n');
+```
+
+(O en la pestaña Network, el pedido `property_info` → Response.) Al 2026-11-16, antes de la carga, los cuatro primeros estaban vacíos (`null` o `""`).
+
+**Para probarla de punta a punta** hace falta una reserva real en `/book`: con Tag Assistant (tagassistant.google.com) conectado a la página se ve salir el `conversion` al confirmar. Esa reserva cuenta como una conversión real en Google Ads, con su valor; después se cancela en Cloudbeds.
 
 ## Pre-llenar la búsqueda
 

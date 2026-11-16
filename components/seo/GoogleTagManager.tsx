@@ -12,11 +12,29 @@
 //
 // Production only: local dev and Vercel previews would otherwise send page
 // views from localhost and *.vercel.app into the same GA4 property.
+//
+// ─── The Google Ads `config` line, and why the booking needs it ─────────────
+// The booking conversion is fired by Cloudbeds, not by us: when a reservation
+// is created, the Immersive Experience calls
+// gtag('event', 'conversion', { send_to: '<id>/<label>', value, transaction_id… })
+// on this page, with the conversion ID and label loaded in Cloudbeds →
+// Settings → Booking Engine → Analytics. But it only does so if this page's
+// dataLayer already holds a gtag('config', '<that same id>') — its own check,
+// read from their bundle (the `ql` guard in index13.chunk.js, Nov 2026). The
+// Ads tag living inside the GTM container does not leave that entry in the
+// dataLayer, so without the line below the conversion never fires.
+//
+// `send_page_view: false` because the Google tag in GTM already sends the
+// page view to this account; the line exists to pass Cloudbeds' check and to
+// route the conversion, not to count visits twice. The ID must match the one
+// in Cloudbeds character for character, AW- prefix included.
 
 export const GTM_ID = 'GTM-5VWZBWCM';
+export const GOOGLE_ADS_ID = 'AW-18552728484';
 
 const GTM_STUB =
-  "window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());";
+  "window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());" +
+  `gtag('config', '${GOOGLE_ADS_ID}', { send_page_view: false });`;
 
 export function GoogleTagManager() {
   if (process.env.VERCEL_ENV !== 'production') return null;
