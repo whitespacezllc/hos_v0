@@ -1525,7 +1525,7 @@
       "phone": "Phone",
       "optional": "(optional)",
       "code": "Referral / packs code",
-      "codePlaceholder": "e.g. SURF-CAMP or your pack code",
+      "codePlaceholder": "Your referral or pack code",
       "apply": "Apply",
       "placeholders": {
         "firstName": "Ana",

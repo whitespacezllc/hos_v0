@@ -408,6 +408,17 @@ export default function BookingFlow({
       });
 
       if (!res.ok) {
+        if (res.error === 'code_invalid') {
+          // Cash/Venmo now hold the spot and drop an invalid code, so only card
+          // reaches here. The code field lives on step 3 — send the customer
+          // back to it with the error shown, instead of a dead end on step 4
+          // where there is nothing to remove.
+          setAppliedCode(null);
+          setCodeErrorKey('invalid');
+          setCodeStatus('error');
+          goToStep(3);
+          return;
+        }
         setBookingError(errorKind(res.error));
         return;
       }
