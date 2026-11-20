@@ -268,8 +268,15 @@ export async function startBookingCheckout(input: CheckoutInput): Promise<Checko
   }
 
   // ══ DROP-IN: pay this class (+upsells); a code may discount or waive it ══════
-  const outcome = await evaluateCode(supabase, clean(personalData.referralCode), classPrice, upsells);
-  if (outcome.kind === 'invalid') return { ok: false, error: 'code_invalid' };
+  let outcome = await evaluateCode(supabase, clean(personalData.referralCode), classPrice, upsells);
+  if (outcome.kind === 'invalid') {
+    // An unknown or expired code must never trap a reservation. Cash/Venmo are
+    // settled in person, so we drop the code and hold the spot at full price
+    // instead of sending the customer into a dead end. Card still stops here:
+    // we must not silently charge full price after a code was entered.
+    if (isOffline) outcome = { kind: 'none' };
+    else return { ok: false, error: 'code_invalid' };
+  }
 
   const classCharged = outcome.kind === 'pack' ? 0 : classPrice;
   const discount = outcome.kind === 'referral' ? outcome.discount : 0;
