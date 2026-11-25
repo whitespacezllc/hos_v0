@@ -1499,6 +1499,18 @@
       "step3": "Tus datos",
       "step4": "Pago"
     },
+    "options": {
+      "title": "¿Cómo quieres reservar?",
+      "intro": "Reserva solo esta clase o ahorra con un pack: el pack cubre esta clase y te enviamos por correo un código para las demás.",
+      "dropin": "Clase suelta",
+      "packOf": "Pack de {count}",
+      "dropinDetail": "Solo esta clase",
+      "packDetail": "Esta clase + {rest} más · ${perClass} por clase",
+      "savings": "Ahorra ${amount}",
+      "required": "Elige una opción para continuar.",
+      "haveCode": "¿Ya tienes un pack? <choose>Elige clase suelta</choose> e ingresa tu código junto con tus datos.",
+      "change": "Cambiar"
+    },
     "step1": {
       "descriptionFallback": "Una práctica con raíces, al ritmo del cuerpo.",
       "instructor": "Instructor/a",
@@ -1554,11 +1566,7 @@
       "packCodeApplied": "Pack de clases aplicado"
     },
     "step4": {
-      "intro": "Paga de forma segura con tarjeta ahora, o con Venmo o en efectivo en el estudio. Elige una clase suelta o ahorra con un pack: el pack también cubre esta clase y te envía un código para las próximas.",
-      "packs": {
-        "dropin": "Clase suelta"
-      },
-      "savings": "Ahorra ${amount}",
+      "intro": "Paga de forma segura con tarjeta ahora, o con Venmo o en efectivo en el estudio.",
       "priceUsd": "${amount} USD",
       "paymentMethod": "Forma de pago",
       "methods": {
@@ -1590,7 +1598,6 @@
         "venmo": "Pagar con Venmo",
         "cash": "Reservar"
       },
-      "packOf": "Pack de {count}",
       "cancellationLink": "Leer la política completa"
     },
     "navigation": {
@@ -1604,6 +1611,7 @@
       "duration": "DURACIÓN",
       "minutes": "{count} minutos",
       "classLabel": "Clase",
+      "chooseOption": "Elige una opción",
       "free": "Gratis",
       "included": "Incluido",
       "code": "Código {code}",
@@ -1637,6 +1645,8 @@
       "emailSent": "Enviamos los detalles a {email}.",
       "emailSentGeneric": "Enviamos los detalles a tu correo.",
       "pendingNote": "Ten a mano tu referencia de reserva para el pago.",
+      "packPending": "En cuanto recibamos el pago te enviaremos por correo tu código personal para {rest, plural, one {la clase restante} other {las # clases restantes}}.",
+      "packConfirmed": "Tu código personal para {rest, plural, one {la clase restante} other {las # clases restantes}} va en camino a tu correo.",
       "addToCalendar": "Agregar al calendario",
       "backToClasses": "Volver a las clases",
       "dateFormat": "EEEE d 'de' MMMM 'de' yyyy",
@@ -1745,6 +1755,8 @@
       },
       "bookClass": "Reservar una clase",
       "tryAgain": "Intentar de nuevo",
+      "classBooked": "Tu lugar en <strong>{className}</strong> el {date} ya está reservado: usa la primera clase de tu pack.",
+      "classDateFormat": "EEEE d 'de' MMMM 'a las' HH:mm",
       "code": {
         "label": "Tu código de clases",
         "body": "{count, plural, =1 {1 clase} other {# clases}}. También te lo enviamos por correo: ingrésalo en el campo «Código de referido / pack» al reservar."
@@ -1812,7 +1824,8 @@
         "extras": "Extras",
         "payment": "Pago",
         "total": "Total",
-        "amountDue": "Monto a pagar"
+        "amountDue": "Monto a pagar",
+        "pack": "Pack de clases"
       },
       "minutes": "{count} minutos",
       "included": "Incluido",

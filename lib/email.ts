@@ -54,21 +54,54 @@ type Deliverable = {
   replyTo?: string;
 };
 
+const RATE_LIMIT_RETRIES = 3;
+
+function sendOnce(mail: Deliverable) {
+  return resend!.emails.send({
+    from: FROM,
+    to: mail.to,
+    replyTo: mail.replyTo ?? BUSINESS.email.general,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    attachments: mail.attachments,
+  });
+}
+
+// The per-second limit, not a daily or monthly quota: waiting a moment fixes
+// the first and nothing fixes the others.
+function isRateLimited(error: { name?: string; statusCode?: number | null } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.name === 'rate_limit_exceeded') return true;
+  return error.statusCode === 429 && !/quota/.test(error.name ?? '');
+}
+
+// Resend says how long to wait (retry-after, in seconds); otherwise a little
+// over a second, a bit longer each time.
+function retryDelayMs(headers: Record<string, string> | null | undefined, attempt: number): number {
+  const after = Number(headers?.['retry-after']);
+  const fallback = 1100 * attempt;
+  return Number.isFinite(after) && after > 0 ? Math.min(after * 1000, 5000) : fallback;
+}
+
 async function deliver(mail: Deliverable): Promise<SendResult> {
   if (!resend) {
     console.warn(`[email] RESEND_API_KEY not set — skipping ${mail.tag}`);
     return { sent: false, skipped: true };
   }
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM,
-      to: mail.to,
-      replyTo: mail.replyTo ?? BUSINESS.email.general,
-      subject: mail.subject,
-      html: mail.html,
-      text: mail.text,
-      attachments: mail.attachments,
-    });
+    let attempt = 0;
+    let result = await sendOnce(mail);
+    // Resend takes 2 requests a second per account. A pack bought by card
+    // sends three back to back (the booking, the studio's heads-up, the pack's
+    // code) and the third used to bounce — the customer paid and never got
+    // their code. A rate-limited send was not sent, so trying again is safe.
+    while (isRateLimited(result.error) && attempt < RATE_LIMIT_RETRIES) {
+      attempt++;
+      await new Promise((r) => setTimeout(r, retryDelayMs(result.headers, attempt)));
+      result = await sendOnce(mail);
+    }
+    const { data, error } = result;
     if (error) {
       console.error(`[email] ${mail.tag} send failed:`, error);
       return { sent: false, error: error.message ?? String(error) };
@@ -267,6 +300,11 @@ export type BookingEmailData = {
   /** The referral or pack code the customer typed, if any. */
   code: string | null;
   packName: string | null;
+  /**
+   * pack_purchase only: what the pack costs. The booking's own total holds the
+   * extras alone, so the amount the customer pays (or paid) is both together.
+   */
+  packPriceUsd?: number | null;
   /** cancelled only: a pack credit was given back. */
   creditReturned?: boolean;
   /** cancelled only: who cancelled, which decides what the email offers. */
@@ -275,6 +313,16 @@ export type BookingEmailData = {
   wasPaid?: boolean;
   locale: AppLocale;
 };
+
+/**
+ * What the customer pays, or paid, for this booking: its own total, plus the
+ * pack bought together with it. Without the pack, a pack paid in cash read
+ * "Amount due: Free" — the booking row carries the extras only.
+ */
+export function amountWithPack(d: Pick<BookingEmailData, 'totalUsd' | 'coveredBy' | 'packPriceUsd'>): number {
+  const pack = d.coveredBy === 'pack_purchase' ? Number(d.packPriceUsd ?? 0) : 0;
+  return Math.round((Number(d.totalUsd) + pack) * 100) / 100;
+}
 
 export function bookingEmailSubject(d: BookingEmailData): string {
   const t = translator(d.locale, 'email.booking');
@@ -371,6 +419,9 @@ export function bookingEmailHtml(d: BookingEmailData): string {
     { label: t('labels.duration'), value: escapeHtml(t('minutes', { count: d.durationMinutes })) },
     { label: t('labels.location'), value: escapeHtml(d.location) },
   );
+  if (d.coveredBy === 'pack_purchase' && d.packName && d.packPriceUsd != null) {
+    rows.push({ label: t('labels.pack'), value: `${escapeHtml(d.packName)} · ${formatUsd(Number(d.packPriceUsd))}` });
+  }
   if (d.extras.length > 0) {
     rows.push({
       label: t('labels.extras'),
@@ -381,7 +432,7 @@ export function bookingEmailHtml(d: BookingEmailData): string {
   }
 
   // How it was, or will be, paid.
-  const total = Number(d.totalUsd);
+  const total = amountWithPack(d);
   let paymentLine: string;
   if (isPending) {
     paymentLine = escapeHtml(t(`paymentMethod.${d.paymentMethod === 'venmo' ? 'venmo' : 'cash'}`));
@@ -466,6 +517,9 @@ function bookingEmailText(d: BookingEmailData): string {
     }
     opening.push('');
   }
+  // A cancellation keeps the booking's own total: with the pack's price added
+  // it would read as money to be given back, which the email doesn't promise.
+  const textAmount = d.event === 'cancelled' ? Number(d.totalUsd) : amountWithPack(d);
   const lines = [
     t('hello', { firstName: d.firstName }),
     '',
@@ -476,7 +530,7 @@ function bookingEmailText(d: BookingEmailData): string {
     `${t('labels.date')}: ${formatEmailDate(d.startsAt, d.locale)}`,
     `${t('labels.time')}: ${formatEmailTime(d.startsAt, d.durationMinutes)} (${c('timezone')})`,
     `${t('labels.location')}: ${d.location}`,
-    `${t(d.event === 'pending' ? 'labels.amountDue' : 'labels.total')}: ${Number(d.totalUsd) === 0 ? t('free') : formatUsd(Number(d.totalUsd))}`,
+    `${t(d.event === 'pending' ? 'labels.amountDue' : 'labels.total')}: ${textAmount === 0 ? t('free') : formatUsd(textAmount)}`,
     ...policy,
     '',
     c('questions'),
@@ -554,13 +608,16 @@ export function packCodeHtml(params: PackCodeEmail): string {
 }
 
 export async function sendPackCodeEmail(params: PackCodeEmail): Promise<SendResult> {
-  const { to, code, packName, classesTotal, locale = routing.defaultLocale } = params;
+  const { to, code, packName, classesTotal, classesRemaining, locale = routing.defaultLocale } = params;
   const t = translator(locale, 'email.packCode');
+  // What's left, as the HTML says it: a pack bought with a class has spent one.
+  const remaining =
+    classesRemaining != null && classesRemaining !== classesTotal ? ['', t('remaining', { count: classesRemaining })] : [];
   return deliver({
     to,
     subject: t('subject', { packName }),
     html: packCodeHtml(params),
-    text: [t('hello', { firstName: params.firstName }), '', t('useCode'), '', code, '', t('works', { count: classesTotal })].join('\n'),
+    text: [t('hello', { firstName: params.firstName }), '', t('useCode'), '', code, '', t('works', { count: classesTotal }), ...remaining].join('\n'),
     tag: `pack-code:${classesTotal}`,
     // Classes and packs are the shala's business: a reply reaches the studio.
     replyTo: BUSINESS.email.yogaStudio,

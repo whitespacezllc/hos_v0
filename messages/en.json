@@ -1499,6 +1499,18 @@
       "step3": "Your details",
       "step4": "Payment"
     },
+    "options": {
+      "title": "How would you like to book?",
+      "intro": "Book just this class, or save with a pack: the pack covers this class, and we email you a code for the rest.",
+      "dropin": "Drop-in",
+      "packOf": "Pack of {count}",
+      "dropinDetail": "This class only",
+      "packDetail": "This class + {rest} more · ${perClass} per class",
+      "savings": "Save ${amount}",
+      "required": "Choose an option to continue.",
+      "haveCode": "Already have a pack? <choose>Choose drop-in</choose> and enter your code with your details.",
+      "change": "Change"
+    },
     "step1": {
       "descriptionFallback": "A grounded practice paced to the rhythm of the body.",
       "instructor": "Instructor",
@@ -1554,11 +1566,7 @@
       "packCodeApplied": "Class pack applied"
     },
     "step4": {
-      "intro": "Pay securely by card now, or settle with Venmo or in cash at the studio. Choose a single class or save with a pack — a pack also covers this class and sends you a code for future ones.",
-      "packs": {
-        "dropin": "Drop-in"
-      },
-      "savings": "Save ${amount}",
+      "intro": "Pay securely by card now, or settle with Venmo or in cash at the studio.",
       "priceUsd": "${amount} USD",
       "paymentMethod": "Payment method",
       "methods": {
@@ -1590,7 +1598,6 @@
         "venmo": "Pay with Venmo",
         "cash": "Reserve"
       },
-      "packOf": "Pack of {count}",
       "cancellationLink": "Read the full policy"
     },
     "navigation": {
@@ -1604,6 +1611,7 @@
       "duration": "DURATION",
       "minutes": "{count} minutes",
       "classLabel": "Class",
+      "chooseOption": "Choose an option",
       "free": "Free",
       "included": "Included",
       "code": "Code {code}",
@@ -1637,6 +1645,8 @@
       "emailSent": "We've sent the details to {email}.",
       "emailSentGeneric": "We've sent the details to your email.",
       "pendingNote": "Keep your booking reference handy for payment.",
+      "packPending": "Once we receive the payment, we'll email your personal code for the remaining {rest, plural, one {class} other {# classes}}.",
+      "packConfirmed": "Your personal code for the remaining {rest, plural, one {class} other {# classes}} is on its way to your email.",
       "addToCalendar": "Add to calendar",
       "backToClasses": "Back to classes",
       "dateFormat": "EEEE, MMMM d yyyy",
@@ -1745,6 +1755,8 @@
       },
       "bookClass": "Book a class",
       "tryAgain": "Try again",
+      "classBooked": "Your place in <strong>{className}</strong> on {date} is already booked: it uses the first class of your pack.",
+      "classDateFormat": "EEEE, MMMM d 'at' HH:mm",
       "code": {
         "label": "Your class code",
         "body": "{count, plural, =1 {1 class} other {# classes}}. We've also emailed it to you — enter it in the “Referral / packs code” field when you book."
@@ -1812,7 +1824,8 @@
         "extras": "Extras",
         "payment": "Payment",
         "total": "Total",
-        "amountDue": "Amount due"
+        "amountDue": "Amount due",
+        "pack": "Class pack"
       },
       "minutes": "{count} minutes",
       "included": "Included",

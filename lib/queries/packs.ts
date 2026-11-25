@@ -51,6 +51,32 @@ export async function getSellablePacks(): Promise<ClassPack[]> {
   }
 }
 
+// Public: the studio's standard price for one class — the catalogue's
+// drop-in row. The booking flow measures a pack's saving against it rather
+// than against the class at hand, which may be a special-priced workshop.
+// Null if the row is missing or unreadable: the flow then falls back to the
+// class's own price.
+export async function getStandardDropInUsd(): Promise<number | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('class_packs')
+      .select('price_usd')
+      .eq('classes_count', 1)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error('[getStandardDropInUsd]', error.message);
+      return null;
+    }
+    return data ? Number(data.price_usd) : null;
+  } catch (err) {
+    console.error('[getStandardDropInUsd] unexpected:', err);
+    return null;
+  }
+}
+
 type PurchaseRow = {
   id: string;
   pack_id: string | null;

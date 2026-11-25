@@ -7,7 +7,8 @@ import { useTranslations } from 'next-intl';
 
 type Props = {
   className: string;
-  total: number;
+  /** Null while drop-in or pack is still to be chosen: the bar names the class alone. */
+  total: number | null;
   isFree: boolean;
   children: ReactNode; // the BookingSummary rendered inside, in `bare` mode
 };
@@ -31,7 +32,7 @@ export function BookingMobileSummary({
         aria-expanded={isExpanded}
       >
         <span className="font-body text-sm text-ink truncate pr-3">
-          {isFree ? t('free') : `$${total}`} — {className}
+          {total === null ? className : `${isFree ? t('free') : `$${total}`} — ${className}`}
         </span>
         <span className="flex items-center gap-2 flex-shrink-0">
           <span className="font-body text-xs text-ink">

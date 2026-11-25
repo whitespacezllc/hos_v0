@@ -1,7 +1,7 @@
 import { getClassById } from '@/lib/queries/classes';
 import { isOnSchedule } from '@/types';
 import { getActiveUpsells } from '@/lib/queries/upsells';
-import { getSellablePacks } from '@/lib/queries/packs';
+import { getSellablePacks, getStandardDropInUsd } from '@/lib/queries/packs';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { localeFromParams } from '@/i18n/routing';
@@ -15,10 +15,11 @@ export default async function BookingPage({
 }) {
   const [locale, { classId }] = await Promise.all([localeFromParams(params), params]);
   setRequestLocale(locale);
-  const [clase, upsells, packs] = await Promise.all([
+  const [clase, upsells, packs, standardDropInUsd] = await Promise.all([
     getClassById(classId),
     getActiveUpsells(),
     getSellablePacks(),
+    getStandardDropInUsd(),
   ]);
 
   // A link to a session that left the schedule (its class was switched off, or
@@ -43,6 +44,7 @@ export default async function BookingPage({
       imageUrl={clase.image_url ?? undefined}
       upsells={upsells}
       packs={packs}
+      standardDropInUsd={standardDropInUsd}
       locale={locale}
     />
     </PageMessages>
