@@ -18,17 +18,39 @@ visitante, la administradora o el servidor (`lib/costa-rica-time.ts`).
 | Código de pack | La clase sale $0; el crédito se descuenta **al crear la reserva** (y vuelve si la reserva muere: rechazada, abandonada, cancelada). Los extras se cobran aparte (tarjeta/efectivo/Venmo). | "Confirmed" (o "Reserved" si hay extras por cobrar) |
 | Código de referido | Descuento por porcentaje, fijo o extra gratis; se consume al confirmar el pago. | según el método |
 
-**Pack de clases.** Desde `/paquetes` (solo tarjeta) o desde el paso 4 de
+**Pack de clases.** Desde `/paquetes` (solo tarjeta) o desde el paso 1 de
 una reserva (tarjeta, efectivo o Venmo, junto con esa clase). Al confirmarse
 el pago se genera el código `PACK-XXXXXX`, se gasta el primer crédito en la
 clase reservada (si la hubo) y se envía el correo con el código y las clases
 que quedan. El cliente lo escribe en el campo "Referral / packs code" al
 reservar; `redeem_pack_code` descuenta un crédito por reserva.
 
+**Drop-in o pack, en el paso 1.** Al abrir una clase el cliente elige entre
+Drop-in y cada pack activo de `class_packs` (hoy x5 y x10), **sin nada
+preseleccionado**: "Continue" sin elegir pide la elección. Cada pack muestra su
+precio por clase y el ahorro contra el drop-in estándar (la fila
+`classes_count = 1`), no contra el precio de esa clase, para que un taller más
+caro no prometa un ahorro que las clases siguientes no dan. Una clase gratis,
+una completa o un estudio sin packs activos no muestran la elección (solo hay
+drop-in). Con un pack elegido el paso 3 no muestra el campo de código (al pack
+no se le aplica ninguno) y el paso 4 recuerda lo elegido con "Change". Quien ya
+tiene un pack elige Drop-in y escribe su código en el paso 3.
+
+**Monto de un pack comprado con la clase.** La reserva guarda en `total_usd`
+solo los extras; el precio del pack vive en `pack_purchases.amount_usd`. Los
+correos de la reserva y el aviso al estudio suman los dos (`amountWithPack`):
+antes un pack en efectivo decía "Amount due: Free".
+
+**Límite de Resend (2 por segundo).** `deliver()` reintenta hasta 3 veces un
+envío rechazado por `rate_limit_exceeded`, esperando lo que diga `retry-after`
+(o ~1 s). Un pack pagado con tarjeta manda tres correos seguidos (reserva,
+aviso al estudio y código) y el del código se perdía.
+
 **Recibos.** Tarjeta: `/booking/confirmacion?order=<id>` (clase) o
-`/paquetes/resultado?order=<id>` (pack, muestra el código); el id es el uuid
-de la orden, que nadie puede adivinar. Efectivo, Venmo y gratis: la pantalla
-final del propio flujo.
+`/paquetes/resultado?order=<id>` (pack, muestra el código y, si vino de una
+clase, que esa clase ya quedó reservada; si el pago se rechaza, "Try again"
+vuelve a esa clase); el id es el uuid de la orden, que nadie puede adivinar.
+Efectivo, Venmo y gratis: la pantalla final del propio flujo.
 
 **Cancelación desde el admin.** Libera el cupo, cancela un pack pendiente
 comprado con esa clase, devuelve el crédito si la clase se había pagado con

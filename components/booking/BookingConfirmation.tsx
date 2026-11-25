@@ -31,8 +31,13 @@ type Props = {
   classDate: Date;
   durationMinutes: number;
   location: string;
+  /** "Class" for a drop-in, or the pack's name. */
+  priceLabel: string;
+  /** What the first line charges: the class, or the pack. */
   priceUsd: number;
   isFree: boolean;
+  /** Set when a pack was bought with this class: its size. */
+  packClasses?: number | null;
   selectedUpsells: Upsell[];
   appliedCode: ReferralCode | null;
   discountAmount: number;
@@ -50,7 +55,7 @@ type Props = {
 export function BookingConfirmation({
   bookingRef, onDownloadICS,
   className, instructor, classDate, durationMinutes, location,
-  priceUsd, isFree, selectedUpsells, appliedCode, discountAmount, total, email,
+  priceLabel, priceUsd, isFree, packClasses = null, selectedUpsells, appliedCode, discountAmount, total, email,
   pendingMethod = null,
 }: Props) {
   const t = useTranslations('booking.confirmation');
@@ -132,7 +137,7 @@ export function BookingConfirmation({
         {/* Price breakdown */}
         <div className="mt-10 pt-10 border-t border-ink/15 space-y-3">
           <ReceiptRow
-            label={t('class')}
+            label={priceLabel}
             value={isFree ? t('free') : `$${priceUsd}`}
           />
           {selectedUpsells.map((u) => (
@@ -160,6 +165,13 @@ export function BookingConfirmation({
             {isTotalFree ? t('free') : `$${total}`}
           </span>
         </div>
+
+        {/* A pack bought with this class: its code comes by email, for the rest. */}
+        {packClasses ? (
+          <p className="font-body text-sm text-ink leading-relaxed mt-6">
+            {t(isPending ? 'packPending' : 'packConfirmed', { rest: packClasses - 1 })}
+          </p>
+        ) : null}
 
         {/* Payment instructions — cash / Venmo */}
         {isPending && (

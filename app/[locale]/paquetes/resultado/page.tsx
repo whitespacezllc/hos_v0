@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { format } from 'date-fns';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { localeFromParams, type LocaleParams } from '@/i18n/routing';
 import { Navigation } from '@/components/landing/navigation';
 import { Footer } from '@/components/landing/footer';
 import { getPackReceipt } from '@/lib/queries/receipts';
+import { dateFnsLocale } from '@/lib/dates';
+import { inCostaRica } from '@/lib/costa-rica-time';
 import { Check, X, AlertCircle, Clock } from 'lucide-react';
 
 // The page Tilopay's callback sends a pack buyer to. `order` is the purchase
@@ -18,6 +21,11 @@ export const metadata: Metadata = {
 };
 
 type Copy = { icon: 'ok' | 'declined' | 'error' | 'review'; title: string; body: string };
+
+// Bookings close an hour before class (see startBookingCheckout).
+function stillBookable(startsAt: string): boolean {
+  return new Date(startsAt).getTime() - Date.now() > 3_600_000;
+}
 
 type Translate = Awaited<ReturnType<typeof getTranslations<'packs.result'>>>;
 
@@ -47,8 +55,20 @@ export default async function ResultadoPage({
   const t = await getTranslations('packs.result');
   const { status, kind, order } = await searchParams;
   const c = copyFor(t, status ?? 'error', kind ?? 'pack');
-  const receipt = status === 'ok' && order ? await getPackReceipt(order) : null;
-  const code = receipt?.status === 'paid' ? receipt.code : null;
+  // Read for every outcome: a declined pack bought from a class sends its
+  // customer back to that class, not to /paquetes.
+  const receipt = order ? await getPackReceipt(order) : null;
+  const code = status === 'ok' && receipt?.status === 'paid' ? receipt.code : null;
+  const booked = receipt?.bookedClass ?? null;
+  // The class its first credit booked, once paid and confirmed.
+  const bookedNow = code && booked && booked.status === 'confirmed' ? booked : null;
+  const retryClass = booked && stillBookable(booked.startsAt) ? booked.classId : null;
+  const classDate = bookedNow
+    ? (() => {
+        const d = format(inCostaRica(bookedNow.startsAt), t('classDateFormat'), { locale: dateFnsLocale(locale) });
+        return d.charAt(0).toUpperCase() + d.slice(1);
+      })()
+    : '';
 
   return (
     <>
@@ -66,6 +86,15 @@ export default async function ResultadoPage({
             </div>
             <h1 className="font-display text-3xl font-light text-ink mt-7">{c.title}</h1>
             <p className="font-body text-sm text-ink/70 mt-4 leading-relaxed">{c.body}</p>
+            {bookedNow && (
+              <p className="font-body text-sm text-ink mt-4 leading-relaxed">
+                {t.rich('classBooked', {
+                  className: bookedNow.name,
+                  date: classDate,
+                  strong: (chunks) => <strong className="font-medium">{chunks}</strong>,
+                })}
+              </p>
+            )}
 
             {code && receipt && (
               <div className="mt-8 border border-dashed border-burgundy/60 bg-cream/40 px-6 py-6 text-center">
@@ -86,7 +115,7 @@ export default async function ResultadoPage({
               </Link>
               {(status === 'declined' || status === 'error') && (
                 <Link
-                  href="/paquetes"
+                  href={retryClass ? `/booking/${retryClass}` : '/paquetes'}
                   className="border border-ink/25 text-ink font-body text-sm tracking-[0.1em] uppercase px-6 py-3 hover:bg-cream/60 transition-colors duration-200"
                 >
                   {t('tryAgain')}

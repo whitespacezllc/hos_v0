@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { addMinutes, format } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -31,6 +31,9 @@ import { BookingMobileSummary } from '@/components/booking/BookingMobileSummary'
 import { BookingNavigation } from '@/components/booking/BookingNavigation';
 import { BookingConfirmation } from '@/components/booking/BookingConfirmation';
 import { VenmoModal } from '@/components/booking/VenmoModal';
+import {
+  BookingOptions, usd, useOptionDetail, useOptionLabel, type BookingOption,
+} from '@/components/booking/BookingOptions';
 
 // ── Class photo mapping ──────────────────────────────────────────────────────
 const CLASS_PHOTOS: Record<string, string> = {
@@ -69,6 +72,8 @@ type Props = {
   upsells: Upsell[];
   /** The class packs on sale, priced by the database — the same rows the checkout charges. */
   packs: ClassPack[];
+  /** The studio's standard price for one class (the catalogue's drop-in row): what a pack's saving is measured against. */
+  standardDropInUsd: number | null;
   /** The language the flow renders in — stored with the booking so its emails speak it. */
   locale: AppLocale;
 };
@@ -89,10 +94,6 @@ const personalSchema = (errors: FormErrors) =>
   });
 
 type PersonalData = z.infer<ReturnType<typeof personalSchema>>;
-
-// The single class, or one of the packs on sale. `'dropin'` is the class on
-// its own; anything else is a class_packs id.
-type PackOption = { id: string; packId: string | null; classes: number; price: number; saving: number };
 
 // Name and hint of each come from the catalogue (booking.step4.methods).
 const PAYMENT_METHODS: { id: PaymentMethod; Icon: typeof CreditCard }[] = [
@@ -228,7 +229,7 @@ function mockBookingReference(): string {
 export default function BookingFlow({
   classId, className, instructor, startsAt,
   durationMinutes, capacity, spotsRemaining,
-  priceUsd, location, description, color, imageUrl, upsells, packs, locale: bookingLocale,
+  priceUsd, location, description, color, imageUrl, upsells, packs, standardDropInUsd, locale: bookingLocale,
 }: Props) {
   const t = useTranslations('booking');
   const tCategories = useTranslations('yoga.categories');
@@ -237,7 +238,16 @@ export default function BookingFlow({
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [selectedUpsellIds, setSelectedUpsellIds] = useState<Set<string>>(new Set());
   const [personalData, setPersonalData] = useState<PersonalData | null>(null);
-  const [packChoice, setPackChoice] = useState<string>('dropin');
+  // Drop-in or a pack. Nothing is chosen for the customer when there is a
+  // choice to make: a free class, or a studio with no packs on sale, has only
+  // the drop-in.
+  const offersPacks = packs.length > 0 && priceUsd > 0;
+  const [packChoice, setPackChoice] = useState<string | null>(offersPacks ? null : 'dropin');
+  const [choiceRequired, setChoiceRequired] = useState(false);
+  const optionsRef = useRef<HTMLDivElement | null>(null);
+  const optionLabel = useOptionLabel();
+  const optionDetail = useOptionDetail();
+  const tOptions = useTranslations('booking.options');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [pendingMethod, setPendingMethod] = useState<'cash' | 'venmo' | null>(null);
   const [venmoModalOpen, setVenmoModalOpen] = useState(false);
@@ -253,21 +263,26 @@ export default function BookingFlow({
   const isFree = priceUsd === 0;
   const activeUpsells = upsells.filter(u => u.isActive);
 
-  // The options on step 4: this class alone, then each pack the studio sells,
-  // with what it saves against booking that many classes one by one.
-  const packOptions = useMemo<PackOption[]>(
-    () => [
-      { id: 'dropin', packId: null, classes: 1, price: priceUsd, saving: 0 },
+  // The options on step 1: this class alone, then each pack the studio sells,
+  // with its price per class and what it saves against booking that many
+  // classes one by one. The saving is measured against the studio's standard
+  // drop-in, not this class's price: a pack bought on a special-priced
+  // workshop would otherwise promise a saving the next classes don't give.
+  const packOptions = useMemo<BookingOption[]>(() => {
+    const reference = standardDropInUsd ?? priceUsd;
+    const round = (n: number) => Math.round(n * 100) / 100;
+    return [
+      { id: 'dropin', packId: null, classes: 1, price: priceUsd, perClass: priceUsd, saving: 0 },
       ...packs.map((p) => ({
         id: p.id,
         packId: p.id,
         classes: p.classesCount,
         price: p.priceUsd,
-        saving: Math.max(0, Math.round((p.classesCount * priceUsd - p.priceUsd) * 100) / 100),
+        perClass: round(p.priceUsd / p.classesCount),
+        saving: Math.max(0, round(p.classesCount * reference - p.priceUsd)),
       })),
-    ],
-    [packs, priceUsd],
-  );
+    ];
+  }, [packs, priceUsd, standardDropInUsd]);
 
   const selectedUpsellsList = useMemo(
     () => activeUpsells.filter(u => selectedUpsellIds.has(u.id)),
@@ -281,13 +296,28 @@ export default function BookingFlow({
   // Amount actually charged depends on the selected option: a drop-in charges the
   // class (a code may discount it); a pack charges the pack price (codes don't
   // apply to pack purchases). Upsells are always added.
-  const packDef = packOptions.find((p) => p.id === packChoice) ?? packOptions[0];
-  const isPack = packDef.packId !== null;
+  // Null until the customer picks, when there is something to pick.
+  const packDef = packOptions.find((p) => p.id === packChoice) ?? null;
+  const isPack = packDef !== null && packDef.packId !== null;
   const basePrice = isPack ? packDef.price : priceUsd;
-  const priceLabel = isPack ? t('step4.packOf', { count: packDef.classes }) : t('summary.classLabel');
+  const priceLabel = isPack ? optionLabel(packDef) : t('summary.classLabel');
   const payDiscount = isPack ? 0 : discountAmount;
   const total = Math.max(0, basePrice + subtotalUpsells - payDiscount);
   const isTotalFree = total === 0;
+
+  function chooseOption(id: string) {
+    setPackChoice(id);
+    setChoiceRequired(false);
+  }
+
+  // Continue without a choice: say so where the choice is, and take them there.
+  function requireChoice() {
+    setChoiceRequired(true);
+    const el = optionsRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.focus({ preventScroll: true });
+  }
 
   async function handleApplyCode() {
     const codeStr = form.getValues('referralCode') ?? '';
@@ -376,6 +406,10 @@ export default function BookingFlow({
 
   async function handleConfirm() {
     if (!personalData) return;
+    if (!packDef) {
+      goToStep(1);
+      return;
+    }
     setIsLoading(true);
     setBookingError(null);
 
@@ -477,7 +511,10 @@ export default function BookingFlow({
     if (step > 1) goToStep(step - 1);
   }
   function handleContinue() {
-    if (step === 1) goToStep(2);
+    if (step === 1) {
+      if (!packDef) requireChoice();
+      else goToStep(2);
+    }
     else if (step === 2) goToStep(3);
     else if (step === 3) form.handleSubmit(handlePersonalSubmit)();
     else if (step === 4) handleStep4();
@@ -503,18 +540,21 @@ export default function BookingFlow({
 
   // Props bundle for BookingSummary (used in two places: desktop sidebar + mobile drawer).
   // The class image is intentionally NOT included — it lives only in Step 1's main content.
+  // Until an option is chosen there is no price to state: the summary says
+  // what is missing instead of quoting the drop-in as if it were decided.
   const summaryProps = {
     className,
     instructor,
     classDate,
     durationMinutes,
-    priceUsd: basePrice,
-    priceLabel,
+    priceUsd: packDef ? basePrice : null,
+    priceLabel: packDef ? priceLabel : t('summary.chooseOption'),
+    priceNote: isPack ? optionDetail(packDef) : undefined,
     selectedUpsells: selectedUpsellsList,
     appliedCode: isPack ? null : appliedCode,
     discountAmount: payDiscount,
-    total,
-    isFree: isTotalFree,
+    total: packDef ? total : null,
+    isFree: packDef ? isTotalFree : false,
   };
 
   return (
@@ -529,8 +569,8 @@ export default function BookingFlow({
       {!isConfirmation && (
         <BookingMobileSummary
           className={className}
-          total={total}
-          isFree={isTotalFree}
+          total={packDef ? total : null}
+          isFree={packDef ? isTotalFree : false}
         >
           <BookingSummary {...summaryProps} bare />
         </BookingMobileSummary>
@@ -545,11 +585,13 @@ export default function BookingFlow({
           classDate={classDate}
           durationMinutes={durationMinutes}
           location={location}
-          priceUsd={priceUsd}
-          isFree={isFree}
+          priceLabel={priceLabel}
+          priceUsd={basePrice}
+          isFree={!isPack && isFree}
+          packClasses={isPack ? packDef.classes : null}
           selectedUpsells={selectedUpsellsList}
-          appliedCode={appliedCode}
-          discountAmount={discountAmount}
+          appliedCode={isPack ? null : appliedCode}
+          discountAmount={payDiscount}
           total={total}
           email={personalData?.email}
           pendingMethod={pendingMethod}
@@ -657,6 +699,18 @@ export default function BookingFlow({
                             }
                           />
                         </div>
+
+                        {/* Drop-in or a pack — nothing preselected. A full
+                            class has nothing to book. */}
+                        {offersPacks && spotsRemaining > 0 && (
+                          <BookingOptions
+                            ref={optionsRef}
+                            options={packOptions}
+                            value={packChoice}
+                            onChange={chooseOption}
+                            showRequired={choiceRequired}
+                          />
+                        )}
                       </motion.div>
                     )}
 
@@ -789,7 +843,10 @@ export default function BookingFlow({
                               </FormItem>
                             )} />
 
-                            {/* Referral code */}
+                            {/* Referral / pack code — a drop-in's only: a pack
+                                bought now is the code, and checkout applies no
+                                discount to a pack. */}
+                            {!isPack && (
                             <FormField control={form.control} name="referralCode" render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="flex items-center gap-1.5 font-body text-[10px] tracking-[0.25em] uppercase text-ink">
@@ -846,6 +903,7 @@ export default function BookingFlow({
                                 )}
                               </FormItem>
                             )} />
+                            )}
 
                           </form>
                         </Form>
@@ -866,56 +924,25 @@ export default function BookingFlow({
                           {t('step4.intro')}
                         </p>
 
-                        {/* Pack type selector — editorial flat cards, no radius */}
-                        <div className="mt-12 border-y border-ink/10 divide-y divide-ink/10">
-                          {packOptions.map((pack) => {
-                            const active = packChoice === pack.id;
-                            const displayPrice = pack.price;
-                            return (
+                        {/* What is being bought, chosen on step 1. */}
+                        {offersPacks && packDef && (
+                          <div className="mt-12 border-y border-ink/10 py-5 flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="font-body text-sm font-medium text-ink">{optionLabel(packDef)}</p>
+                              <p className="font-body text-xs text-ink/70 mt-1 leading-snug">{optionDetail(packDef)}</p>
+                            </div>
+                            <div className="flex items-baseline gap-5 flex-shrink-0">
+                              <span className="font-body text-sm text-ink">{t('step4.priceUsd', { amount: usd(packDef.price) })}</span>
                               <button
-                                key={pack.id}
                                 type="button"
-                                onClick={() => setPackChoice(pack.id)}
-                                className={`
-                                  group relative w-full flex items-center justify-between
-                                  py-5 pl-8 pr-2 text-left
-                                  cursor-pointer transition-colors duration-300
-                                  ${active ? '' : 'hover:bg-ink/[0.02]'}
-                                `}
+                                onClick={() => goToStep(1)}
+                                className="font-body text-xs text-ink underline underline-offset-4 decoration-[0.5px] hover:opacity-70 transition-opacity duration-300 cursor-pointer"
                               >
-                                {/* Burgundy active marker on the left */}
-                                <span
-                                  aria-hidden
-                                  className={`
-                                    absolute left-0 top-1/2 -translate-y-1/2 h-10 w-[2px]
-                                    transition-opacity duration-300
-                                    ${active ? 'bg-burgundy opacity-100' : 'opacity-0'}
-                                  `}
-                                />
-                                <div className="flex items-center gap-4">
-                                  <div className={`
-                                    w-4 h-4 rounded-full border flex-shrink-0
-                                    flex items-center justify-center transition-colors duration-300
-                                    ${active ? 'border-ink' : 'border-ink/40'}
-                                  `}>
-                                    {active && <div className="w-1.5 h-1.5 rounded-full bg-ink" />}
-                                  </div>
-                                  <div>
-                                    <p className="font-body text-sm font-medium text-ink">
-                                      {pack.packId ? t('step4.packOf', { count: pack.classes }) : t('step4.packs.dropin')}
-                                    </p>
-                                    {pack.saving > 0 && (
-                                      <p className="font-body text-xs text-burgundy mt-1">
-                                        {t('step4.savings', { amount: pack.saving })}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className="font-body text-sm text-ink">{t('step4.priceUsd', { amount: displayPrice })}</span>
+                                {tOptions('change')}
                               </button>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Payment method selector */}
                         <div className="mt-10">

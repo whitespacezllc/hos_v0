@@ -82,6 +82,11 @@ export type PackReceipt = {
   classesUsed: number;
   packName: string;
   firstName: string;
+  /**
+   * Bought from a class's booking flow: the class its first credit booked.
+   * Null for a pack bought on its own from /paquetes.
+   */
+  bookedClass: { classId: string; name: string; startsAt: string; status: string } | null;
 };
 
 export async function getPackReceipt(id: string): Promise<PackReceipt | null> {
@@ -94,6 +99,18 @@ export async function getPackReceipt(id: string): Promise<PackReceipt | null> {
       .eq('id', id)
       .maybeSingle();
     if (error || !data) return null;
+    // The booking made together with the pack, if it came from a class.
+    const { data: linked } = await supabase
+      .from('bookings')
+      .select('class_id, payment_status, classes ( name, starts_at )')
+      .eq('pack_purchase_id', id)
+      .limit(1)
+      .maybeSingle();
+    const booking = linked as unknown as {
+      class_id: string;
+      payment_status: string;
+      classes: { name: string; starts_at: string } | null;
+    } | null;
     const row = data as unknown as {
       status: PackReceipt['status'];
       code: string | null;
@@ -109,6 +126,15 @@ export async function getPackReceipt(id: string): Promise<PackReceipt | null> {
       classesUsed: row.classes_used,
       packName: row.class_packs?.name ?? `Pack x${row.classes_total}`,
       firstName: row.first_name,
+      bookedClass:
+        booking && booking.classes
+          ? {
+              classId: booking.class_id,
+              name: booking.classes.name,
+              startsAt: booking.classes.starts_at,
+              status: booking.payment_status,
+            }
+          : null,
     };
   } catch (err) {
     console.error('[getPackReceipt]', err);

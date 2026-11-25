@@ -11,13 +11,17 @@ type Props = {
   instructor: string;
   classDate: Date;
   durationMinutes: number;
-  priceUsd: number;
+  /** Null while the customer hasn't chosen between drop-in and a pack. */
+  priceUsd: number | null;
   /** Label for the primary line item — "Class" for a drop-in, or the pack name. */
   priceLabel?: string;
+  /** A second, quieter line under it: what a pack covers. */
+  priceNote?: string;
   selectedUpsells: Upsell[];
   appliedCode: ReferralCode | null;
   discountAmount: number;
-  total: number;
+  /** Null while nothing is chosen. */
+  total: number | null;
   isFree: boolean;
   /** When true, the wrapper drops its bg + padding so it can live inside another container (mobile drawer). */
   bare?: boolean;
@@ -30,7 +34,7 @@ type Props = {
  */
 export function BookingSummary({
   className, instructor, classDate, durationMinutes,
-  priceUsd, priceLabel, selectedUpsells, appliedCode, discountAmount, total, isFree, bare = false,
+  priceUsd, priceLabel, priceNote, selectedUpsells, appliedCode, discountAmount, total, isFree, bare = false,
 }: Props) {
   const t = useTranslations('booking.summary');
   const locale = dateFnsLocale(useLocale());
@@ -59,10 +63,17 @@ export function BookingSummary({
 
       {/* Line items */}
       <div className="space-y-2">
-        <LineRow
-          label={priceLabel ?? t('classLabel')}
-          amount={isFree ? t('free') : `$${priceUsd}`}
-        />
+        {priceUsd === null ? (
+          <LineRow label={priceLabel ?? t('classLabel')} amount="—" muted />
+        ) : (
+          <LineRow
+            label={priceLabel ?? t('classLabel')}
+            amount={isFree ? t('free') : `$${priceUsd}`}
+          />
+        )}
+        {priceNote && (
+          <p className="font-body text-xs text-ink/70 leading-snug">{priceNote}</p>
+        )}
         {selectedUpsells.map((u) => (
           <LineRow
             key={u.id}
@@ -85,7 +96,7 @@ export function BookingSummary({
           {t('total')}
         </span>
         <span className="font-display text-2xl lg:text-3xl font-light text-ink">
-          {total === 0 ? t('free') : `$${total}`}
+          {total === null ? '—' : total === 0 ? t('free') : `$${total}`}
         </span>
       </div>
     </div>
@@ -103,9 +114,9 @@ function MetaPair({ label, value, note }: { label: string; value: string; note?:
 }
 
 function LineRow({
-  label, amount, tone,
-}: { label: string; amount: string; tone?: 'burgundy' }) {
-  const color = tone === 'burgundy' ? 'text-burgundy' : 'text-ink';
+  label, amount, tone, muted,
+}: { label: string; amount: string; tone?: 'burgundy'; muted?: boolean }) {
+  const color = tone === 'burgundy' ? 'text-burgundy' : muted ? 'text-ink/60 italic' : 'text-ink';
   return (
     <div className="flex justify-between items-baseline gap-4">
       <span className={`font-body text-sm ${color}`}>{label}</span>
